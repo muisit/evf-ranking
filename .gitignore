@@ -21,3 +21,9 @@ node_modules/
 *.log
 *.sql
 *.sqlite
+
+dist/
+deploy/
+assets/
+yarn.lock
+

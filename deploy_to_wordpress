@@ -1,0 +1,157 @@
+#!/bin/bash
+
+source  .env
+
+RELEASE="1"
+MAJOR="0"
+MINOR="0"
+DRY="0"
+NOGIT="0"
+
+while [ $# -gt 0 ]
+do
+    arg=$1
+    shift
+    
+    if [[ "x$arg" = "x-v" ]]
+    then
+        RELEASE="1"
+        MINOR="1"
+    fi
+
+    if [[ "x$arg" = "x-r" ]]
+    then
+        RELEASE="1"        
+        MAJOR="1"
+    fi
+
+    if [[ "x$arg" = "x-n" ]]
+    then    
+        DRY="1"
+    fi
+
+    if [[ "x$arg" = "x-h" ]]
+    then
+        echo "Deploy to Wordpress script"
+        echo "Copyright (C) 2020 muis IT https://www.muisit.nl"
+        echo ""
+        echo "deploy_to_wordpress [options]"
+        echo ""
+        echo "-h           print this help text"
+        echo "-n           perform a dry-run, printing the raw commands"
+        echo "-r           release a major release (tag with major value upgraded)"
+        echo "-v           release a minor release (tag with minor value upgraded)"
+        echo ""
+        echo "Add the WPDIR directory location of the destination SVN repository in the"
+        echo ".env file next to this script. Set the PROJECT variable to the name of"
+        echo "the project/plugin name/file containing the version number."
+        exit
+    fi
+done
+
+if [[ "x$DRY" = "x1" ]]
+then
+    echo "Dry-run, no execution"
+else
+    # perform a production build before we deploy
+    npm run build
+fi
+
+if [[ "x$MAJOR" = "x1" && "x$MINOR" = "x1" ]]
+then
+    echo "Major release requires a minor version of 0, ignoring -v"
+    MINOR="0"
+fi
+
+VERSION=`grep "* Version" "$PROJECT.php" | sed 's/[^0-9]*\([0-9\.]*\).*/\1/'`
+MAJ=`echo $VERSION | sed 's/\([0-9]*\).*/\1/'`
+MIN=`echo $VERSION | sed 's/[0-9]*\.\([0-9]*\).*/\1/'`
+MICR=`echo $VERSION | sed 's/[0-9]*\.[0-9]*\.\([0-9]*\)/\1/'`
+
+if [[ "x1" == "x$MAJOR" ]]
+then
+    echo "Performing major release"
+    let "MAJ=$MAJ+1"
+    MIN="0"
+    MICR="0"
+else
+    if [[ "x1" = "x$MINOR" ]]
+    then
+        echo "Performing minor release"
+        let "MIN=$MIN+1"
+        MICR="0"
+    else
+        if [[ "x$RELEASE" = "x1" ]]
+        then
+            echo "Performing micro release"
+            let "MICR=$MICR+1"
+        fi
+    fi
+fi
+
+echo "Version ${MAJ}.${MIN}.${MICR}"
+
+if [[ "x$DRY" = "x1" ]]
+then
+    echo "cat \"$PROJECT.php\" | sed \"s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/\" > tmp.$$"
+    echo "mv tmp.$$ \"$PROJECT.php\""
+    echo "cat \"package.json\" | sed \"s/\(.*version\\\"[ \t:]*\\\"\).*/\1${MAJ}.${MIN}.${MICR}\\\",/\" > tmp.$$"
+    echo "mv tmp.$$ \"package.json\""
+else
+    cat "$PROJECT.php" | sed "s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/" > tmp.$$
+    mv tmp.$$ "$PROJECT.php"
+    cat "package.json" | sed "s/\(.*version\"[ \t:]*\"\).*/\1${MAJ}.${MIN}.${MICR}\",/" > tmp.$$
+    mv tmp.$$ "package.json"
+fi
+
+
+BASE=`pwd`
+DEPLOYDIR="$BASE/$WPDIR"
+if [[ "x$DRY" = "x1" ]]
+then
+    echo "rm -rf $DEPLOYDIR"
+    echo "mkdir -p $DEPLOYDIR/dist"
+    echo "mkdir -p $DEPLOYDIR/models"
+    echo "mkdir -p $DEPLOYDIR/css"
+else
+    rm -rf $DEPLOYDIR
+    mkdir -p $DEPLOYDIR/models
+    mkdir -p $DEPLOYDIR/dist
+    mkdir -p $DEPLOYDIR/css
+fi
+
+for i in *.php LICENSE readme.txt
+do
+    if [[ "x$DRY" = "x1" ]]
+    then
+        echo "cp -v $i $DEPLOYDIR"
+    else
+        cp -v $i $DEPLOYDIR
+    fi
+done
+
+for i in `find ./ -type f -path ./models/\*`
+do
+    if [[ "x$DRY" = "x1" ]]
+    then
+        echo "cp -v $i $DEPLOYDIR/models"
+    else
+        cp -v $i $DEPLOYDIR/models
+    fi
+done
+
+if [[ "x$DRY" = "x1" ]]
+then
+    echo "cp -r dist/fonts dist/images dist/app.js $DEPLOYDIR/dist"
+    echo "cp css/evfranking.css $DEPLOYDIR/css"
+else
+    cp -r dist/fonts dist/images dist/app.js dist/ranking.js dist/results.js $DEPLOYDIR/dist
+    cp dist/app.css $DEPLOYDIR/dist
+
+    cd /tmp
+    cp -darpv $DEPLOYDIR /tmp/$PROJECT
+    zip -r $PROJECT $PROJECT
+    mv $PROJECT.zip $DEPLOYDIR
+    rm -rf /tmp/$PROJECT
+fi
+

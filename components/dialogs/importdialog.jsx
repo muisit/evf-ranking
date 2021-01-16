@@ -25,6 +25,8 @@ export default class ImportDialog extends React.Component {
                 this.countryByAbbrev[cnt.abbr.toLowerCase()]=cnt;
             }
         }
+
+        this.gender = 'M';
     }
 
     loading = (state) => {
@@ -45,9 +47,36 @@ export default class ImportDialog extends React.Component {
         this.close();
     }
 
+    printRanking2 = (rnk) => {
+        var ranking=[];
+        for(var i in rnk) {
+            var rnk=rnk[i];
+            var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
+            ranking.push(obj);
+        }
+        console.log(ranking);
+    }
+
+    printRanking = () => {
+        var ranking=[];
+        for(var i in this.props.value.object.ranking) {
+            var rnk=this.props.value.object.ranking[i];
+            var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
+            ranking.push(obj);
+        }
+        console.log(ranking);
+    }
+
     onCloseDialog = (event) => {
         if(this.props.value.object.ranking.length) {
-            result('import',{import: this.props.value.object})
+            var ranking=[];
+            for(var i in this.props.value.object.ranking) {
+                var rnk=this.props.value.object.ranking[i];
+                var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
+                ranking.push(obj);
+            }
+
+            result('import',{import: { ranking: ranking, competition_id: this.props.value.object.competition_id }})
                 .then((res) => {
                     if(res) {
                         this.close();
@@ -83,17 +112,25 @@ export default class ImportDialog extends React.Component {
             })
             .then((res) => {
                 // parse results
+                console.log("parsing results");
                 var ranking=this.props.value.object.ranking.slice();
                 if(res && res.data.ranking) {
-                    console.log(res.data.ranking);
                     for(var i in res.data.ranking) {
                         var entry=res.data.ranking[i];
 
-                        console.log('looking for fencer index ',entry.index);
                         for(var j in ranking) {
                             var el=ranking[j];
                             if(el.index === entry.index) {
-                                console.log('found fencer entry');
+                                if(entry.fencer_id > 0) {
+                                    for(var k in entry.suggestions) {
+                                        var sugg = entry.suggestions[k];
+                                        if(sugg.id == entry.fencer_id) {
+                                            entry.birthday = sugg.birthday;
+                                            entry.gender = sugg.gender;
+                                        }
+                                    }
+                                }
+
                                 el.fencer_id = entry.fencer_id || -1;
                                 el.lastname_check = entry.lastname_check || 'nok';
                                 el.lastname_text = entry.lastname_text || '';
@@ -103,18 +140,19 @@ export default class ImportDialog extends React.Component {
                                 el.country_text = entry.country_text || '';
                                 el.all_check = entry.all_check || 'nok';
                                 el.all_text = entry.all_text || '';
-                                el.gender = entry.gender || 'M';
+                                el.gender = entry.gender || this.gender;
                                 el.birthday = entry.birthday || '';
-                                console.log('copying suggestions ',entry.suggestions);
                                 el.suggestions = [];
                                 if(entry.suggestions && entry.suggestions.length) {
                                     el.suggestions = entry.suggestions.slice();
                                 }
                                 ranking[j]=el;
-                                break;
+
                             }
                         }
                     }
+
+                    for(var j in ranking) console.log(ranking[j].pos + "/" + ranking[j].lastname);
 
                     var item=this.props.value;
                     item.object.ranking=ranking;
@@ -127,6 +165,17 @@ export default class ImportDialog extends React.Component {
 
     onConvert = () => {
         console.log('converting text');
+
+        // set the default gender based on the selected competition
+        if(this.props.weapons && this.props.competition) {
+            for(var j in this.props.weapons) {
+                var wpn=this.props.weapons[j];
+                if(wpn.id == this.props.competition.weapon) {
+                    this.gender = wpn.gender;
+                }
+            }
+        }
+
         var lines=this.props.value.text.split('\n');
         var lastpos=0;
         var ranking = lines.reduce((result, line) => {
@@ -173,19 +222,19 @@ export default class ImportDialog extends React.Component {
                 else {
                     obj.country_check="nok";
                 }
+                console.log("pushing "+obj.pos + "/" + obj.lastname);
                 result.push(obj);
             }
             return result;
         },[]);
 
-        console.log('ranking is ',ranking);
         var item=this.props.value;
         item.object.ranking=ranking;
         item.converted=true;
         if (this.props.onChange) this.props.onChange(item);
         this.setState({current_check: 0}, () => {
             setTimeout(this.checkResults, 1);
-        });        
+        });
     }
 
     onChange = (event) => {
@@ -208,12 +257,14 @@ export default class ImportDialog extends React.Component {
             console.log('applying change for item ',this.state.item);
             // change the value of the item at this index itm.index
             var ranking=this.props.value.object.ranking.map((rnk,idx) => {
+                console.log("ranking "+rnk.index+" " + rnk.pos + "/" + rnk.fencer_id);
                 if(rnk.index == this.state.item.index) {
                     console.log('found index item');
                     return this.state.item;
                 }
                 return rnk;
             });
+            console.log("ranking ",ranking);
             var item=this.props.value;
             item.object.ranking=ranking;
             console.log('propagating change upwards');
@@ -226,6 +277,7 @@ export default class ImportDialog extends React.Component {
 
     selectRow = (itm) => {
         console.log("opening dialog for selected import row ",itm);
+        this.printRanking();
         this.setState({showDialog: true, item: itm});
     }
 
@@ -275,7 +327,7 @@ export default class ImportDialog extends React.Component {
                     </tbody>
                 </table>
                 <SuggestionDialog 
-            countries={this.props.countries}
+            countries={this.props.countries} gender={this.gender}
             onClose={()=>this.onSuggest('close')} onChange={(itm)=>this.onSuggest('change',itm)} onSave={()=>this.onSuggest('save')} 
             value={this.state.item} display={this.state.showDialog}
             />

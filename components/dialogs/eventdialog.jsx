@@ -325,7 +325,7 @@ export default class EventDialog extends React.Component {
         end.setDate(end.getDate() + (parseInt(this.props.value.duration) || 21));
 
         return (
-<Dialog header="Edit Event" position="center" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+<Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
   <TabView id="eventdialog" animate={true} defaultSelectedTabId="general">
     <TabPanel id='general' header='General'>
       <div>

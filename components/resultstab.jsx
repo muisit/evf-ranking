@@ -203,9 +203,7 @@ export default class ResultsTab extends PagedTab {
             <div>
         <ResultDialog countries={this.props.countries} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />
         <ImportDialog 
-            countries={this.props.countries}  events={this.state.events}
-            categories={this.state.categories}
-            weapons={this.state.weapons}
+            countries={this.props.countries} competition={this.state.competition} weapons={this.state.weapons}
             onClose={()=>this.onImport('close')} onChange={(itm)=>this.onImport('change',itm)} onSave={()=>this.onImport('save')} 
             value={this.state.importObject} display={this.state.importDialog}
             />

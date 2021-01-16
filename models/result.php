@@ -193,6 +193,7 @@
 
         $errors=array();
         if(!$competition->isNew()) {
+            error_log("checking import into competition");
             $event = $event->get($competition->competition_event);
             $factor=floatval($event->event_factor);
             // error situation, but we'll correct and ignore
@@ -205,7 +206,7 @@
                 foreach($obj["ranking"] as $entry) {
                     $pos = intval($entry["pos"]);
                     $fencerid = intval($entry["fencer_id"]);
-
+                    error_log("position $pos, fencer $fencerid");
                     $fmodel = $fencer->get($fencerid);
                     if(!$fmodel || $fmodel->isNew()) {
                         $errors[]="Unknown fencer at position $pos called ".$entry["lastname"].", ".$entry["firstname"]."\r\n";
@@ -217,12 +218,13 @@
                 }
 
                 if(sizeof($errors) == 0) {
+                    error_log("no errors, importing everything");
                     $totalparticipants=sizeof($obj["ranking"]);
                     $this->clear($competition->competition_id);
                     foreach($obj["ranking"] as $entry) {
                         $pos = intval($entry["pos"]);
                         $fencerid = intval($entry["fencer_id"]);
-
+                        error_log("calculating result for position $pos, fencer $fencerid");
                         $res = $this->createResult($competition, $fencerid, $pos, $totalparticipants);
                         $this->recalculateResult($res,$factor);
                     }

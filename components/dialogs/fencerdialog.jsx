@@ -28,7 +28,9 @@ export default class FencerDialog extends React.Component {
     }
 
     delete = (item) => {
-        if(this.props.onDelete) this.props.onDelete(item);
+        if(this.props.delete !== false) {
+            if(this.props.onDelete) this.props.onDelete(item);
+        }
         this.close();
     }
 
@@ -38,8 +40,14 @@ export default class FencerDialog extends React.Component {
         console.log('saving ',this.props.value);
         fencer('save',this.props.value)
             .then((json) => {
+              console.log("fencer saved, returned ",json);
                 this.loading(false);
-                this.save(this.props.value);
+                var itm=Object.assign({},this.props.value);
+                if(json.data && json.data.id) {
+                  console.log("setting new id");
+                  itm.id = json.data.id;
+                }
+                this.save(itm);
             })
             .catch((err) => {
                 console.log("caught error ",err);
@@ -98,11 +106,12 @@ export default class FencerDialog extends React.Component {
     }
 
     render() {
+      console.log("rendering fencers dialog for ",this.props.value);
         var footer=(<div>
         <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
         <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
-        if(this.props.value.id >0) {
+        if(this.props.value.id >0 && this.props.delete !== false) {
             footer=(<div>
                 <Button label="Remove" icon="pi pi-trash" className="p-button-danger p-button-raised p-button-text" onClick={this.onDeleteDialog} />
                 <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
@@ -111,7 +120,7 @@ export default class FencerDialog extends React.Component {
         }
         let genders = [{ name: 'Male', code: 'M' }, { name: 'Female', code: 'F' }];
 
-        return (<Dialog header="Edit Fencer" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+        return (<Dialog header="Edit Fencer" position="center" visible={this.props.display} className="fencer-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} >
     <h5>Name</h5>
     <div className="p-grid p-fluid">
       <div className="p-col-12 p-md-6">

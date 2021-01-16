@@ -35,6 +35,9 @@
 .p-dialog-content div div.input .p-dropdown { width: 35vw; }
 .p-dialog-content div div.input .inputint input { width: 5vw; }
 
+.fencer-dialog .p-dialog-content div div .p-inputgroup .p-inputtext { width: 8vw; }
+.fencer-dialog .p-dialog-content div div .p-inputgroup .p-dropdown { width: 8vw; }
+
 .p-datepicker:not(.p-disabled) table td span.p-disabled { 
     background-color: white; 
     color: #666;
@@ -100,3 +103,8 @@ div.table-action i a { padding: 0; }
 .resultranking tbody td.part { background-color: #fa4; }
 .resultranking tbody .right { float: right; padding: 0; width: auto; height: 18px;}
 .resultranking tbody td span.item { padding-top: 0px;}
+
+.suggestiontable { padding-top: 8px; border-spacing: 0px; border-collapse: collapse; }
+.suggestiontable tr.selected td{ background-color: #9f9; }
+.suggestiontable tr.selected td.icon { background-color: none; }
+.suggestiontable tr td { padding: 2px 4px; }

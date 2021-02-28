@@ -1,7 +1,7 @@
 <?php
 
 /**
- * EVF-Ranking Display Interface
+ * EVF-Ranking API interface
  *
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
@@ -69,6 +69,7 @@
             $path=array("index");
         }
         error_log('path is '.json_encode($path));
+
         //error_log('data is '.json_encode($data));
         $retval=array();
         switch($path[0]) {
@@ -80,36 +81,53 @@
             case "countries":
             case "results":
             case "events":
-                switch($path[0]) {
+            case "roletypes":
+            case "roles":
+                    switch($path[0]) {
                     case 'fencers': $model = $this->loadModel("Fencer"); break;
                     case 'countries': $model = $this->loadModel("Country"); break;
                     case 'results': $model = $this->loadModel("Result"); break;
                     case 'events': $model = $this->loadModel("Event"); break;
+                    case 'roletypes': $model = $this->loadModel('RoleType'); break;
+                    case 'roles': $model = $this->loadModel('Role'); break;
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
+                    $this->checkPolicy($path[0],"save");
                     $retval=array_merge($retval, $this->save($model,$modeldata));
                 }
                 else if(isset($path[1]) && $path[1] == "delete") {
+                    $this->checkPolicy($path[0],"delete");
                     $retval=array_merge($retval, $this->delete($model,$modeldata));
                 }
                 else if($path[0] == 'events' && isset($path[1]) && $path[1] == "competitions") {
                     // list all competitions of events (event special action)
+                    $this->checkPolicy("competitions","list");
                     $retval=array_merge($retval, $this->listResults($model, $model->competitions($modeldata['id']), null, TRUE));
                 }
+                else if($path[0] == 'events' && isset($path[1]) && $path[1] == "sides") {
+                    // list all side events of events (event special action)
+                    $this->checkPolicy("sides","list");
+                    $retval=array_merge($retval, $this->listResults($model, $model->sides($modeldata['id']), null, TRUE));
+                }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "importcheck") {
+                    $this->checkPolicy("results","misc");
                     $retval=array_merge($retval, $model->doImportCheck($modeldata['ranking']));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "import") {
+                    $this->checkPolicy("results","misc");
                     $retval=array_merge($retval, $model->doImport($modeldata['import']));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "recalculate") {
+                    $this->checkPolicy("results","misc");
                     $retval=array_merge($retval, $model->recalculate($modeldata['competition_id']));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "clear") {
+                    $this->checkPolicy("results","misc");
                     $retval=array_merge($retval, $model->clear($modeldata['competition_id']));
                 }
                 else {
+                    $this->checkPolicy($path[0],"list");
                     $retval=array_merge($retval, $this->listAll($model,$offset,$pagesize,$filter,$sort,$special));
                 }
                 break;
@@ -120,9 +138,11 @@
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
+                    $this->checkPolicy($path[0],"save");
                     $retval=array_merge($retval, $this->save($model,$modeldata));
                 }
                 else {
+                    $this->checkPolicy($path[0],"list");
                     $retval=array_merge($retval, $this->listAll($model,$offset,$pagesize,$filter,$sort,$special));
                 }
                 break;
@@ -135,11 +155,13 @@
                     case 'categories': $model = $this->loadModel("Category"); break;
                     case 'types': $model = $this->loadModel("EventType"); break;
                 }
+                $this->checkPolicy($path[0],"list");
                 $retval=array_merge($retval, $this->listAll($model,0,null,'','i',''));
                 break;
             // special models
             case 'ranking':
                 if(isset($path[1]) && $path[1] == "reset") {
+                    $this->checkPolicy($path[0],"misc");
                     $model = $this->loadModel("Ranking"); 
                     $total = $model->calculateRankings();
                     $retval=array(
@@ -148,6 +170,7 @@
                     );
                 }
                 else if(isset($path[1]) && $path[1] == "list") {
+                    $this->checkPolicy($path[0],"list");
                     $model = $this->loadModel("Ranking");
                     $cid = intval(isset($modeldata['category_id']) ? $modeldata['category_id'] : "-1");
                     $catmodel = $this->loadModel("Category");
@@ -165,6 +188,7 @@
                     }
                 }
                 else if(isset($path[1]) && $path[1] == "detail") {
+                    $this->checkPolicy($path[0],"view");
                     $model = $this->loadModel("Ranking");
                     $cid = intval(isset($modeldata['category_id']) ? $modeldata['category_id'] : "-1");
                     $wid = intval(isset($modeldata['weapon_id']) ? $modeldata['weapon_id'] : "-1");
@@ -257,5 +281,13 @@
         error_log('instantiation');
         $name="\\EVFRanking\\$name";
         return new $name();
+    }
+
+    private function checkPolicy($model,$action) {
+        require_once(__DIR__ . "/policy.php");
+        $policy = new \EVFRanking\Policy();
+        if(!$policy->check($model,$action)) {
+            die(403);
+        }
     }
 }

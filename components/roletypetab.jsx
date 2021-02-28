@@ -1,29 +1,25 @@
-import { countries, country } from "./api.js";
+import { roletypes } from "./api.js";
 import { DataTable } from 'primereact/components/datatable/DataTable';
 import { Column } from 'primereact/components/column/Column';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
-import { Paginator } from 'primereact/paginator';
-import { Toast } from 'primereact/toast';
 
 import React from 'react';
 import PagedTab from './pagedtab';
-import CountryDialog from './dialogs/countrydialog';
+import RoleTypeDialog from './dialogs/roletypedialog';
 
 const fieldToSorterList={
     "id":"i",
     "name":"n"
 };
 
-export default class CountriesTab extends PagedTab {
+export default class RoleTypeTab extends PagedTab {
     constructor(props, context) {
         super(props, context);
         this.dt = React.createRef();
-        this.abortType='countries';
+        this.abortType='roletypes';
     }
 
     apiCall = (o,p,f,s) => {
-        return countries(o,p,f,s);
+        return roletypes(o,p,f,s);
     }
 
     fieldToSorter = (fld) => {
@@ -32,16 +28,16 @@ export default class CountriesTab extends PagedTab {
 
     toastMessage = (type,item) => {
         if(type == "save") {
-            return { severity: 'info', summary: 'Country Saved', detail: 'Country ' + item.name+ ' was succesfully stored in the database', life: 3000 };
+            return { severity: 'info', summary: 'Role Type Saved', detail: 'Role Type was succesfully stored in the database', life: 3000 };
         }
         if(type == "delete") {
-            return { severity: 'info', summary: 'Country Deleted', detail: 'Country ' + item.name + ' was succesfully removed from the database', life: 3000 };
+            return { severity: 'info', summary: 'Role Type Deleted', detail: 'Role Type was succesfully removed from the database', life: 3000 };
         }
         return {"severity":"info","summary":"Unknown","detail":"","life":1};
     }
 
     renderDialog() {
-        return (<CountryDialog countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />);
+        return (<RoleTypeDialog onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />);
     }
 
     renderTable(pager) {
@@ -56,9 +52,8 @@ export default class CountriesTab extends PagedTab {
     sortMode="multiple" multiSortMeta={this.state.multiSortMeta} onSort={this.onSort}
     >
     <Column field="id" header="ID" sortable={true} />
-    <Column field="abbr" header="Abbreviation" sortable={false}/>
     <Column field="name" header="Name" sortable={true}/>
-    <Column field="registered" header="Registered" sortable={false} />
+    <Column field="org_declaration" header="Org" sortable={true}/>
 </DataTable>
 );
     }

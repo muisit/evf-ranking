@@ -97,6 +97,10 @@ export function competitions(id) {
     var obj = {id:id};
     return fetchJson('events','events/competitions',obj);
 }
+export function sideevents(id) {
+    var obj = {id:id};
+    return fetchJson('events','events/sides',obj);
+}
 export function categories(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
     return fetchJson('events','categories',obj);
@@ -130,4 +134,19 @@ export function migrations(offset,pagesize,filter,sort) {
 }
 export function migration(action,fields) {
     return fetchJson('migrations','migrations/'+action,fields);
+}
+
+export function roles(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('roles','roles',obj);
+}
+export function role(action, fields) {
+    return fetchJson('roles','roles/' + action,fields);
+}
+export function roletypes(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('roletypes','roletypes',obj);
+}
+export function roletype(action, fields) {
+    return fetchJson('roletypes','roletypes/' + action,fields);
 }

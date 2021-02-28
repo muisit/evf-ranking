@@ -108,3 +108,8 @@ div.table-action i a { padding: 0; }
 .suggestiontable tr.selected td{ background-color: #9f9; }
 .suggestiontable tr.selected td.icon { background-color: none; }
 .suggestiontable tr td { padding: 2px 4px; }
+
+#evfregistration-root .sideevent { position: relative; width: 100%; height: 100%; padding-bottom: 20px;}
+#evfregistration-root .sideevent:after { content:"";display:table;clear:both; }
+#evfregistration-root .formelement { clear: both; }
+#evfregistration-root .p-dialog-content .sideevent label { height: 1.5rem; line-height: 1.5rem; }

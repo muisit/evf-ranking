@@ -7,18 +7,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
-
-function pad(number) {
-    if (number < 10) {
-        return '0' + number;
-    }
-    return number;
-}
-function format_date(dt) {
-    return dt.getFullYear() +
-        '-' + pad(dt.getMonth() + 1) +
-        '-' + pad(dt.getDate());
-};
+import { format_date } from '../functions';
 
 function Competition(props) {
     var opens=props.cmp.opens.length ? new Date(props.cmp.opens) : null;
@@ -66,19 +55,6 @@ export default class EventDialog extends React.Component {
             weapons: [],
             categories: []
         };
-
-        this.currencies = [
-            {"name":"Euro","code":"EUR","symbol":"€"},
-            {"name":"British Pound","code":"GBP","symbol":"£"},
-            {"name":"Swiss Franc","code":"CHF","symbol":"CHF"},
-            {"name":"Danish Krone","code":"DKK","symbol":"kr."},
-            {"name":"Icelandic Króna","code":"ISK","symbol":"kr."},
-            {"name":"Norwegian Krone","code":"NOK","symbol":"kr."},
-            {"name":"Swedish Krona","code":"SEK","symbol":"kr."},
-            {"name":"Hungarian Forint","code":"HUF","symbol":"Ft"},
-            {"name":"Polish Złoty","code":"PLN","symbol":"zł"},
-            {"name":"Unknown","code":"UNK","symbol":"-"},
-        ];
 
     }
 
@@ -171,16 +147,6 @@ export default class EventDialog extends React.Component {
         case 'web':
         case 'location':
         case 'country':
-        case 'registration_cost':
-        case 'entry_cost':
-        case 'dinner_cost':
-        case 'note':
-        case 'bank':
-        case 'account':
-        case 'address':
-        case 'iban':
-        case 'swift':
-        case 'reference':
         case 'in_ranking':
             item[name] = value;
             break;
@@ -196,16 +162,6 @@ export default class EventDialog extends React.Component {
             //    item.year = dt.getFullYear();
             //}
             } catch(e) {console.log('caught ',e);}
-            break;
-        case 'currency':
-            item.currency = value;
-            for(var idx in this.currencies) {
-                var cr=this.currencies[idx];
-                if(cr.code == value) {
-                    item.symbol = cr.symbol;
-                    break;
-                }
-            }
             break;
         case 'ccat':
         case 'cwpn':
@@ -390,81 +346,7 @@ export default class EventDialog extends React.Component {
       </div>
 
     </TabPanel>
-    <TabPanel id='registration' header='Registration'>
-    <div>
-        <label>Currency</label>
-        <div className='input'>
-            <Dropdown name='currency' optionLabel="name" optionValue="code" value={this.props.value.currency} options={this.currencies} placeholder="Currency" onChange={this.onChangeEl} appendTo={document.body}/>
-        </div>
-      </div>
-    <div>
-        <label>Registration Costs</label>
-        <div className='input'>
-            <InputNumber className='inputint' name='registration_cost' onChange={this.onChangeEl} 
-              mode="decimal" minFractionDigits={2} maxFractionDigits={2} min={0} useGrouping={false}  prefix={this.props.value.symbol+' '}
-             value={parseFloat(this.props.value.registration_cost)}></InputNumber>
-        </div>
-      </div>
-      <div>
-        <label>Entry Costs</label>
-        <div className='input'>
-            <InputNumber className='inputint' name='entry_cost' onChange={this.onChangeEl} 
-              mode="decimal" minFractionDigits={2} maxFractionDigits={2} min={0} useGrouping={false}  prefix={this.props.value.symbol+' '}
-             value={parseFloat(this.props.value.entry_cost)}></InputNumber>
-        </div>
-      </div>
-      <div>
-        <label>Dinner Costs</label>
-        <div className='input'>
-            <InputNumber className='inputint' name='dinner_cost' onChange={this.onChangeEl} 
-              mode="decimal" minFractionDigits={2} maxFractionDigits={2} min={0} useGrouping={false}  prefix={this.props.value.symbol+' '}
-             value={parseFloat(this.props.value.dinner_cost)}></InputNumber>
-        </div>
-      </div>
-      <div>
-        <label>Dinner Note</label>
-        <div className='input'>
-            <InputText name='note' value={this.props.value.note} onChange={this.onChangeEl} placeholder='Dinner note'/>
-        </div>
-      </div>
-      <div>
-        <label>Bank</label>
-        <div className='input'>
-            <InputText name='bank' value={this.props.value.bank} onChange={this.onChangeEl} placeholder='Bank name'/>
-        </div>
-      </div>
-      <div>
-        <label>Account Name</label>
-        <div className='input'>
-            <InputText name='account' value={this.props.value.account} onChange={this.onChangeEl} placeholder='Account name'/>
-        </div>
-      </div>
-      <div>
-        <label>Account Address</label>
-        <div className='input'>
-            <InputText name='address' value={this.props.value.address} onChange={this.onChangeEl} placeholder='Account holder address'/>
-        </div>
-      </div>
-      <div>
-        <label>IBAN</label>
-        <div className='input'>
-            <InputText name='iban' value={this.props.value.iban} onChange={this.onChangeEl} placeholder='IBAN account nr'/>
-        </div>
-      </div>
-      <div>
-        <label>SWIFT</label>
-        <div className='input'>
-            <InputText name='swift' value={this.props.value.swift} onChange={this.onChangeEl} placeholder='SWIFT code'/>
-        </div>
-      </div>
-      <div>
-        <label>Reference</label>
-        <div className='input'>
-            <InputText name='reference' value={this.props.value.reference} onChange={this.onChangeEl} placeholder='Account reference'/>
-        </div>
-      </div>
 
-    </TabPanel>
     <TabPanel id='competitions' header='Competitions'>
     <div className='competitions'>
       <span className="p-input-icon-left add-button">

@@ -65,6 +65,14 @@ function evfranking_display_admin_page() {
     $dat->index();
 }
 
+function evfranking_display_registration_page() {
+    error_log('displaying registration page');
+    require_once(__DIR__ . '/display.php');
+    $dat = new \EVFRanking\Display();
+    $dat->registration();
+}
+
+
 function evfranking_enqueue_scripts($page) {
     error_log('adding script');
     require_once(__DIR__ . '/display.php');
@@ -88,6 +96,15 @@ function evfranking_admin_menu() {
 		'manage_ranking',
 		'evfrankings',
         'evfranking_display_admin_page',
+        'dashicons-media-spreadsheet',
+        100
+	);
+	add_menu_page(
+		__( 'Registration' ),
+		__( 'Registration' ),
+		'manage_registration',
+		'evfregistration',
+        'evfranking_display_registration_page',
         'dashicons-media-spreadsheet',
         100
 	);

@@ -326,5 +326,12 @@
         }
         return true;
     }
+
+    public function loadModel($name) {
+        require_once(__DIR__ . "/".strtolower($name).".php");
+        $cname = "\\EVFRanking\\".$name;
+        return $cname;
+    }
+
 }
  

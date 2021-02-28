@@ -96,29 +96,37 @@
         error_log("syncing migrations");
         $cnt = $this->count();
         error_log("count is $cnt");
+        if ($cnt < 1) {
+            $migration = new Migration(array("name" => "001: Adjust Event Table", "status" => 0));
+            $migration->save();
+        }
+        if($cnt < 2) {
+            $migration = new Migration(array("name" => "002: Merge Result and Event", "status" => 0));
+            $migration->save();
+            $migration = new Migration(array("name" => "003: Adjust TD_Result table", "status" => 0));
+            $migration->save();
+        }
+        if($cnt < 4) {
+            $migration = new Migration(array("name" => "004: More adjustments to TD_Result", "status" => 0));
+            $migration->save();
+        }
+        if($cnt < 5) {
+            $migration = new Migration(array("name" => "005: Move Factor to Event", "status" => 0));
+            $migration->save();
+            $migration = new Migration(array("name" => "006: Add Ranking View", "status" => 0));
+            $migration->save();
+        }
         if($cnt < 7) {
-            if($cnt < 5) {
-                if($cnt < 4) {
-                    if($cnt < 2) {
-                        if ($cnt < 1) {
-                            $migration = new Migration(array("name" => "001: Adjust Event Table", "status" => 0));
-                            $migration->save();
-                        }
-                        $migration = new Migration(array("name" => "002: Merge Result and Event", "status" => 0));
-                        $migration->save();
-                        $migration = new Migration(array("name" => "003: Adjust TD_Result table", "status" => 0));
-                        $migration->save();
-                    }
-                    $migration = new Migration(array("name" => "004: More adjustments to TD_Result", "status" => 0));
-                    $migration->save();
-                }
-                $migration = new Migration(array("name" => "005: Move Factor to Event", "status" => 0));
-                $migration->save();
-                $migration = new Migration(array("name" => "006: Add Ranking View", "status" => 0));
-                $migration->save();
-            }
             $migration = new Migration(array("name" => '007: Dropping national points', "status" => 0));
             $migration->save();
+        }
+        if($cnt < 8) {
+            $migration = new Migration(array("name" => '008: Registrations', "status" => 0));
+            $migration->save();            
+        }
+        if($cnt < 9) {
+            $migration = new Migration(array("name" => '009: Registrations 2', "status" => 0));
+            $migration->save();            
         }
     }
 
@@ -175,7 +183,19 @@
         case '007: Dropping national points':
             $wpdb->query("ALTER TABLE `TD_Result` DROP `result_national_points`;");
             break;
-        default:
+        case '008: Registrations':
+            $wpdb->query("DROP TABLE `TD_Event_Side`;");
+            $wpdb->query("CREATE TABLE `TD_Event_Side` (`id` int(11) NOT NULL AUTO_INCREMENT, `event_id` int(11) NOT NULL, `title` varchar(255) COLLATE utf8_bin NOT NULL, `description` text COLLATE utf8_bin NOT NULL, `costs` float NOT NULL, `competition_id` int(11) DEFAULT NULL, PRIMARY KEY (`id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+            $wpdb->query("ALTER TABLE `TD_Event` DROP `event_registration_cost`, DROP `event_entry_cost`, DROP `event_dinner_cost`, DROP `event_dinner_note`;");
+            $wpdb->query("alter table TD_Event add column event_registration_open date null");
+            $wpdb->query("alter table TD_Event add column event_registration_close date null");
+            $wpdb->query("alter table TD_Event_Side add column starts date null");
+            break;
+        case '009: Registrations 2':
+            $wpdb->query("alter table TD_Event add column event_base_fee float null");
+            $wpdb->query("alter table TD_Event add column event_competition_fee float null");
+            $wpdb->query("ALTER TABLE `TD_Role_Type` ADD `org_declaration` ENUM('Country','EVF','Org','FIE') NULL AFTER `role_type_name`; ");
+            default:
             break;
         }
     }

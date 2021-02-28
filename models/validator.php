@@ -143,7 +143,7 @@ class Validator {
         switch($rule) {
         case 'required':
             // value must be present and have content
-            $retval = !(empty($value) && $value !==false);
+            $retval = !(empty($value) && $value !==false && strlen($value) == 0);
             if($msg === null) $msg = "{label} is a required field";
             break;
         case 'skip': break;
@@ -267,6 +267,7 @@ class Validator {
                     $p1 = floatval($params[0]);
                     if($msg === null) $msg="{label} should be more than or equal to {p1}";
                     $retval = floatval($value) >= $p1;
+                    error_log("gte check on $value and $p1 says ".json_encode($retval));
                 }
                 else if($this->is_date($value)) {
                     $p1 = date_parse($params[0]);
@@ -344,8 +345,8 @@ class Validator {
 
                     $result = $validator->validate($objvals);
                     $retval = $result && $retval;
-                    if(!$result && isset($obj->errors) && sizeof($obj->errors)) {
-                        $this->errors=array_merge($this->errors,$obj->errors);
+                    if(!$result && isset($validator->errors) && sizeof($validator->errors)) {
+                        $this->errors=array_merge($this->errors,$validator->errors);
                     }
                     $lst[]=$obj;
                 }

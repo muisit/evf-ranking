@@ -30,15 +30,18 @@
  class Event extends Base {
     public $table = "TD_Event";
     public $pk="event_id";
-    public $fields=array("event_id","event_name","event_open","event_year", "event_duration","event_email", "event_web", "event_location", "event_country","event_type",
-        "event_registration_cost","event_entry_cost","event_dinner_cost","event_dinner_note","event_currency_symbol","event_currency_name",
-        "event_bank","event_account_name","event_organisers_address","event_iban","event_swift","event_reference","event_in_ranking", "event_factor",
+    public $fields=array("event_id","event_name","event_open","event_registration_open","event_registration_close","event_year", 
+        "event_duration","event_email", "event_web", "event_location", "event_country","event_type",
+        "event_currency_symbol","event_currency_name","event_base_fee", "event_competition_fee",
+        "event_bank","event_account_name","event_organisers_address","event_iban","event_swift","event_reference","event_in_ranking", "event_factor", "event_frontend",
         "type_name","country_name",
     );
     public $fieldToExport=array(
         "event_id" => "id",
         "event_name" => "name",
         "event_open" => "opens",
+        "event_registration_open" => "reg_open",
+        "event_registration_close" => "reg_close",
         "event_year" => "year",
         "event_duration" => "duration",
         "event_email" => "email",
@@ -46,12 +49,10 @@
         "event_location" => "location",
         "event_country" => "country",
         "event_type" => "type",
-        "event_registration_cost" => "registration_cost",
-        "event_entry_cost" => "entry_cost",
-        "event_dinner_cost" => "dinner_cost",
-        "event_dinner_note" => "note",
         "event_currency_symbol" => "symbol",
         "event_currency_name" => "currency",
+        "event_base_fee"=>"base_fee",
+        "event_competition_fee" => "competition_fee",
         "event_bank" => "bank",
         "event_account_name" => "account",
         "event_organisers_address" => "address",
@@ -60,6 +61,7 @@
         "event_reference" => "reference",
         "event_in_ranking" => "in_ranking",
         "event_factor" => "factor",
+        "event_frontend" => "frontend",
         "event_type_name" => "type_name",
         "country_name" => "country_name",
     );
@@ -67,6 +69,8 @@
         "event_id" => "skip",
         "event_name" => array("label"=>"Name", "rules"=>"trim|required","message"=>"Name is required"),
         "event_open" => array("label"=>"Opens", "rules"=>"date|gt=2000-01-01|lt=2100-01-01|required","message"=>"Opening date is required"),
+        "event_registration_open" => array("label"=>"Registration Start", "rules"=>"date|gt=2000-01-01|lt=2100-01-01","message"=>"Registration start date must be a valid date"),
+        "event_registration_close" => array("label"=>"Registration Close", "rules"=>"date|gt=2000-01-01|lt=2100-01-01","message"=>"Registration close date must be a valid date"),
         "event_year" => array("label"=>"Year", "rules"=>"int|gte=2000|lt=2100|required","message"=>"Year of the event is required"),
         "event_duration" => array("label"=>"Duration", "rules"=>"int"),
         "event_email" => array("label"=>"E-mail", "rules"=>"email", "message"=>"E-mail address is incorrect"),
@@ -74,12 +78,10 @@
         "event_location" => array("label"=>"Location", "rules"=>"trim"),
         "event_country" => array("label"=>"Country", "rules"=>"model=Country","message"=>"Please select a valid country"),
         "event_type" => array("label"=>"Type", "rules"=>"model=EventType", "message"=>"Please select a valid type"),
-        "event_registration_cost" => array("label"=>"Registration costs", "rules"=>"float=.2"),
-        "event_entry_cost" => array("label"=>"Entry costs", "rules"=>"float=.2"),
-        "event_dinner_cost" => array("label"=>"Dinner costs", "rules"=>"float=.2"),
-        "event_dinner_note" => array("label"=>"Dinner note", "rules"=>"trim"),
         "event_currency_symbol" => array("label"=>"Currency symbol", "rules"=>"trim"),
         "event_currency_name" => array("label"=>"Currency name", "rules"=>"trim"),
+        "event_base_fee"=> array("label"=>"Base fee","rules"=>"float"),
+        "event_competition_fee"=> array("label"=>"Competition fee","rules"=>"float"),
         "event_bank" => array("label"=>"Bank name", "rules"=>"trim"),
         "event_account_name" => array("label"=>"Bank account", "rules"=>"trim"),
         "event_organisers_address" => array("label"=>"Account address", "rules"=>"trim"),
@@ -88,9 +90,11 @@
         "event_reference" => array("label"=>"Account reference", "rules"=>"trim"),
         "event_in_ranking" => array("label"=>"In-Ranking", "rules"=>"bool"),
         "event_factor" => array("label" => "Factor","rules"=>"float"),
+        "event_frontend" => "skip",
         "event_type_name" => "skip",
         "country_name" => "skip",
-        "competitions" => "contains=Competition,competition_list"
+        "competitions" => "contains=Competition,competition_list",
+        "sides" => "contains=SideEvent,sides_list",
     );
 
 
@@ -178,16 +182,72 @@
         }
         return $retval;
     }
-   
+
+    public function sides($id=null, $asObject=false) {
+        if($id === null) $id = $this->{$this->pk};
+        // find the side events belonging to this event
+        $cname=$this->loadModel("SideEvent");
+        $model = new $cname();
+        $dt = $model->listByEvent($id);
+
+        $retval = array();
+        if (!empty($dt) && is_array($dt)) {
+            foreach ($dt as $c) {
+                if($asObject) {
+                    error_log("creating a new side event object based on result");
+                    $retval[] = new SideEvent($c);
+                }
+                else {
+                    $retval[] = $model->export($c);
+                }
+            }
+        }
+        return $retval;
+    }
+    
+
     public function postSave() {
         error_log("postsave for event, testing competition_list: ".(isset($this->competition_list)?"set":"not set"));
         if(isset($this->competition_list)) {
             error_log("competition list is set for saving");
             $oldcomps = $this->competitions(null,true);
+
+            $lst = $this->sides(null,true);
+            $sides=array();
+            foreach($lst as $se) { 
+                if(isset($se->competition_id) && intval($se->competition_id)>0) {
+                    $sides["c_".$se->competition_id] = $se;
+                }
+            }
+            $wname=$this->loadModel("Weapon");
+            $wmodel=new $wname();
+            $cname=$this->loadModel("Category");
+            $cmodel=new $cname();
+
             foreach($this->competition_list as $c) {
                 error_log("setting the event ID");
                 $c->competition_event = $this->{$this->pk};
                 $c->save();
+
+                // make sure there is a SideEvent linked to this as well
+                $se=null;
+                if(!isset($sides["c_".$c->{$c->pk}])) {
+                    $se = new SideEvent();
+                    $se->event_id=$this->{$this->pk};
+                    $se->competition_id=$c->{$c->pk};
+                }
+                else {
+                    $se = $sides["c_".$c->{$c->pk}];
+                }
+
+                // overwrite the SideEvent details if they were changed on the competition
+                $weapon=$wmodel->get($c->competition_weapon);
+                $category=$cmodel->get($c->competition_category);
+                if($weapon!=null && $category != null) {
+                    $se->title=$weapon->weapon_name ." ".$category->category_name;
+                }
+                $se->starts = $c->competition_opens;
+                $se->save();
 
                 for($i=0;$i<sizeof($oldcomps);$i++) {
                     if($oldcomps[$i]->identical($c)) {
@@ -197,9 +257,38 @@
                 }
             }
             foreach($oldcomps as $c) {
+                if(isset($sides["c_".$c->{$c->pk}])) {
+                    $sides["c_".$c->{$c->pk}]->delete();
+                }
                 $c->delete();
             }
         }
+
+
+        error_log("postsave for event, testing sides_list: ".(isset($this->sides_list)?"set":"not set"));
+        if(isset($this->sides_list)) {
+            error_log("sides list is set for saving");
+            $old = $this->sides(null,true); // this includes any new competitions added above
+            foreach($this->sides_list as $c) {
+                error_log("setting the event ID");
+                $c->event_id = $this->{$this->pk};
+                $c->save();
+
+                for($i=0;$i<sizeof($old);$i++) {
+                    if($old[$i]->identical($c)) {
+                        unset($old[$i]);
+                        $old = array_values($old);
+                    }
+                }
+            }
+            foreach($old as $c) {
+                // do not remove side events linked to a competition. These are removed with the competition above
+                if(!isset($c->competition_id) || intval($c->competition_id)<0) {
+                    $c->delete();
+                }
+            }
+        }
+
         return true;
     }
  }

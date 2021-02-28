@@ -34,15 +34,26 @@
 HEREDOC;
     }
 
+    public function registration() {
+        echo <<<HEREDOC
+        <div id="evfregistration-root"></div>
+HEREDOC;
+    }
+
+
     public function scripts($page) {
         if(in_array($page,array("toplevel_page_evfrankings"))) {
             $script = plugins_url('/dist/app.js', __FILE__);
             $this->enqueue_code($script);
         }
+        if(in_array($page,array("toplevel_page_evfregistration"))) {
+            $script = plugins_url('/dist/registrations.js', __FILE__);
+            $this->enqueue_code($script);
+        }
     }
 
     public function styles($page) {
-        if(in_array($page,array("toplevel_page_evfrankings"))) {
+        if(in_array($page,array("toplevel_page_evfrankings","toplevel_page_evfregistration"))) {
             wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', __FILE__), array(), '1.0.0' );
 //            wp_enqueue_style( 'blueprint', plugins_url('/node_modules/@blueprintjs/core/lib/css/blueprint.css', __FILE__), array(), '1.0.0' );
 //            wp_enqueue_style( 'blueprint-icons', plugins_url('/node_modules/@blueprintjs/icons/lib/css/blueprint-icons.css', __FILE__), array(), '1.0.0' );

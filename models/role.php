@@ -1,7 +1,7 @@
 <?php
 
 /**
- * EVF-Ranking Country Model
+ * EVF-Ranking RoleType Model
  * 
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
@@ -27,21 +27,21 @@
 
  namespace EVFRanking;
 
- class Country extends Base {
-    public $table = "TD_Country";
-    public $pk="country_id";
-    public $fields=array("country_id","country_abbr","country_name","country_registered");
+ class Role extends Base {
+    public $table = "TD_Role";
+    public $pk="role_id";
+    public $fields=array("role_id","role_name","role_type");
     public $fieldToExport=array(
-        "country_id" => "id",
-        "country_abbr" => "abbr",
-        "country_name" => "name",
-        "country_registered" => "registered",
+        "role_id" => "id",
+        "role_name" => "name",
+        "role_type"=>"type",
+        "role_type_name"=>"type_name"
     );
     public $rules = array(
-        "country_id"=>"skip",
-        "country_abbr" => "trim|upper|eq=3|required",
-        "country_name" => "trim|gte=3|required",
-        "country_registered" => "bool|required"
+        "role_id"=>"skip",
+        "role_name" => "trim|required",
+        "role_type"=> "model=RoleType",
+        "role_type_name" => "skip"
     );
 
 
@@ -56,10 +56,10 @@
             $c=$sort[$i];
             switch($c) {
             default:
-            case 'i': $orderBy[]="country_id asc"; break;
-            case 'I': $orderBy[]="country_id desc"; break;
-            case 'n': $orderBy[]="country_name asc"; break;
-            case 'N': $orderBy[]="country_name desc"; break;
+            case 'i': $orderBy[]="role_id asc"; break;
+            case 'I': $orderBy[]="role_id desc"; break;
+            case 'n': $orderBy[]="role_name asc"; break;
+            case 'N': $orderBy[]="role_name desc"; break;
             }
         }
         return $orderBy;
@@ -68,12 +68,13 @@
     private function addFilter($qb, $filter,$special) {
         if(!empty(trim($filter))) {
             $filter=str_replace("%","%%",$filter);
-            $qb->where("country_name","like","%$filter%");
+            $qb->where("role_name","like","%$filter%");
         }
     }
 
     public function selectAll($offset,$pagesize,$filter,$sort, $special=null) {
-        $qb = $this->select('*')->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
+        $qb = $this->select('TD_Role.*, rt.role_type_name')->join("TD_Role_Type","rt","TD_Role.role_type=rt.role_type_id")
+          ->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);
         return $qb->get();
     }
@@ -90,15 +91,11 @@
     public function delete($id=null) {
         if($id === null) $id = $this->{$this->pk};
 
-        // check that country is not used in Fencer or Event
-        $nr1 = $this->numrows()->from("TD_Fencer")->where("fencer_country",$id)->count();
-        $nr2 = $this->numrows()->from("TD_Event")->where("event_country",$id)->count();
+        // check that role is not used in 
+        $nr1 = $this->numrows()->from("TD_Registration")->where("registration_role",$id)->count();
         $this->errors=array();
         if($nr1>0) {
-            $this->errors[]="Cannot delete country that is still used for fencers";
-        }
-        if($nr2>0) {
-            $this->errors[]="Cannot delete country that is still used for events";
+            $this->errors[]="Cannot delete Role that is still used for Registrations";
         }
         if(sizeof($this->errors)==0) {
             return parent::delete($id);

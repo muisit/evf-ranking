@@ -1,4 +1,4 @@
-import { events, sideevents } from "./api.js";
+import { eventroles, events, sideevents } from "./api.js";
 import { DataTable } from 'primereact/components/datatable/DataTable';
 import { Column } from 'primereact/components/column/Column';
 import EventRegistrationDialog from './dialogs/eventregistrationdialog';
@@ -34,13 +34,17 @@ export default class EventsRegistrationTab extends PagedTab {
     }
 
     onEdit = (event)=> {
-        sideevents(event.data.id)
-            .then((cmp) => {
-                if(cmp) {
-                    var item = Object.assign({sides: cmp.data.list},event.data);
-                    this.setState({item: item, displayDialog:true });                    
-                }
-            });
+        var p1=sideevents(event.data.id).then((cmp1) => cmp1.data.list);
+        var p2=eventroles(event.data.id).then((cmp2) => cmp2.data.list);
+
+        Promise.all([p1,p2])
+          .then((results) => {
+            console.log("assigning sideevents and roles", results);
+            if(results.length == 2) {
+                var item = Object.assign({ sides: results[0], roles: results[1] }, event.data);
+                this.setState({ item: item, displayDialog: true });  
+            }
+          });
         return false;
     }
 
@@ -57,7 +61,7 @@ export default class EventsRegistrationTab extends PagedTab {
 
     renderDialog() {
         return (
-            <EventRegistrationDialog countries={this.props.countries} types={this.props.types} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item}/>
+            <EventRegistrationDialog users={this.props.users} countries={this.props.countries} types={this.props.types} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item}/>
         );
     }
 

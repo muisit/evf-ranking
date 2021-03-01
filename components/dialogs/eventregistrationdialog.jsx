@@ -73,11 +73,31 @@ function SideEvent(props) {
     );
 }
 
+let roletypes = [
+  { name: 'Organisation', code: 'organiser' },
+  { name: 'Accreditation', code: 'accreditation' },
+  { name: 'Cashier', code: 'cashier' },
+  { name: 'Registrar', code: 'registrar' },
+];
+
+function EventRole(props) {
+  return (
+    <div className='roletype'>
+      <Dropdown className='userdrop' autoWidth={false} name={'ruser-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.role.user} options={props.users} placeholder="User" />
+      <Dropdown className='roletypedrop' autoWidth={false} name={'rtype-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="code" value={props.role.role_type} options={roletypes} placeholder="Role" />
+      <span className="p-input-icon-left add-button">
+        <i className="pi pi-trash" onClick={() => props.onRemoveCompetition(props.role)}></i>
+      </span>
+    </div>
+  );
+}
+
 export default class EventRegistrationDialog extends React.Component {
     constructor(props, context) {
         super(props, context);
         this.state = {
             evtindex: 1,
+            roleindex:1,
         };
 
         this.currencies = [
@@ -93,9 +113,6 @@ export default class EventRegistrationDialog extends React.Component {
             {"name":"Unknown","code":"UNK","symbol":"-"},
         ];
 
-    }
-
-    componentDidMount = () => {
     }
 
     loading = (state) => {
@@ -200,6 +217,26 @@ export default class EventRegistrationDialog extends React.Component {
             }
             item.sides = sides;
             break;
+        case 'ruser':
+        case 'rtype':
+            var roles=this.props.value.roles;
+            for(var i in roles) {
+                var d=roles[i];
+                if(d.id == id) {
+                    switch(name) {
+                    case 'ruser':
+                        d.user=value;
+                        break;
+                    case 'rtype':
+                        d.role_type=value;
+                        break;
+                    }
+                    roles[i]=d;
+                    break;
+                }
+            }
+            item.roles = roles;
+            break;
         }
         if(this.props.onChange) this.props.onChange(item);
     }
@@ -235,6 +272,34 @@ export default class EventRegistrationDialog extends React.Component {
         }
         console.log('adjusting item');
         item.sides=pushed;
+        if(this.props.onChange) this.props.onChange(item);
+    }
+
+    addEventRole = (tp) => {
+        var item=this.props.value;
+        var pushed=item.roles;
+        var cindex=this.state.roleindex;
+        if(!pushed) pushed=[];
+
+        pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'user':-1,role_type:''});
+        cindex+=1;
+
+        item.roles=pushed;
+        if(this.props.onChange) this.props.onChange(item);
+        this.setState({'roleindex': cindex});
+    }
+
+    removeRole = (role) => {
+        var item=this.props.value;
+        var pushed=item.roles;
+        for(var i in pushed) {
+            var c=pushed[i];
+            if(c.id == role.id) {
+                pushed.splice(i,1);
+                break;
+            }
+        }
+        item.roles=pushed;
         if(this.props.onChange) this.props.onChange(item);
     }
 
@@ -328,6 +393,20 @@ export default class EventRegistrationDialog extends React.Component {
         {sidesSansComp.length && sidesSansComp.map((evt,idx) => {
             return (
                 <SideEvent event={evt} start={start} end={end} symbol={this.props.value.symbol} key={idx} onChangeEl={this.onChangeEl} onRemoveEvent={this.removeEvent} />
+            );
+        })}
+    </div>
+
+    </TabPanel>
+      <TabPanel id='roles' header='Event Roles'>
+    <div className='eventroles'>
+      <span className="p-input-icon-left add-button">
+        <i className="pi pi-plus-circle"></i>
+        <a onClick={()=>this.addEventRole('one')}>Add</a>
+      </span>
+        {this.props.value.roles && this.props.value.roles.length && this.props.value.roles.map((role,idx) => {
+            return (
+                <EventRole key={idx} role={role} users={this.props.users} onChangeEl={this.onChangeEl} onRemoveRole={this.removeRole} />
             );
         })}
     </div>

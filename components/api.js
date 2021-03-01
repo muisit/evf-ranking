@@ -101,6 +101,10 @@ export function sideevents(id) {
     var obj = {id:id};
     return fetchJson('events','events/sides',obj);
 }
+export function eventroles(id) {
+    var obj = {id:id};
+    return fetchJson('events','events/roles',obj);
+}
 export function categories(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
     return fetchJson('events','categories',obj);
@@ -149,4 +153,15 @@ export function roletypes(offset,pagesize,filter,sort) {
 }
 export function roletype(action, fields) {
     return fetchJson('roletypes','roletypes/' + action,fields);
+}
+export function registrars(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('registrars','registrars',obj);
+}
+export function registrar(action, fields) {
+    return fetchJson('registrars','registrars/' + action,fields);
+}
+export function users(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('registrars','users',obj);
 }

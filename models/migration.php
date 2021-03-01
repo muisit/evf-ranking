@@ -195,6 +195,19 @@
             $wpdb->query("alter table TD_Event add column event_base_fee float null");
             $wpdb->query("alter table TD_Event add column event_competition_fee float null");
             $wpdb->query("ALTER TABLE `TD_Role_Type` ADD `org_declaration` ENUM('Country','EVF','Org','FIE') NULL AFTER `role_type_name`; ");
+            //$wpdb->query("DROP TABLE `TD_Access`;");
+            //$wpdb->query("DROP TABLE `TD_Assign`;");
+            //$wpdb->query("DROP TABLE `TD_Flex`;");
+            //$wpdb->query("DROP TABLE `TD_Function`;");
+            //$wpdb->query("DROP TABLE `TD_Log`;");
+            //$wpdb->query("DROP TABLE `TD_Note`;");
+            //$wpdb->query("DROP TABLE `TD_Person`;");
+            //$wpdb->query("DROP TABLE `TD_Person_Type`;");
+            $wpdb->query("DROP TABLE IF EXISTS `TD_Registrar`");
+            $wpdb->query("CREATE TABLE `TD_Registrar` ( `id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(11) NOT NULL, `country_id` int(11) DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+            $wpdb->query("DROP TABLE IF EXISTS `TD_Event_Role`");
+            $wpdb->query("CREATE TABLE `wordpress`.`TD_Event_Role` ( `id` INT NOT NULL AUTO_INCREMENT , `event_id` INT NOT NULL , `user_id` INT NOT NULL , `role_type` ENUM('organiser','registrar','accreditation','cashier') NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB");
+            break;
             default:
             break;
         }

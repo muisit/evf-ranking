@@ -68,7 +68,7 @@
         if(!is_array($path) || sizeof($path) == 0) {
             $path=array("index");
         }
-        error_log('path is '.json_encode($path));
+        //error_log('path is '.json_encode($path));
 
         //error_log('data is '.json_encode($data));
         $retval=array();
@@ -83,6 +83,7 @@
             case "events":
             case "roletypes":
             case "roles":
+            case "registrars":
                     switch($path[0]) {
                     case 'fencers': $model = $this->loadModel("Fencer"); break;
                     case 'countries': $model = $this->loadModel("Country"); break;
@@ -90,6 +91,7 @@
                     case 'events': $model = $this->loadModel("Event"); break;
                     case 'roletypes': $model = $this->loadModel('RoleType'); break;
                     case 'roles': $model = $this->loadModel('Role'); break;
+                    case 'registrars': $model = $this->loadModel('Registrar'); break;
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
@@ -109,6 +111,11 @@
                     // list all side events of events (event special action)
                     $this->checkPolicy("sides","list");
                     $retval=array_merge($retval, $this->listResults($model, $model->sides($modeldata['id']), null, TRUE));
+                }
+                else if($path[0] == 'events' && isset($path[1]) && $path[1] == "roles") {
+                    // list all side events of events (event special action)
+                    $this->checkPolicy("eventroles","list");
+                    $retval=array_merge($retval, $this->listResults($model, $model->roles($modeldata['id']), null, TRUE));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "importcheck") {
                     $this->checkPolicy("results","misc");
@@ -150,10 +157,12 @@
             case "weapons":
             case "categories":
             case "types":
+            case "users":
                 switch($path[0]) {
                     case 'weapons': $model = $this->loadModel("Weapon"); break;
                     case 'categories': $model = $this->loadModel("Category"); break;
                     case 'types': $model = $this->loadModel("EventType"); break;
+                    case 'users': $model = $this->loadModel("User"); break;
                 }
                 $this->checkPolicy($path[0],"list");
                 $retval=array_merge($retval, $this->listAll($model,0,null,'','i',''));

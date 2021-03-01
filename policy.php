@@ -47,27 +47,30 @@
     public function check($model, $action) {
         $policies = array(       // List     View        Update/Create      Delete      Misc
             # Common tables
-            "fencers" => array(     "any",   "any",      "reg",             "rank",     "rank"     ),
-            "events" => array(      "any",   "any",      "reg",             "rank",     "rank"     ),
+            "fencers" => array(     "any",   "any",      "reg",             "rank",     "noone"    ),
+            "events" => array(      "any",   "any",      "reg",             "rank",     "noone"    ),
 
             # Results and Rankings
             "results" => array(     "any",   "any",      "rank",            "rank",     "rank"     ),
-            "ranking"=>array(       "any",   "any",      "rank",            "rank",     "rank"     ),
-            "competitions" => array("any",   "any",      "rank",            "rank",     "rank"     ),
+            "ranking"=>array(       "any",   "any",      "rank",            "rank",     "noone"    ),
+            "competitions" => array("any",   "any",      "rank",            "rank",     "noone"    ),
 
             # Registration and Accreditation
-            "sides" => array(       "any",   "any",      "reg",             "rank",     "rank"     ),
+            "sides" => array(       "any",   "any",      "reg",             "reg",      "noone"    ),
+            "eventroles" => array(  "reg",   "reg",      "reg",             "reg",      "noone"    ),
 
             # base tables
-            "weapons"=>array(       "any",   "rank",     "rank",            "rank",     "rank"     ),
-            "categories" => array(  "any",   "rank",     "rank",            "rank",     "rank"     ),
-            "countries"=> array(    "any",   "rank",     "rank",            "rank",     "rank"     ),
-            "types" => array(       "any",   "rank",     "rank",            "rank",     "rank"     ),
-            "roles" => array(       "any",   "rank",     "rank",            "rank",     "rank"     ),
-            "roletypes" => array(   "any",   "rank",     "rank",            "rank",     "rank"     ),
+            "weapons"=>array(       "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "categories" => array(  "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "countries"=> array(    "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "types" => array(       "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "roles" => array(       "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "roletypes" => array(   "any",   "rank",     "rank",            "rank",     "noone"    ),
 
-            # Purely sysadmin
-            "migrations" => array(  "rank",  "rank",     "rank",            "rank",     "rank"     ),
+            # Purely sysadmin-type
+            # registration can list them, rank can see them. Update, delete and misc are all forbidden
+            "users" => array(       "reg",   "rank",     "noone",           "noone",    "noone"    ),
+            "migrations" => array(  "rank",  "rank",     "rank",            "noone",    "noone"    ),
         );
 
         $idx=4; // Misc action

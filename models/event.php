@@ -95,6 +95,7 @@
         "country_name" => "skip",
         "competitions" => "contains=Competition,competition_list",
         "sides" => "contains=SideEvent,sides_list",
+        "roles" => "contains=EventRole,roles_list"
     );
 
 
@@ -195,7 +196,7 @@
             foreach ($dt as $c) {
                 if($asObject) {
                     error_log("creating a new side event object based on result");
-                    $retval[] = new SideEvent($c);
+                    $retval[] = new $cname($c);
                 }
                 else {
                     $retval[] = $model->export($c);
@@ -204,7 +205,27 @@
         }
         return $retval;
     }
-    
+
+    public function roles($id = null, $asObject = false) {
+        if ($id === null) $id = $this->{$this->pk};
+        // find the roles belonging to this event
+        $cname = $this->loadModel("EventRole");
+        $model = new $cname();
+        $dt = $model->listByEvent($id);
+
+        $retval = array();
+        if (!empty($dt) && is_array($dt)) {
+            foreach ($dt as $c) {
+                if ($asObject) {
+                    error_log("creating a new event role object based on result");
+                    $retval[] = new $cname($c);
+                } else {
+                    $retval[] = $model->export($c);
+                }
+            }
+        }
+        return $retval;
+    }
 
     public function postSave() {
         error_log("postsave for event, testing competition_list: ".(isset($this->competition_list)?"set":"not set"));
@@ -264,7 +285,6 @@
             }
         }
 
-
         error_log("postsave for event, testing sides_list: ".(isset($this->sides_list)?"set":"not set"));
         if(isset($this->sides_list)) {
             error_log("sides list is set for saving");
@@ -289,6 +309,26 @@
             }
         }
 
+        error_log("postsave for event, testing roles_list: " . (isset($this->roles_list) ? "set" : "not set"));
+        if (isset($this->roles_list)) {
+            error_log("roles list is set for saving");
+            $old = $this->roles(null, true); // this includes any new competitions added above
+            foreach ($this->roles_list as $c) {
+                error_log("setting the event ID");
+                $c->event_id = $this->{$this->pk};
+                $c->save();
+
+                for ($i = 0; $i < sizeof($old); $i++) {
+                    if ($old[$i]->identical($c)) {
+                        unset($old[$i]);
+                        $old = array_values($old);
+                    }
+                }
+            }
+            foreach ($old as $c) {
+                $c->delete();
+            }
+        }        
         return true;
     }
  }

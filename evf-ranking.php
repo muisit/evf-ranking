@@ -38,11 +38,18 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+require_once(__DIR__ . '/display.php');
 
 function evfranking_activate() {
+    error_log("activate");
     require_once(__DIR__.'/activate.php');
     $activator = new \EVFRanking\Activator();
     $activator->activate();
+
+    // add rewrite rules just before flush, so they are added to the new cached version
+    evfranking_rewrite_add_rewrites();
+    flush_rewrite_rules();
+    error_log('rules flushed');
 }
 
 function evfranking_deactivate() {
@@ -60,14 +67,12 @@ function evfranking_plugins_loaded()
 
 function evfranking_display_admin_page() {
     error_log('displaying admin page');
-    require_once(__DIR__ . '/display.php');
     $dat = new \EVFRanking\Display();
     $dat->index();
 }
 
 function evfranking_display_registration_page() {
     error_log('displaying registration page');
-    require_once(__DIR__ . '/display.php');
     $dat = new \EVFRanking\Display();
     $dat->registration();
 }
@@ -75,7 +80,6 @@ function evfranking_display_registration_page() {
 
 function evfranking_enqueue_scripts($page) {
     error_log('adding script');
-    require_once(__DIR__ . '/display.php');
     $dat = new \EVFRanking\Display();
     $dat->scripts($page);
     $dat->styles($page);
@@ -118,19 +122,37 @@ function evfranking_cron_exec() {
 
 function evfranking_ranking_shortcode($atts) {
     error_log('evfranking shortcode');
-    require_once(__DIR__ . '/display.php');
     $actor = new \EVFRanking\Display();
     return $actor->rankingShortCode($atts);
 }
 function evfranking_results_shortcode($atts) {
-    require_once(__DIR__ . '/display.php');
     $actor = new \EVFRanking\Display();
     return $actor->resultsShortCode($atts);
 }
 
+function evfranking_page_template($page_template) {
+    if (is_page('register')) {
+        $actor = new \EVFRanking\Display();
+        $page_template = $actor->displayRegistration($page_template);
+    }
+    return $page_template;
+}
+
+function evfranking_rewrite_add_rewrites() {
+    add_rewrite_rule('register/(\d+)/?$', 'index.php?suppress_filters=1&evfranking_register=$matches[1]', 'top');
+}
+
+function simpleBT() {
+    $vals=debug_backtrace();
+    $retval="";
+    foreach($vals as $v) {
+        $retval.=basename($v["file"]).":".$v["line"]." ".$v["function"]."\r\n";
+    }
+    return $retval;
+}
 
 if (defined('ABSPATH')) {
-    register_activation_hook( __FILE__, 'evfranking_deactivate' );
+    register_activation_hook( __FILE__, 'evfranking_activate' );
     register_deactivation_hook( __FILE__, 'evfranking_deactivate' );
     add_action('plugins_loaded', 'evfranking_plugins_loaded');
 
@@ -139,7 +161,34 @@ if (defined('ABSPATH')) {
     add_action( 'wp_ajax_evfranking', 'evfranking_ajax_handler' );
     add_action( 'wp_ajax_nopriv_evfranking', 'evfranking_ajax_handler' );
     add_action( 'evfranking_cron_hook', 'evfranking_cron_exec' );
+
     add_shortcode( 'evf-ranking', 'evfranking_ranking_shortcode' );
     add_shortcode( 'evf-results', 'evfranking_results_shortcode' );
 
+    add_filter('page_template', 'evfranking_page_template');
+
+    add_filter('posts_pre_query', function ($posts, $q) {
+        if (empty($posts) && isset($q->query["evfranking_register"])) {
+            error_log(simpleBT());
+            $actor = new \EVFRanking\Display();
+            $post = $actor->virtualPage($q->query["evfranking_register"]);
+            $posts=array();
+            $posts[]=$post;
+        }
+        return $posts;
+    },2,99);
+
+    // use admin_init instead of init, because we only need to add a rewrite for a possible flush,
+    // which can only be done from inside the admin area
+    add_action('admin_init', function () {
+        error_log("\r\n\r\nevfranking init");
+        // add rewrite rules in case someone decides to flush the cache
+        evfranking_rewrite_add_rewrites();
+    });
+
+    add_filter('query_vars', function ($query_vars) {
+        error_log("adding query vars");
+        $query_vars[] = 'evfranking_register';
+        return $query_vars;
+    });
 }

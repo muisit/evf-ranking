@@ -90,7 +90,7 @@
         "event_reference" => array("label"=>"Account reference", "rules"=>"trim"),
         "event_in_ranking" => array("label"=>"In-Ranking", "rules"=>"bool"),
         "event_factor" => array("label" => "Factor","rules"=>"float"),
-        "event_frontend" => "skip",
+        "event_frontend" => array("label"=>"Select a valid, published front-end event", "rules"=>"model=Posts"),
         "event_type_name" => "skip",
         "country_name" => "skip",
         "competitions" => "contains=Competition,competition_list",
@@ -226,6 +226,11 @@
         }
         return $retval;
     }
+    public function roleOfUser($userid) {
+        $cname = $this->loadModel("EventRole");
+        $model = new $cname();
+        return $model->roleOfUser($this->{$this->pk},$userid);
+    }
 
     public function postSave() {
         error_log("postsave for event, testing competition_list: ".(isset($this->competition_list)?"set":"not set"));
@@ -330,6 +335,32 @@
             }
         }        
         return true;
+    }
+
+    public function eventCaps($frontendid, $userdata) {
+        // see if there is an event with this front-end id
+        $retval="closed";
+        $event=$this->select('*')->where('event_frontend',intval($frontendid))->first();
+        if($event !== null) {
+            $event=new Event($event);
+            $now=time();
+            $opens=strtotime($event->event_registration_open);
+            $closes=strtotime($event->event_registration_close);
+
+            if($now >= $opens && $now < $closes) {
+                // open for registration, so at least return "registrar"
+                $retval="registrar";
+
+                if(isset($userdata["id"]) && intval($userdata["id"]) > 0) {
+                    // if the current user has special rights on the event, we return those rights
+                    $role=$event->roleOfUser($userdata['id']);
+                    if($role !== null) {
+                        $retval = $role->role_type;                        
+                    }
+                }
+            }
+        }
+        return $retval;
     }
  }
  

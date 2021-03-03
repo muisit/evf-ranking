@@ -42,7 +42,7 @@
         "id" => "skip",
         "event_id"=> "skip",
         "user_id" => array("rules"=>"model=User|required","message"=>"Please select a valid user"),
-        "user_name" => "skip",
+        "user_nicename" => "skip",
         "role_type" => array("rules"=>"enum=organiser,registrar,accreditation,cashier|required","message"=>"Please set the role for the user in this event"),
     );
 
@@ -56,6 +56,10 @@
         return $this->select('*, u.user_nicename')
         ->join("wp_users", "u", "TD_Event_Role.user_id=u.ID")
         ->where("event_id",intval($event))->orderBy(array("TD_Event_Role.id"))->get();
+    }
+
+    public function roleOfUser($eventid, $userid) {
+        return $this->select('*')->where('event_id',intval($eventid))->where('user_id',intval($userid))->first();
     }
 }
  

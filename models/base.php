@@ -201,7 +201,7 @@
     }
 
     private function differs($field) {
-        if(!isset($this->$field)) {
+        if(!property_exists($this,$field)) {
             return false; // unset fields are never different
         }
         if($field === $this->pk && (!$this->isNew() || $this->{$this->pk} <=0)) {
@@ -221,6 +221,11 @@
             $value = floatval($value);
             $original=floatval($original);
             return abs($value-$original) > 0.000000001;
+        }
+        // if we have a null-allowed field and it is filled/cleared, always differs
+        if(  ($value === null && $original !== null)
+          || ($original === null && $value !== null)) {
+            return true;
         }
         return strcmp($value,$original) != 0;
     }
@@ -261,6 +266,14 @@
     }
     public function numrows() {
         return $this->select('count(*) as cnt');
+    }
+
+    public function first($query,$values) {
+        $vals = $this->prepare($query,$values);
+        if(sizeof($vals)) {
+            return $vals[0];
+        }
+        return null;
     }
 
     public function prepare($query,$values) {

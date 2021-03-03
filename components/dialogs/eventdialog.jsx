@@ -297,7 +297,7 @@ export default class EventDialog extends React.Component {
         </div>
       </div>
       <div>
-        <label>Opens</label>
+        <label>Starts</label>
         <div className='input'>
             <Calendar name="opens" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={date_opens}></Calendar>
         </div>

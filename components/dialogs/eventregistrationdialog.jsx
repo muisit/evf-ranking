@@ -1,5 +1,5 @@
 import React from 'react';
-import { singleevent, weapons, categories } from "../api.js";
+import { singleevent, posts } from "../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { TabView,TabPanel } from 'primereact/tabview';
@@ -86,7 +86,7 @@ function EventRole(props) {
       <Dropdown className='userdrop' autoWidth={false} name={'ruser-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.role.user} options={props.users} placeholder="User" />
       <Dropdown className='roletypedrop' autoWidth={false} name={'rtype-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="code" value={props.role.role_type} options={roletypes} placeholder="Role" />
       <span className="p-input-icon-left add-button">
-        <i className="pi pi-trash" onClick={() => props.onRemoveCompetition(props.role)}></i>
+        <i className="pi pi-trash" onClick={() => props.onRemoveRole(props.role)}></i>
       </span>
     </div>
   );
@@ -98,6 +98,7 @@ export default class EventRegistrationDialog extends React.Component {
         this.state = {
             evtindex: 1,
             roleindex:1,
+            events: []
         };
 
         this.currencies = [
@@ -112,7 +113,13 @@ export default class EventRegistrationDialog extends React.Component {
             {"name":"Polish Złoty","code":"PLN","symbol":"zł"},
             {"name":"Unknown","code":"UNK","symbol":"-"},
         ];
+    }
 
+    componentDidMount = () => {
+        posts(0,10000,null,"i",JSON.stringify({ events: true}))
+          .then((cmp) => {
+              this.setState({events: cmp.data.list});
+          });
     }
 
     loading = (state) => {
@@ -175,6 +182,9 @@ export default class EventRegistrationDialog extends React.Component {
         case 'iban':
         case 'swift':
         case 'reference':
+        case 'frontend':
+        case 'reg_open':
+        case 'reg_close':
             item[name] = value;
             break;
         case 'currency':
@@ -317,6 +327,13 @@ export default class EventRegistrationDialog extends React.Component {
             sidesSansComp=this.props.value.sides.filter((evt) => { return !hasComp(evt);});
         }
 
+        var unselectevent = { id: null, title:"None"};
+        var eventsWithUnselect=[unselectevent];
+        if(this.state.events.length) {
+            eventsWithUnselect = this.state.events.slice();
+            eventsWithUnselect.splice(0,0,unselectevent);
+        }
+
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
 <TabView id="eventdialog" animate={true} defaultSelectedTabId="general">
@@ -324,6 +341,24 @@ export default class EventRegistrationDialog extends React.Component {
       <div>
         <label>Name</label>
         <div className='input'>{ this.props.value.name }</div>
+      </div>
+    <div>
+      <label>Frontend Event</label>
+      <div className='input'>
+          <Dropdown name='frontend' optionLabel="title" optionValue="id" value={this.props.value.frontend} options={eventsWithUnselect} placeholder="Event" onChange={this.onChangeEl} appendTo={document.body}/>
+      </div>
+    </div>
+      <div>
+        <label>Reg. Opens</label>
+        <div className='input'>
+            <Calendar name="reg_open" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={this.props.value.reg_open}></Calendar>
+        </div>
+      </div>
+      <div>
+        <label>Reg. Closes</label>
+        <div className='input'>
+            <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={this.props.value.reg_close}></Calendar>
+        </div>
       </div>
     <div>
       <label>Currency</label>

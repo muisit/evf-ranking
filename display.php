@@ -28,18 +28,32 @@
  namespace EVFRanking;
 
  class Display {
+    public static $policy=null;
+    public static $instance=null;
+    public static $jsparams=array();
+
+    public function __construct() {
+        Display::$instance=$this;
+    }
+
+    public static function Instance() {
+        if(Display::$instance === null) {
+            $display=new Display();
+        }
+        return Display::$instance;
+    }
+
     public function index() {
         echo <<<HEREDOC
         <div id="evfranking-root"></div>
 HEREDOC;
     }
 
-    public function registration() {
+    public function displayRegistration() {
         echo <<<HEREDOC
         <div id="evfregistration-root"></div>
 HEREDOC;
     }
-
 
     public function scripts($page) {
         if(in_array($page,array("toplevel_page_evfrankings"))) {
@@ -50,6 +64,7 @@ HEREDOC;
             $script = plugins_url('/dist/registrations.js', __FILE__);
             $this->enqueue_code($script);
         }
+        error_log("scripts, page is $page");
     }
 
     public function styles($page) {
@@ -66,14 +81,11 @@ HEREDOC;
         require_once(__DIR__ . '/api.php');
         $dat = new \EVFRanking\API();
         $nonce = wp_create_nonce( $dat->createNonceText() );
-        wp_localize_script(
-            'evfranking',
-            'evfranking',
-            array(
-                'url' => admin_url( 'admin-ajax.php?action=evfranking' ),
-                'nonce'    => $nonce,
-            )
-        );
+        $params= array_merge(Display::$jsparams, array(
+            'url' => admin_url('admin-ajax.php?action=evfranking'),
+            'nonce'    => $nonce
+        ));
+        wp_localize_script('evfranking', 'evfranking', $params);
     }
 
     public function rankingShortCode($attributes) {
@@ -92,4 +104,57 @@ HEREDOC;
         $output="<div id='evfranking-results'></div>";
         return $output;
     }    
+
+    public function eventButton($event) {
+        if(isset($event) && is_object($event) && isset($event->ID)) {
+            if(Display::$policy === null) {
+                require_once(__DIR__.'/policy.php');
+                Display::$policy=new Policy();                
+            }
+            $caps = Display::$policy->eventCaps($event->ID);
+            error_log("caps is $caps");
+
+            if(in_array($caps, array("organiser","cashier","accreditation"))) {
+                echo "<div class='evfranking-manage'></div>";
+            }
+            else if (in_array($caps, array("registrar"))) {
+                echo "<div class='evfranking-register'></div>";
+            }
+        }
+    }
+
+    public function virtualPage($id)
+    {
+        error_log("faking page for id ".$id);
+        global $wp;
+        // create a fake post instance
+        $post = new \WP_Post((object)array(
+            "ID"=>$id,
+            "post_type" => "page",
+            "filter" => "raw",
+            "post_name" => "Registration",
+            "comment_status" => "closed",
+            "post_title" => "Registration",
+            "post_content" => "<div id='evfregistration-frontend-root'></div>",
+            "post_date" => strftime("%Y-%m-%d %H:%M:%S")
+        ));
+
+        Display::$jsparams["eventid"] = intval($id);
+        $script = plugins_url('/dist/registrationsfe.js', __FILE__);
+        $this->enqueue_code($script);
+        wp_enqueue_style('evfranking', plugins_url('/dist/app.css', __FILE__), array(), '1.0.0');
+        
+        // reset wp_query properties to simulate a found page
+        global $wp_query;
+        $wp_query->is_page = TRUE;
+        $wp_query->is_singular = TRUE;
+        $wp_query->is_home = FALSE;
+        $wp_query->is_archive = FALSE;
+        $wp_query->is_category = FALSE;
+        unset($wp_query->query['error']);
+        $wp_query->query_vars['error'] = '';
+        $wp_query->is_404 = FALSE;
+
+        return $post;
+    }
 }

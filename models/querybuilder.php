@@ -101,9 +101,15 @@
         return intval($result[0]->cnt);
     }
 
+    public function first() {
+        if ($this->_issub) return $this->_dosub();
+        $sql = $this->_doget();
+        return $this->_model->first($sql, $this->_where_values);
+    }
     public function get() {
         if($this->_issub) return $this->_dosub();
-        return $this->_doget();
+        $sql = $this->_doget();
+        return $this->_model->prepare($sql, $this->_where_values);
     }
     private function _doget() {
         error_log('query builder for get');
@@ -144,9 +150,7 @@
         if(!empty($this->_offset)) {
             $sql .= " OFFSET ".intval($this->_offset);
         }
-
-        error_log('preparing '.$sql.' using '.json_encode($this->_where_values));
-        return $this->_model->prepare($sql,$this->_where_values);
+        return $sql;
     }
 
     private function _dosub() {

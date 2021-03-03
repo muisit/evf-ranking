@@ -28,6 +28,14 @@
  namespace EVFRanking;
 
  class Policy {
+    public function eventCaps($eventid) {
+        require_once(__DIR__ . '/models/base.php');
+        require_once(__DIR__ . "/models/event.php");
+        $userdata=$this->findUser();
+        $model=new \EVFRanking\Event();
+        return $model->eventCaps($eventid, $userdata);
+    }
+
     public function findUser() {
         $userdata=array("id"=>null,"rankings"=>false,"registration"=>false);
         $user = wp_get_current_user();        
@@ -70,6 +78,7 @@
             # Purely sysadmin-type
             # registration can list them, rank can see them. Update, delete and misc are all forbidden
             "users" => array(       "reg",   "rank",     "noone",           "noone",    "noone"    ),
+            "posts" => array(       "reg",   "rank",     "noone",           "noone",    "noone"    ),
             "migrations" => array(  "rank",  "rank",     "rank",            "noone",    "noone"    ),
         );
 

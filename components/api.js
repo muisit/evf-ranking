@@ -165,3 +165,7 @@ export function users(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
     return fetchJson('registrars','users',obj);
 }
+export function posts(offset,pagesize,filter,sort,special) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
+    return fetchJson('events','posts',obj);
+}

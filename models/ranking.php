@@ -36,7 +36,7 @@
         // only take tournaments into account that are less than 2 years ago
         global $wpdb;
         $twoyearsago = strftime('%Y-%m-%d', time() - 2*365*24*60*60);
-        $wpdb->query("update TD_Event set event_in_ranking='N' where event_open < '$twoyearsgo';");
+        $wpdb->query("update TD_Event set event_in_ranking='N' where event_open < '$twoyearsago';");
     }
 
     public function listDetail($wid, $cid, $fid) {

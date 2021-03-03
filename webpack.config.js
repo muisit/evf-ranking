@@ -18,6 +18,7 @@ module.exports = {
     ranking: `${LOCAL_JS}/ranking.jsx`,
     results: `${LOCAL_JS}/results.jsx`,
     registrations: `${LOCAL_JS}/registrations.jsx`,
+    registrationsfe: `${LOCAL_JS}/registrationsfe.jsx`,
   },
   module:  {
     rules: [

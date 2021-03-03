@@ -158,14 +158,16 @@
             case "categories":
             case "types":
             case "users":
+            case "posts":
                 switch($path[0]) {
                     case 'weapons': $model = $this->loadModel("Weapon"); break;
                     case 'categories': $model = $this->loadModel("Category"); break;
                     case 'types': $model = $this->loadModel("EventType"); break;
                     case 'users': $model = $this->loadModel("User"); break;
+                    case 'posts': $model = $this->loadModel("Posts"); break;
                 }
                 $this->checkPolicy($path[0],"list");
-                $retval=array_merge($retval, $this->listAll($model,0,null,'','i',''));
+                $retval=array_merge($retval, $this->listAll($model,0,null,'','i',$special));
                 break;
             // special models
             case 'ranking':

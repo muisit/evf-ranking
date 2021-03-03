@@ -134,8 +134,10 @@ class Validator {
         $label = $ruleelements['label'];
         $p1='';
         $p2='';
+
+        $valueisempty = empty($value) && $value !== false && strlen($value) == 0;
         // always pass if we have an empty value and this is not the required rule
-        if($rule != 'required' && empty($value)) {
+        if($rule != 'required' && $valueisempty) {
             return true;
         }
 
@@ -143,7 +145,7 @@ class Validator {
         switch($rule) {
         case 'required':
             // value must be present and have content
-            $retval = !(empty($value) && $value !==false && strlen($value) == 0);
+            $retval = !$valueisempty;
             if($msg === null) $msg = "{label} is a required field";
             break;
         case 'skip': break;

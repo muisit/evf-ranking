@@ -135,9 +135,11 @@ class Validator {
         $p1='';
         $p2='';
 
-        $valueisempty = empty($value) && $value !== false && strlen($value) == 0;
+        $valueisempty = empty($value) && $value !== false && (!is_string($value) || strlen($value) == 0);
         // always pass if we have an empty value and this is not the required rule
-        if($rule != 'required' && $valueisempty) {
+        // if the rule is 'contains' and the value is empty, it contains an empty list, which is information
+        // we can't drop
+        if($rule != 'required' && $rule != "contains" && $valueisempty) {
             return true;
         }
 
@@ -147,6 +149,12 @@ class Validator {
             // value must be present and have content
             $retval = !$valueisempty;
             if($msg === null) $msg = "{label} is a required field";
+            break;
+        case 'default':
+            // use this if the value is empty
+            if($valueisempty) {
+                $value = $params[0];
+            }
             break;
         case 'skip': break;
         case 'fail': 

@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking;
+namespace EVFRanking;
+require_once(__DIR__ . '/baselib.php');
 
- class Activator {
+class Activator extends BaseLib {
      const DBVERSION="1.0.0";
 
     public function deactivate() {
@@ -61,11 +62,7 @@
     }
 
     public function cron() {
-        $name = "Ranking";
-        require_once(__DIR__ . '/models/base.php');
-        require_once(__DIR__ . "/models/".strtolower($name).".php");
-        $name="\\EVFRanking\\$name";
-        $model = new $name();
+        $model = $this->loadModel("Ranking");
 
         // remove the old tournaments from the ranking automatically
         $model->unselectOldTournaments();

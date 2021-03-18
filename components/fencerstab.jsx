@@ -29,7 +29,7 @@ export default class FencersTab extends PagedTab {
     }
 
     apiCall = (o,p,f,s) => {
-        return fencers(o,p,f,s);
+        return fencers(o,p,{name: f},s);
     }
 
     fieldToSorter = (fld) => {

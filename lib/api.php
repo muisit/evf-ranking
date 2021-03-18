@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking;
+namespace EVFRanking;
 
- class API {
+require_once(__DIR__.'/baselib.php');
+class API extends BaseLib {
     public function createNonceText() {
         $user = wp_get_current_user();        
         if(!empty($user)) {
@@ -41,17 +42,146 @@
         $data = json_decode($json,true);
         error_log('resolving call: '.json_encode($data));
 
+        if (!empty($_FILES)) {
+            $this->doFile($_POST["nonce"]);
+        }
         if(empty($data) || !isset($data['nonce']) || !isset($data['path'])) {
+            if(empty($data)) {
+                // see if we have the proper GET requests for a download
+                if(!empty($this->fromGet("action")) && !empty($this->fromGet("nonce"))) {
+                    return $this->doGet($this->fromGet("action"),$this->fromGet("nonce"));
+                }
+            }
+
             error_log('die because no path nor nonce');
             die(403);
         }
+        return $this->doPost($data);
+    }
 
-        error_log('checking nonce '.$data['nonce'].' using '.$this->createNonceText());
-        $result = wp_verify_nonce( $data['nonce'], $this->createNonceText() );
-        if(!($result === 1 || $result === 2)) {
+    private function checkNonce($nonce) {
+        error_log('checking nonce ' . $nonce . ' using ' . $this->createNonceText());
+        $result = wp_verify_nonce($nonce, $this->createNonceText());
+        if (!($result === 1 || $result === 2)) {
             error_log('die because nonce does not match');
             die(403);
         }
+    }
+
+    private function fromGet($var, $def=null) {
+        if(isset($_GET[$var])) return $_GET[$var];
+        return $def;
+    }
+    private function fromPost($var, $def=null) {
+        if(isset($_POST[$var])) return $_POST[$var];
+        return $def;
+    }
+
+    private function doGet($action, $nonce) {
+        $this->checkNonce($nonce);
+
+        if($action == "evfranking") {
+            $filetype = $this->fromGet("download");
+            $eid = $this->fromGet("event");
+            $picture = $this->fromGet("picture");
+
+            if (!empty($eid) && in_array($filetype, array("accreditations", "participants"))) {
+                $model = $this->loadModel("SideEvent");
+                $sideevent = $model->get($eid);
+
+                if (!empty($sideevent)) {
+                    error_log("checking policy");
+                    // check the policy to see if the user can retrieve a listing
+                    $this->checkPolicy("registration", "list", array(
+                        "model" => array(
+                            "sideevent" => $sideevent->getKey(),
+                            "event" => $sideevent->event_id
+                        ),
+                        "filter" => array(
+                            "event" => $sideevent->event_id
+                        )
+                    ));
+
+                    require_once(__DIR__ . "/exportmanager.php");
+                    $em = new ExportManager();
+                    $em->export($filetype,$sideevent);
+                }
+            }
+            else if (!empty($eid) && is_numeric($picture)) {
+                error_log("displaying picture for ".$eid." and " .$picture);
+                $event = $this->loadModel("Event");
+                $event = $event->get($eid);
+                $fencer = $this->loadModel("Fencer");
+                $fencer = $fencer->get($picture);
+
+                $this->loadModel("SideEvent");
+
+                if (!empty($event) && !empty($fencer)) {
+                    error_log("getting side events");
+                    $sides = $event->sides();
+                    if (!empty($sides)) {
+                        $sideevent = new SideEvent($sides[0]); // pick any sideevent
+
+                        error_log("checking policy");
+                        // check the policy to see if the user can retrieve a listing
+                        $this->checkPolicy("registration", "list", array(
+                            "model" => array(
+                                "sideevent" => $sideevent->getKey(),
+                                "event" => $sideevent->event_id,
+                            ),
+                            "filter" => array(
+                                "event" => $sideevent->event_id,
+                                "country" => $fencer->fencer_country
+                            )
+                        ));
+
+                        require_once(__DIR__ . "/picturemanager.php");
+                        $pm = new PictureManager();
+                        $pm->display($fencer);
+                    }
+                }
+            }
+        }
+        die(403);
+    }
+
+    private function doFile($nonce) {
+        $this->checkNonce($nonce);
+
+        $upload = $this->fromPost("upload");
+        $fencer = $this->fromPost("fencer");
+        $event = $this->fromPost("event");
+
+        if (!empty($event) && $upload == "true")  {
+            $model = $this->loadModel("Event");
+            $event = $model->get($event);
+            $this->loadModel("SideEvent");
+
+            if (!empty($event)) {
+                $sides = $event->sides();
+                if(!empty($sides)) {
+                    $sideevent = new SideEvent($sides[0]); // pick any sideevent
+                    error_log("checking policy");
+                    // check the policy to see if the user can save a registration
+                    $this->checkPolicy("registration", "save", array(
+                        "model" => array(
+                            "sideevent" => $sideevent->getKey(),
+                            "event" => $sideevent->event_id,
+                            "fencer" => $fencer
+                        )
+                    ));
+
+                    require_once(__DIR__ . "/picturemanager.php");
+                    $pm = new PictureManager();
+                    $pm->import($fencer);
+                }
+            }
+        }
+        return false;
+    }
+
+    private function doPost($data) {
+        $this->checkNonce($data['nonce']);
 
         $modeldata = isset($data['model']) ? $data['model'] : array();
         $offset = isset($modeldata['offset']) ? intval($modeldata['offset']) : 0;
@@ -101,6 +231,12 @@
                 else if(isset($path[1]) && $path[1] == "delete") {
                     $this->checkPolicy($path[0],"delete");
                     $retval=array_merge($retval, $this->delete($model,$modeldata));
+                }
+                else if(isset($path[1]) && $path[1] == "view") {
+                    // Get a specific event
+                    $this->checkPolicy($path[0],"view");
+                    $item = $model->get($modeldata['id']);
+                    $retval=array_merge($retval, array("item"=> ($item === null) ? $item : $item->export() ));
                 }
                 else if($path[0] == 'events' && isset($path[1]) && $path[1] == "competitions") {
                     // list all competitions of events (event special action)
@@ -211,7 +347,26 @@
                         $retval=array("error"=>"No category or weapon selected");
                     }
                 }
-            }
+                break;
+            case "registration":
+                if (isset($path[1]) && $path[1] == "save") {
+                    $this->checkPolicy($path[0], "save", array("filter" => $filter, "model" => $modeldata));
+                    $model = $this->loadModel("Registration");
+                    $retval = array_merge($retval, $this->save($model, $modeldata));
+                } else if (isset($path[1]) && $path[1] == "delete") {
+                    $this->checkPolicy($path[0], "delete", array("filter" => $filter, "model" => $modeldata));
+                    $model = $this->loadModel("Registration");
+                    $retval = array_merge($retval, $this->delete($model, $modeldata));
+                }
+                else {
+                    // we can list if we can administer the event belonging to the passed side-event
+                    $this->checkPolicy($path[0], "list", array("filter"=>$filter, "model"=>$modeldata));
+                    $model = $this->loadModel("Registration");
+                    $retval = array_merge($retval, $this->listAll($model, $offset, $pagesize, $filter, $sort, $special));
+                }                   
+                break;
+
+        }
 
         error_log("returning ".json_encode($retval));
         if(!isset($retval["error"])) {
@@ -234,6 +389,7 @@
         else {
             error_log('save successful');
             $retval["id"] = $model->{$model->pk};
+            $retval = array_merge($retval,array("model"=>$model->export()));
         }
         return $retval;
     }
@@ -285,19 +441,10 @@
         return $retval;
     }
 
-    private function loadModel($name) {
-        require_once(__DIR__ . '/models/base.php');
-        error_log('requiring model '.$name);
-        require_once(__DIR__ . "/models/".strtolower($name).".php");
-        error_log('instantiation');
-        $name="\\EVFRanking\\$name";
-        return new $name();
-    }
-
-    private function checkPolicy($model,$action) {
+    private function checkPolicy($model,$action,$obj=null) {
         require_once(__DIR__ . "/policy.php");
         $policy = new \EVFRanking\Policy();
-        if(!$policy->check($model,$action)) {
+        if(!$policy->check($model,$action,$obj)) {
             die(403);
         }
     }

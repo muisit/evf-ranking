@@ -59,7 +59,13 @@
     }
 
     public function roleOfUser($eventid, $userid) {
-        return $this->select('*')->where('event_id',intval($eventid))->where('user_id',intval($userid))->first();
+        $vals=$this->select('*')->where('event_id',intval($eventid))->where('user_id',intval($userid))->first();
+        if(!empty($vals)) {
+            return new EventRole($vals);        
+        }
+        global $evflogger;
+        $evflogger->log("event-role not found for $eventid $userid, returning null");
+        return null;
     }
 }
  

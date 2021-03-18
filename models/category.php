@@ -58,5 +58,22 @@
         if(empty($result) || !is_array($result)) return 0;
         return intval($result[0]->cnt);
     }
+
+    public function categoryFromYear($year, $wrt) {
+        $year=intval($year);
+        $wrtM=intval(strftime('%m',strtotime($wrt)));
+        $wrtY=intval(strftime('%Y', strtotime($wrt)));
+
+        $diff = $wrtY - $year;
+        if($wrtM > 7) {
+            $diff += 1; // people start fencing in the older category as of august
+        }
+        if ($diff >= 80 ) return 5;
+        if ($diff >= 70 ) return 4;
+        if ($diff >= 60 ) return 3;
+        if ($diff >= 50 ) return 2;
+        if ($diff >= 40 ) return 1;
+        return -1;
+    }
  }
  

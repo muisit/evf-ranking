@@ -37,20 +37,19 @@ export default class FencerDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        console.log('saving ',this.props.value);
         fencer('save',this.props.value)
             .then((json) => {
-              console.log("fencer saved, returned ",json);
                 this.loading(false);
                 var itm=Object.assign({},this.props.value);
                 if(json.data && json.data.id) {
-                  console.log("setting new id");
-                  itm.id = json.data.id;
+                    itm.id = json.data.id;
+                }
+                if(json.data.model) {
+                    itm = Object.assign({},itm,json.data.model);
                 }
                 this.save(itm);
             })
             .catch((err) => {
-                console.log("caught error ",err);
                 if(err.response.data.messages && err.response.data.messages.length) {
                     var txt="";
                     for(var i=0;i<err.response.data.messages.length;i++) {
@@ -111,7 +110,7 @@ export default class FencerDialog extends React.Component {
         <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
         <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
-        if(this.props.value.id >0 && this.props.delete !== false) {
+        if(this.props.value && this.props.value.id >0 && this.props.delete !== false) {
             footer=(<div>
                 <Button label="Remove" icon="pi pi-trash" className="p-button-danger p-button-raised p-button-text" onClick={this.onDeleteDialog} />
                 <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
@@ -119,6 +118,19 @@ export default class FencerDialog extends React.Component {
 </div>);
         }
         let genders = [{ name: 'Male', code: 'M' }, { name: 'Female', code: 'F' }];
+
+        var country = (
+          <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
+        );
+        if(this.props.country) {
+            var cname = "";
+            this.props.countries.map((c) => {
+                if(c.id == this.props.country) {
+                    cname=c.name;
+                }
+            });
+            country = (<div>{cname}</div>);
+        }
 
         return (<Dialog header="Edit Fencer" position="center" visible={this.props.display} className="fencer-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} >
     <h5>Name</h5>
@@ -137,9 +149,7 @@ export default class FencerDialog extends React.Component {
     <h5>Details</h5>
     <div className="p-grid p-fluid">
       <div className="p-col-12 p-md-4">
-        <div className="p-inputgroup">
-          <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl}/>
-        </div>
+        <div className="p-inputgroup">{country}</div>
       </div>
       <div className="p-col-12 p-md-4">
         <div className="p-inputgroup">

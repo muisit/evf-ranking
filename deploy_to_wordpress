@@ -33,7 +33,7 @@ do
     if [[ "x$arg" = "x-h" ]]
     then
         echo "Deploy to Wordpress script"
-        echo "Copyright (C) 2020 muis IT https://www.muisit.nl"
+        echo "Copyright (C) 2020-2021 muis IT https://www.muisit.nl"
         echo ""
         echo "deploy_to_wordpress [options]"
         echo ""
@@ -116,6 +116,7 @@ then
 else
     rm -rf $DEPLOYDIR
     mkdir -p $DEPLOYDIR/models
+    mkdir -p $DEPLOYDIR/lib
     mkdir -p $DEPLOYDIR/dist
     mkdir -p $DEPLOYDIR/css
 fi
@@ -139,13 +140,22 @@ do
         cp -v $i $DEPLOYDIR/models
     fi
 done
+for i in `find ./ -type f -path ./lib/\*`
+do
+    if [[ "x$DRY" = "x1" ]]
+    then
+        echo "cp -v $i $DEPLOYDIR/lib"
+    else
+        cp -v $i $DEPLOYDIR/lib
+    fi
+done
 
 if [[ "x$DRY" = "x1" ]]
 then
     echo "cp -r dist/fonts dist/images dist/app.js $DEPLOYDIR/dist"
     echo "cp css/evfranking.css $DEPLOYDIR/css"
 else
-    cp -r dist/fonts dist/images dist/app.js dist/ranking.js dist/results.js $DEPLOYDIR/dist
+    cp -r dist/fonts dist/images dist/app.js dist/ranking.js dist/results.js dist/registrations.js dist/registrationsfe.js $DEPLOYDIR/dist
     cp dist/app.css $DEPLOYDIR/dist
 
     cd /tmp

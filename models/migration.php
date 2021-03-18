@@ -128,6 +128,10 @@
             $migration = new Migration(array("name" => '009: Registrations 2', "status" => 0));
             $migration->save();            
         }
+        if ($cnt < 10) {
+            $migration = new Migration(array("name" => '009: Registrations 3', "status" => 0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -225,9 +229,16 @@
                 " inner join TD_Category cat on cat.category_id=c.competition_category ".
                 " inner join TD_Weapon w on w.weapon_id=c.competition_weapon ".
                 " WHERE e.event_in_ranking='Y'");
-
+            $wpdb->query("alter table TD_Registration add column registration_paid enum('Y','N') null");
+            $wpdb->query("alter table TD_Registration add column registration_individual enum('Y','N') null");
+            $wpdb->query("ALTER TABLE `TD_Registration` DROP `registration_competition`;");
             break;
-            default:
+        case '009: Registrations 3':
+            $wpdb->query("alter table TD_Registration add column registration_paid_hod enum('Y','N') null");
+            $wpdb->query("alter table TD_Event add column event_payments varchar(20) null");
+            $wpdb->query("alter table TD_Fencer add column fencer_picture enum('Y','N','A','R') null");
+            break;
+        default:
             break;
         }
     }

@@ -30,7 +30,8 @@
  class Fencer extends Base {
     public $table = "TD_Fencer";
     public $pk="fencer_id";
-    public $fields=array("fencer_id","fencer_firstname","fencer_surname","fencer_country","fencer_dob","fencer_gender", "country_name");
+    public $fields=array("fencer_id","fencer_firstname","fencer_surname","fencer_country","fencer_dob",
+        "fencer_gender", "fencer_picture","country_name");
     public $fieldToExport = array(
         "fencer_id" => "id",
         "fencer_firstname" => "firstname",
@@ -38,7 +39,8 @@
         "fencer_country" => "country",
         "country_name" => "country_name",
         "fencer_dob" => "birthday",
-        "fencer_gender" => "gender"
+        "fencer_gender" => "gender",
+        "fencer_picture" => "picture"
     );
     public $rules=array(
         "fencer_id" => "skip",
@@ -47,7 +49,8 @@
         "fencer_country" => array("rules"=>"model=Country|required","message"=>"Please select a valid country"),
         "country_name" => "skip",
         "fencer_dob" => array("rules"=>"date","message"=>"Please set a date of birth at least 20 years in the past"),
-        "fencer_gender" => array("rules"=>"enum=M,F","message"=>"Please pick a valid gender")
+        "fencer_gender" => array("rules"=>"enum=M,F","message"=>"Please pick a valid gender"),
+        "fencer_picture" => array("rules" => "enum=Y,N,A,R")
     );
 
     public function __construct($id=null) {
@@ -82,19 +85,17 @@
     }
 
     private function addFilter($qb, $filter,$special) {
-        error_log("adding filter");
-        if(!empty(trim($filter))) {
-            global $wpdb;
-            error_log("filter not empty");
-            $filter=$wpdb->esc_like($filter);
-            //$filter=str_replace("%","%%",$filter);
-            error_log("adding subclause for where filter");
-            $qb->where( function($qb2) use ($filter) {
-                error_log("inside where clause");
-//                $qb2->where("fencer_surname","like","%$filter%")
-//                    ->or_where("fencer_firstname","like","%$filter%");
-                  $qb2->where("fencer_surname like '%$filter%' or fencer_firstname like '%$filter%'");
-            });
+        if(is_string($filter)) $filter=json_decode($filter,true);
+        if(!empty($filter)) {
+            if(isset($filter["name"])) {
+                global $wpdb;
+                $name=$wpdb->esc_like($filter["name"]);
+                //$filter=str_replace("%","%%",$filter);
+                $qb->where("(fencer_surname like '%$name%' or fencer_firstname like '%$name%')");
+            }
+            if(isset($filter["country"])) {
+                $qb->where("fencer_country",$filter["country"]);
+            }
         }
     }
 

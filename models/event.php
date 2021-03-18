@@ -33,7 +33,8 @@
     public $fields=array("event_id","event_name","event_open","event_registration_open","event_registration_close","event_year", 
         "event_duration","event_email", "event_web", "event_location", "event_country","event_type",
         "event_currency_symbol","event_currency_name","event_base_fee", "event_competition_fee",
-        "event_bank","event_account_name","event_organisers_address","event_iban","event_swift","event_reference","event_in_ranking", "event_factor", "event_frontend",
+        "event_bank","event_account_name","event_organisers_address","event_iban","event_swift","event_reference",
+        "event_in_ranking", "event_factor", "event_frontend", "event_payments",
         "type_name","country_name",
     );
     public $fieldToExport=array(
@@ -63,6 +64,7 @@
         "event_factor" => "factor",
         "event_frontend" => "frontend",
         "event_type_name" => "type_name",
+        "event_payments" => "payments",
         "country_name" => "country_name",
     );
     public $rules=array(
@@ -91,6 +93,7 @@
         "event_in_ranking" => array("label"=>"In-Ranking", "rules"=>"bool"),
         "event_factor" => array("label" => "Factor","rules"=>"float"),
         "event_frontend" => array("label"=>"Select a valid, published front-end event", "rules"=>"model=Posts"),
+        "event_payments" => array("label"=>"Select a valid payment method", "rules"=>"enum=all,group,individual"),
         "event_type_name" => "skip",
         "country_name" => "skip",
         "competitions" => "contains=Competition,competition_list",
@@ -337,27 +340,54 @@
         return true;
     }
 
-    public function eventCaps($frontendid, $userdata) {
+    public function findByFeId($id) {
+        $data=$this->select('*')->where('event_frontend', intval($id))->first();
+        if($data !== null) {
+            return new Event($data);
+        }
+        return null;
+    }
+
+    public function isOpen() {
+        $now = time();
+        $opens = strtotime($this->event_registration_open);
+        $closes = strtotime($this->event_registration_close);
+        return $now >= $opens && $now < $closes;
+    }
+
+    public function eventCaps() {
+        // too bad we need to spoil the models with Wordpress routines, but this is the only one
+        $user = wp_get_current_user();
+        $id=-1;
+        if (!empty($user)) {
+            $id = $user->ID;
+        }
+
         // see if there is an event with this front-end id
         $retval="closed";
-        $event=$this->select('*')->where('event_frontend',intval($frontendid))->first();
-        if($event !== null) {
-            $event=new Event($event);
-            $now=time();
-            $opens=strtotime($event->event_registration_open);
-            $closes=strtotime($event->event_registration_close);
 
-            if($now >= $opens && $now < $closes) {
-                // open for registration, so at least return "registrar"
-                $retval="registrar";
+        // if the user has management rights to this specific event, we always show it
+        // as manageable, even when it is closed still (or again)
+        if (intval($id) > 0) {
+            // if the current user has special rights on the event, we return those rights
+            $role = $this->roleOfUser($id);
+            if ($role !== null) {
+                error_log("user has an event-role: ".$role->role_type);
+                $retval = $role->role_type;
+            }
+        }
 
-                if(isset($userdata["id"]) && intval($userdata["id"]) > 0) {
-                    // if the current user has special rights on the event, we return those rights
-                    $role=$event->roleOfUser($userdata['id']);
-                    if($role !== null) {
-                        $retval = $role->role_type;                        
-                    }
-                }
+        if($retval === "closed" && $this->isOpen()) {
+            // open for registration, so at least return "open" to allow HoD registration
+            $retval="open";
+
+            // see if the current user is by accident a generic registrar
+            $cname = $this->loadModel("Registrar");
+            $model=new $cname();
+            $registrar = $model->findByUser($id);
+            if($registrar != null) {
+                error_log("user is a HoD");
+                $retval="hod";
             }
         }
         return $retval;

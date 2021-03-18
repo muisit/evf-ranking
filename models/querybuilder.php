@@ -51,7 +51,7 @@
                     $sql.=" WHERE ".$c[1];
                 }
                 else {
-                    $sql .= $c[0] . ' '.$c[1];
+                    $sql .= ' '.$c[0] . ' '.$c[1];
                 }
             }
         }
@@ -87,7 +87,7 @@
                     $sql.=" WHERE ".$c[1];
                 }
                 else {
-                    $sql .= $c[0] . ' '.$c[1];
+                    $sql .= ' '.$c[0] . ' '.$c[1];
                 }
             }
         }
@@ -112,7 +112,7 @@
         return $this->_model->prepare($sql, $this->_where_values);
     }
     private function _doget() {
-        error_log('query builder for get');
+        //error_log('query builder for get');
         $sql = strtoupper($this->_action)." "
             .implode(',', array_keys($this->_select_fields))
             ." FROM ".$this->_from;
@@ -154,7 +154,7 @@
     }
 
     private function _dosub() {
-        error_log("is subclause builder");
+        //error_log("is subclause builder");
         $sql="";
         if(sizeof($this->_where_clauses)) {
             $first=true;
@@ -191,7 +191,12 @@
         }
         else if(is_array($f)) {
             foreach(array_keys($f) as $n) {
-                $this->_select_fields[$n]=true;
+                if(is_numeric($n)) {
+                    $this->_select_fields[$f[$n]]=true;
+                }
+                else {
+                    $this->_select_fields[$n]=true;
+                }
             }
         }
         return $this;
@@ -223,9 +228,9 @@
                     }
                 }
                 else if(is_callable($field)) {
-                    error_log('where clause is a callable');
+                    //error_log('where clause is a callable');
                     $qb=$this->sub();
-                    error_log("calling where clause");
+                    //error_log("calling where clause");
                     ($field)($qb);
                     $qb->get();
                 }
@@ -276,7 +281,7 @@
         else {
             $id=uniqid();
             $this->_where_values[$id]=$clause;
-            $this->_where_clauses[]=array($andor,$field.' '.$comparison.' {'.$id.'}');
+            $this->_where_clauses[]=array($andor,$field.$comparison.'{'.$id.'}');
         }
     }
 
@@ -298,18 +303,18 @@
     private $_orderbyclause=array();
     public function orderBy($field, $dr=null) {
         if(is_array($field)) {
-            error_log('array of orderBy');
+            //error_log('array of orderBy');
             foreach($field as $k=>$v) {
                 if(is_numeric($k)) {
-                    error_log('field is numeric, orderBy is '.$v);
+                    //error_log('field is numeric, orderBy is '.$v);
                     $this->_orderbyclause[]=$v;
                 }
                 else if(in_array(strtolower($v),array("asc","desc"))) {
-                    error_log('value is asc/desc, key is '.$k.' '.$v);
+                    //error_log('value is asc/desc, key is '.$k.' '.$v);
                     $this->_orderbyclause[]="$k $v";
                 }
                 else {
-                    error_log('full clause in key '.$k);
+                    //error_log('full clause in key '.$k);
                     $this->_orderbyclause[]=$k;
                 }
             }

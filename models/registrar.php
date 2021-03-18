@@ -93,5 +93,13 @@
         if(empty($result) || !is_array($result)) return 0;
         return intval($result[0]->cnt);
     }
+
+    public function findByUser($userid) {
+        $vals = $this->select('*')->where('user_id',$userid)->first();
+        if(!empty($vals)) {
+            return new Registrar($vals);
+        }
+        return null;
+    }
  }
  

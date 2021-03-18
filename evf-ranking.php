@@ -38,11 +38,11 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-require_once(__DIR__ . '/display.php');
+require_once(__DIR__ . '/lib/display.php');
 
 function evfranking_activate() {
     error_log("activate");
-    require_once(__DIR__.'/activate.php');
+    require_once(__DIR__.'/lib/activate.php');
     $activator = new \EVFRanking\Activator();
     $activator->activate();
 
@@ -53,14 +53,14 @@ function evfranking_activate() {
 }
 
 function evfranking_deactivate() {
-    require_once(__DIR__.'/activate.php');
+    require_once(__DIR__.'/lib/activate.php');
     $activator = new \EVFRanking\Activator();
     $activator->deactivate();
 }
 
 function evfranking_plugins_loaded()
 {
-    require_once(__DIR__ . '/activate.php');
+    require_once(__DIR__ . '/lib/activate.php');
     $activator = new \EVFRanking\Activator();
     $activator->upgrade();
 }
@@ -77,7 +77,6 @@ function evfranking_display_registration_page() {
     $dat->registration();
 }
 
-
 function evfranking_enqueue_scripts($page) {
     error_log('adding script');
     $dat = new \EVFRanking\Display();
@@ -87,7 +86,7 @@ function evfranking_enqueue_scripts($page) {
 
 function evfranking_ajax_handler($page) {
     error_log('evfranking_ajax_handler');
-    require_once(__DIR__ . '/api.php');
+    require_once(__DIR__ . '/lib/api.php');
     $dat = new \EVFRanking\API();
     $dat->resolve();
 }
@@ -115,7 +114,7 @@ function evfranking_admin_menu() {
 }
 
 function evfranking_cron_exec() {
-    require_once(__DIR__ . '/activate.php');
+    require_once(__DIR__ . '/lib/activate.php');
     $activator = new \EVFRanking\Activator();
     $activator->cron();
 }
@@ -128,14 +127,6 @@ function evfranking_ranking_shortcode($atts) {
 function evfranking_results_shortcode($atts) {
     $actor = new \EVFRanking\Display();
     return $actor->resultsShortCode($atts);
-}
-
-function evfranking_page_template($page_template) {
-    if (is_page('register')) {
-        $actor = new \EVFRanking\Display();
-        $page_template = $actor->displayRegistration($page_template);
-    }
-    return $page_template;
 }
 
 function evfranking_rewrite_add_rewrites() {
@@ -165,15 +156,14 @@ if (defined('ABSPATH')) {
     add_shortcode( 'evf-ranking', 'evfranking_ranking_shortcode' );
     add_shortcode( 'evf-results', 'evfranking_results_shortcode' );
 
-    add_filter('page_template', 'evfranking_page_template');
-
     add_filter('posts_pre_query', function ($posts, $q) {
         if (empty($posts) && isset($q->query["evfranking_register"])) {
-            error_log(simpleBT());
             $actor = new \EVFRanking\Display();
-            $post = $actor->virtualPage($q->query["evfranking_register"]);
-            $posts=array();
-            $posts[]=$post;
+            $post = $actor->registerRedirect($q->query["evfranking_register"]);
+            if($post != null) {
+                $posts=array();
+                $posts[]=$post;
+            }
         }
         return $posts;
     },2,99);
@@ -191,4 +181,13 @@ if (defined('ABSPATH')) {
         $query_vars[] = 'evfranking_register';
         return $query_vars;
     });
+
+    add_action('event_extend', function($event) {
+        $actor = new \EVFRanking\Display();
+        $actor->eventButton($event);
+    });
 }
+
+class TestLogger {function log($txt) {error_log($txt); }}
+$evflogger = new TestLogger();
+

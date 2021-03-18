@@ -183,6 +183,7 @@ export default class EventRegistrationDialog extends React.Component {
         case 'swift':
         case 'reference':
         case 'frontend':
+        case 'payments':
         case 'reg_open':
         case 'reg_close':
             item[name] = value;
@@ -334,6 +335,12 @@ export default class EventRegistrationDialog extends React.Component {
             eventsWithUnselect.splice(0,0,unselectevent);
         }
 
+        var payments=[
+          { id: "all", name:"Group or Individual"},
+          { id: "group", name: "Group payments only"},
+          { id: "individual", name: "Individual payments only" },
+        ];
+
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
 <TabView id="eventdialog" animate={true} defaultSelectedTabId="general">
@@ -364,6 +371,12 @@ export default class EventRegistrationDialog extends React.Component {
       <label>Currency</label>
       <div className='input'>
         <Dropdown name='currency' optionLabel="name" optionValue="code" value={this.props.value.currency} options={this.currencies} placeholder="Currency" onChange={this.onChangeEl} appendTo={document.body}/>
+      </div>
+    </div>
+    <div>
+      <label>Payments</label>
+      <div className='input'>
+        <Dropdown name='payments' optionLabel="name" optionValue="id" value={this.props.value.payments} options={payments} placeholder="Payments" onChange={this.onChangeEl} appendTo={document.body} />
       </div>
     </div>
     <div>

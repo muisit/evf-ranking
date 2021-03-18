@@ -60,6 +60,48 @@ function validFetch(cnt, path, pdata, options, headers = {}) {
         });
 }
 
+export function upload_file(cnt, selectedFile, add_data, options={}, headers={}) {
+    if(!controllers[cnt]) {
+        controllers[cnt]=new AbortController();
+    }
+
+    const contentHeaders = Object.assign({
+        "Accept": "application/json",
+        "Content-Type": "removeme"
+        } , headers);
+
+    delete contentHeaders['Content-Type'];
+
+    var data = new FormData()
+    data.append('picture', selectedFile);
+    data.append('nonce',evfranking.nonce);
+    data.append('upload','true');
+    Object.keys(add_data).map((key)=> {
+        data.append(key,add_data[key]);
+    })
+
+    const fetchOptions = Object.assign({}, {headers: contentHeaders}, options, {
+        credentials: "same-origin",
+        redirect: "manual",
+        method: 'POST',
+        signal: controllers[cnt].signal,
+        body: data
+    });
+    console.log(fetchOptions);
+
+    return fetch(evfranking.url, fetchOptions)
+        .then(validateResponse())
+        .catch(err => {
+            if(err.name === "AbortError") {
+                console.log('disregarding aborted call');
+            }
+            else {
+                console.log("error in fetch: ",err);
+                throw err;
+            }
+        });
+}
+
 function fetchJson(cnt,path, data={}, options = {}, headers = {}) {
     console.log('valid fetch using data '+JSON.stringify(data));
     return validFetch(cnt,path, data, options, headers);
@@ -160,6 +202,13 @@ export function registrars(offset,pagesize,filter,sort) {
 }
 export function registrar(action, fields) {
     return fetchJson('registrars','registrars/' + action,fields);
+}
+export function registrations(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('registrations','registration',obj);
+}
+export function registration(action, fields) {
+    return fetchJson('registrations','registration/' + action,fields);
 }
 export function users(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};

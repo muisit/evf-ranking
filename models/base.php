@@ -61,6 +61,10 @@
         }
     }
 
+    public function getKey() {
+        return $this->{$this->pk};
+    }
+
     public function setKey($id=null) {
         if($id === null) {
             $id=-1;
@@ -73,6 +77,8 @@
     }
 
     public function get($id) {
+        global $evflogger;
+        $evflogger->log("getting by id $id");
         $obj = new static($id);
         $obj->load();
         $pk=$obj->pk;
@@ -87,7 +93,10 @@
     }
 
     public function load() {
+        global $evflogger;
+        $evflogger->log("load for ".get_class($this)."->".$this->{$this->pk});
         if($this->_state == "loaded" || $this->_state == "new") { 
+            $evflogger->log("already loaded or new");
             return;
         }
 
@@ -98,6 +107,7 @@
         $sql = $wpdb->prepare($sql,array($pkval));
         $results = $wpdb->get_results($sql);
 
+        $evflogger->log("load returns ".json_encode($results));
         if(empty($results) || sizeof($results) != 1) {
             $this->{$this->pk} = null;
             $this->_state = "new";
@@ -124,6 +134,8 @@
     }
 
     private function read($values) {
+        global $evflogger;
+        $evflogger->log("reading values for ".get_class($this));
         $values=(array)$values;
         $this->_state = "reading";
         $values=(array)$values;
@@ -153,17 +165,20 @@
         else {
             global $wpdb;
             if($this->isNew()) {
+                error_log("trying an insert of ".json_encode($fieldstosave));
                 $wpdb->insert($this->table,$fieldstosave);
                 $this->{$this->pk} = $wpdb->insert_id;
+                error_log("inserted id is ".$this->{$this->pk});
             }
             else {
-//                error_log("calling update on ".$this->table." for ".json_encode($fieldstosave));
+                error_log("calling update on ".$this->table." for ".json_encode($fieldstosave));
                 $wpdb->update($this->table, $fieldstosave, array($this->pk => $this->{$this->pk}));
             }
         }
         // save attached objects
         $this->postSave();
 
+        error_log("returning true");
         return true;
     }
 
@@ -270,7 +285,7 @@
 
     public function first($query,$values) {
         $vals = $this->prepare($query,$values);
-        if(sizeof($vals)) {
+        if(!empty($vals) && sizeof($vals)) {
             return $vals[0];
         }
         return null;
@@ -289,6 +304,8 @@
         $pattern = "/{[a-f0-9]+}/";
         $matches=array();
         $replvals=array();
+        // make sure search terms are not considered parameters
+        $query = str_replace("%","%%",$query);
         if(preg_match_all($pattern, $query, $matches)) {
             error_log(json_encode($matches));
             foreach($matches[0] as $m) {
@@ -328,6 +345,7 @@
         $validator = new Validator($this);
 
         if(!$validator->validate($obj)) {
+            error_log("saveFromObject: not validate");
             $this->errors=$validator->errors;
             return false;
         }

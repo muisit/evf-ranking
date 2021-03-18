@@ -3,6 +3,22 @@
 @import 'primeicons/primeicons.css';
 @import 'primeflex/primeflex.css';
 
+.bordertop { border-top-width: 1px; border-style: solid; border-color: black;}
+.topmargin { padding-top: 10px; }
+.textcenter { text-align: center; }
+.vertcenter  { vertical-align: center; align-items: center; display:flex;}
+.blue { color: #66f; }
+.red { color: #f00; }
+.green { color: #4c4; }
+
+.entry-content table thead th.textcenter { text-align: center; }
+table.style-stripes > tbody tr:nth-child(2n+1) {
+    background-color: #dde9f6;
+}
+table.style-stripes-body > tbody:nth-child(2n+1) tr {
+    background-color: #dde9f6;
+}
+
 .pager { position: relative; }
 .pager .slider { width: 80%; padding-right: 20px; }
 .pager .slider .p-slider { margin-top: -15px; }
@@ -28,15 +44,19 @@
 .datatable .search-input-results .catdrop { width: 200px; }
 .datatable .search-input-results .wpndrop { width: 170px; }
 
+/* generic input width, old-style */
 .p-dialog-content { position: relative; }
 .p-dialog-content label { display: block; width: 8vw; height: 3.5rem; line-height: 2.5rem; font-weight: 700; float: left; clear: both;}
+.p-dialog-content label.header { width: 100%; }
 .p-dialog-content div div.input { width: 38vw; float: left; }
 .p-dialog-content div div.input .p-inputtext { width: 35vw; }
 .p-dialog-content div div.input .p-dropdown { width: 35vw; }
 .p-dialog-content div div.input .inputint input { width: 5vw; }
 
+/* specific settings for fencer-dialog */
 .fencer-dialog .p-dialog-content div div .p-inputgroup .p-inputtext { width: 8vw; }
 .fencer-dialog .p-dialog-content div div .p-inputgroup .p-dropdown { width: 8vw; }
+.fencer-select-dialog .p-dialog-content div div.input .p-dropdown { width: 8vw; line-height: 1rem; }
 
 .p-datepicker:not(.p-disabled) table td span.p-disabled { 
     background-color: white; 
@@ -113,3 +133,24 @@ div.table-action i a { padding: 0; }
 #evfregistration-root .sideevent:after { content:"";display:table;clear:both; }
 #evfregistration-root .formelement { clear: both; }
 #evfregistration-root .p-dialog-content .sideevent label { height: 1.5rem; line-height: 1.5rem; }
+
+#evfregistration-frontend-root table { line-height: 1.5rem; }
+#evfregistration-frontend-root .fencer-select-dialog .p-dialog-content .state-icons { width: 2rem; }
+#evfregistration-frontend-root .fencer-select-dialog .fencer-select-events td,
+#evfregistration-frontend-root .fencer-select-dialog .fencer-select-events td  .p-checkbox
+{ vertical-align: middle; }
+#evfregistration-frontend-root .fencer-select-dialog .fencer-select-events tbody.athlete { background-color: #9f9; }
+#evfregistration-frontend-root .incorrect-cat { background-color: #f99; }
+
+#evfregistration-frontend-root .right { float: right; clear: both; }
+#evfregistration-frontend-root .center { width: 100%; margin: 0px auto; text-align: center; align-items: center; }
+
+#evfregistration-frontend-root .cashier .details-close { display: none; }
+#evfregistration-frontend-root .cashier .details-open { display: auto; }
+.entry-content #evfregistration-frontend-root table { border-width: 0; }
+.entry-content #evfregistration-frontend-root .state-icons .pi { display: block; width: 2rem; }
+#evfregistration-frontend-root .payment-details { font-size: 1.1rem; line-height: 1.2rem; width: auto;}
+#evfregistration-frontend-root .payment-details .label { font-weight: bold; }
+
+#evfregistration-frontend-root .accreditation { width: 100% ; }
+#evfregistration-frontend-root .accreditation img { width: 413px; margin: 0 auto 0 auto; display: block;}

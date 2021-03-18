@@ -49,14 +49,6 @@ do
     fi
 done
 
-if [[ "x$DRY" = "x1" ]]
-then
-    echo "Dry-run, no execution"
-else
-    # perform a production build before we deploy
-    npm run build
-fi
-
 if [[ "x$MAJOR" = "x1" && "x$MINOR" = "x1" ]]
 then
     echo "Major release requires a minor version of 0, ignoring -v"
@@ -68,7 +60,7 @@ MAJ=`echo $VERSION | sed 's/\([0-9]*\).*/\1/'`
 MIN=`echo $VERSION | sed 's/[0-9]*\.\([0-9]*\).*/\1/'`
 MICR=`echo $VERSION | sed 's/[0-9]*\.[0-9]*\.\([0-9]*\)/\1/'`
 
-if [[ "x1" == "x$MAJOR" ]]
+if [[ "x1" = "x$MAJOR" ]]
 then
     echo "Performing major release"
     let "MAJ=$MAJ+1"
@@ -104,6 +96,13 @@ else
     mv tmp.$$ "package.json"
 fi
 
+if [[ "x$DRY" = "x1" ]]
+then
+    echo "Dry-run, no execution"
+else
+    # perform a production build before we deploy
+    npm run build
+fi
 
 BASE=`pwd`
 DEPLOYDIR="$BASE/$WPDIR"

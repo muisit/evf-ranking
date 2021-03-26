@@ -25,37 +25,37 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Registration extends Base {
     public $table = "TD_Registration";
     public $pk="registration_id";
     public $fields=array("registration_id","registration_fencer","registration_role","registration_event","registration_costs","registration_date",
-        "registration_paid","registration_individual", "registration_paid_hod");
+        "registration_paid","registration_payment", "registration_paid_hod", "registration_mainevent");
     public $fieldToExport=array(
         "registration_id" => "id",
         "registration_fencer" => "fencer",
         "registration_role" => "role",
+        "registration_mainevent" => "event",
         "registration_event" => "sideevent",
         "registration_costs" => "costs",
         "registration_date" => "date",
         "registration_paid" => "paid",
         "registration_paid_hod" => "paid_hod",
-        "registration_individual" => "individual",
-        "event_id" => "event"
+        "registration_payment" => "payment",
 
     );
     public $rules = array(
         "registration_id"=>"skip",
         "registration_fencer" => "model=Fencer|required",
         "registration_role" => "model=Role",
-        "registration_event" => "model=SideEvent|required",
+        "registration_mainevent" => "model=Event|required",
+        "registration_event" => "model=SideEvent",
         "registration_costs" => "float|gte=0",
         "registration_date" => "date",
         "registration_paid" => "bool|default=N",
         "registration_paid_hod" => "bool|default=N",
-        "registration_individual" => "bool|default=N",
-        "event_id"=>"skip"
+        "registration_payment" => "enum=I,G,O,F,E"
     );
 
     public function export($result=null) {
@@ -63,8 +63,6 @@
             $result = $this;
         }
         $retval = parent::export($result);
-
-        $cname=$this->loadModel("Fencer");
         $fencer=new Fencer($result);
         $retval["fencer_data"] = $fencer->export();
         return $retval;
@@ -76,24 +74,43 @@
 
     private function addFilter($qb, $filter,$special) {
         if (is_string($filter)) $filter = json_decode($filter, true);
+        if(is_string($special)) $special = json_decode($special,true);
         if (!empty($filter)) {
-            if (isset($filter["country"])) {
-                $qb->where("fencer_country", $filter["country"]);
+            if (isset($filter["country"]) && (empty($special) || !isset($special["photoid"]))) {
+                if(intval($filter["country"]) == -1) {
+                    // empty selection, select only entries that have at least one org-level role for this fencer
+                    $qb->where_exists(function($qb2) {
+                        $qb2->select('*')->from('TD_Registration r2')
+                            ->join("TD_Role", "r", "r.role_id=r2.registration_role")
+                            ->join("TD_Role_Type", "rt", "r.role_type=rt.role_type_id")
+                            ->where("rt.org_declaration","<>","Country")
+                            ->where("f.fencer_id=r2.registration_fencer");
+                    });
+                }
+                else {
+                    $qb->where("fencer_country", $filter["country"]);
+                }
             }
             if (isset($filter["sideevent"])) {
                 $qb->where("TD_Registration.event_id", $filter["sideevent"]);
             }
             if (isset($filter["event"])) {
-                $qb->where("s.event_id", $filter["event"]);
+                $qb->where("TD_Registration.registration_mainevent", $filter["event"]);
+            }
+        }
+        if(!empty($special)) {
+            if(isset($special["photoid"])) {
+                $qb->where_in("f.fencer_picture",array('Y','R'));
             }
         }
     }
 
     public function selectAll($offset,$pagesize,$filter,$sort, $special=null) {
-        $qb = $this->select('TD_Registration.*, s.event_id as event_id, c.country_name, f.*')
+        $qb = $this->select('TD_Registration.*, c.country_name, f.*')
           ->join("TD_Fencer", "f", "TD_Registration.registration_fencer=f.fencer_id")
           ->join("TD_Country","c","f.fencer_country=c.country_id")
-          ->join("TD_Event_Side", "s", "TD_Registration.registration_event=s.id")
+          ->join("TD_Role", "r", "r.role_id=TD_Registration.registration_role")
+          ->join("TD_Role_Type", "rt", "r.role_type=rt.role_type_id")
           ->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);
         return $qb->get();
@@ -101,16 +118,16 @@
 
     public function selectAllOfFencer($event,$fencer) {
         $qb = $this->select('TD_Registration.*')
-          ->join("TD_Event_Side", "s", "TD_Registration.registration_event=s.id")
-          ->where("s.event_id",$event->getKey())->where("registration_fencer",$fencer->getKey());
+          ->where("TD_Registration.registration_mainevent",$event->getKey())->where("registration_fencer",$fencer->getKey());
         return $qb->get();
     }
 
     public function count($filter,$special=null) {
-        $qb = $this->select("count(*) as cnt")
+        $qb = $this->numrows()
           ->join("TD_Fencer", "f", "TD_Registration.registration_fencer=f.fencer_id")
-          ->join("TD_Country","c","f.country_id=c.country_id")
-          ->join("TD_Event_Side", "s", "TD_Registration.registartion_event=s.id");
+          ->join("TD_Country","c","f.fencer_country=c.country_id")
+          ->join("TD_Role", "r", "r.role_id=TD_Registration.registration_role")
+          ->join("TD_Role_Type", "rt", "r.role_type=rt.role_type_id");
         $this->addFilter($qb,$filter,$special);
         return $qb->count();
     }
@@ -123,33 +140,31 @@
         // - registrars cannot change the paid field
         // - organiser can set anything
         error_log("saveFromObject for registration");
-        $cname=$this->loadModel("SideEvent");
-        $sideevent=new $cname();
+        $event = new Event($obj["event"]);
+        if (!$event->exists()) return false;
+        
+        $sideevent=new SideEvent();
         $sideevent=$sideevent->get($obj["sideevent"]);
-        if(empty($sideevent)) return false;
-
-        $cname = $this->loadModel("Event");
-        $event=new $cname();
-        $event = $event->get($sideevent->event_id);
-        if(empty($event)) return false;
+        // sideevent can be empty for non-athlete roles
 
         $caps = $event->eventCaps();
-        error_log("caps is $caps");
+
         if($caps == "cashier") {
             // make sure only the paid field is present in the object data
             $newobject=array();
             if(isset($obj["paid"])) {
+                // cashiers can only check the paid status
                 $newobject["paid"] = $obj["paid"];
             }
             return parent::saveFromObject($newobject);
         }
-        else if($caps == "registrar" || $caps=="hod" ||  $caps == "organiser") {
+        else if($caps == "registrar" || $caps=="hod" ||  $caps == "organiser" || $caps=="system") {
             if(($caps == "registrar" || $caps=="hod") && isset($obj["paid"])) {
+                // registrars and hods cannot set the cashier-paid status
                 unset($obj["paid"]);
             }
             // we're not checking if the hod is saving a registration for a fencer
             // of the HoD's country. That is checked in the policy already
-            error_log("calling parent saveFromObject");
             return parent::saveFromObject($obj);
         }
         // other roles are not allowed to save any data, but this should have been checked in the general policy
@@ -163,44 +178,56 @@
         if(empty($this->registration_role)) {
             $this->registration_role = 0;// athlete role by default
         }
-        // only ever one registration per fencer per sideevent
-        // do not delete this entry in case we do an update
-        $this->query()->where("registration_id","<>",$this->getKey())->where("registration_fencer",$this->registration_fencer)->where("registration_event",$this->registration_event)->delete();
-        return parent::save();
+
+        // only ever one specific role per fencer per sideevent
+        // do not delete this specific entry in case we do an update
+        $qb = $this->query()->where("registration_id", "<>", $this->getKey())
+            ->where("registration_fencer", $this->registration_fencer)
+            ->where("registration_role",$this->registration_role);
+        if(empty($this->registration_event)) {
+            $qb->where("registration_event", "=",null);
+        }
+        else {
+            $qb->where("registration_event", $this->registration_event);
+        }
+        $qb->delete();
+
+        if(parent::save()) {
+            // save succesful, make all accreditations for this fencer dirty
+            $model=new Accreditation();
+            $model->makeDirty($this->registration_fencer,$this);
+            return true;
+        }
+        return false;
     }
 
     public function delete($id=null) {
-        error_log("delete action for Registration object");
         $model=$this;
         if($id!==null) {
             $model = $this->get($id);
         }
         if(empty($model)) {
             // deleting a non-existing registration always succeeds
+            error_log("deleting empty registration... returning true");
             return true;
         }
-
-        // the policy would check this, but better twice than too little
-        $cname = $this->loadModel("SideEvent");
-        $sideevent = new $cname();
-        $sideevent = $sideevent->get($model->registration_event);
-        if (empty($sideevent)) return false;
-
-        $cname = $this->loadModel("Event");
-        $event = new $cname();
-        $event = $event->get($sideevent->event_id);
-        if (empty($event)) return false;
+        
+        $event = new Event($model->registration_mainevent);
+        if (!$event->exists()) return false;
 
         $caps = $event->eventCaps();
-        error_log("caps is $caps");
 
         // we do not check whether the HoD is deleting a registration for a fencer
         // belonging to the same country. That is done in the policy already
-        if ($caps == "registrar" || $caps == "organiser" || $caps=="hod") {
-            error_log("allowing delete for caps $caps");
-            return parent::delete($model->getKey());
+        if ($caps == "registrar" || $caps == "organiser" || $caps=="hod" || $caps=="system") {
+            error_log("deleting registration through parent");
+            if(parent::delete($model->getKey())) {
+                // delete succesful, make all accreditations for this fencer dirty
+                $amodel=new Accreditation();
+                $amodel->makeDirty($model->registration_fencer,$model);
+                return true;
+            }
         }
-        error_log("not allowing delete");
         return false;
     }
  }

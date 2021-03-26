@@ -1,5 +1,5 @@
-import { competitions, sideevents, registrations } from "./api.js";
-import { format_date_fe, date_to_category, date_to_category_num, format_date } from './functions';
+import { competitions, sideevents, registrations, abort_all_calls } from "./api.js";
+import { format_date_fe, date_to_category, date_to_category_num, format_date, is_hod, is_valid } from './functions';
 import { Dropdown } from 'primereact/dropdown';
 import React from 'react';
 
@@ -10,11 +10,10 @@ export default class FEBase extends React.Component {
         this.abortType='events';
 
         var cid=-1;
-        if (evfranking.eventcap == "hod" && parseInt(evfranking.country) > 0) {
+        if (is_hod() && is_valid(evfranking.country)) {
             cid=evfranking.country;
         }
 
-        console.log("setting country to "+cid);
         this.state = {
             country: cid,
             country_item: this.countryFromId(cid),
@@ -28,6 +27,9 @@ export default class FEBase extends React.Component {
 
     countryFromId = (id) => {
         var retval=null;
+        if(id == -1) {
+            return {id:-1,name:"Organisation"};
+        }
         this.props.countries.map((cnt, idx) => {
             if (cnt.id == id) {
                 console.log("setting default HoD country to " + cnt.name);
@@ -58,6 +60,9 @@ export default class FEBase extends React.Component {
             this.getRegistrations();
         }
     }
+    componentWillUnmount = () => {
+        abort_all_calls(this.abortType);
+    }
 
     adjustFencerData = (fencer) => {
         var name = fencer.name + ", " + fencer.firstname;
@@ -79,19 +84,19 @@ export default class FEBase extends React.Component {
     }
 
     changeSingleRegisteredFencer = (itm) => {
-        console.log("creating new registered list");
+        console.log("FEBase: change Single Registered Fencer, creating new registered list using ",itm);
         var newlist = {};
         Object.keys(this.state.registered).map((key) => {
             var fencer = this.state.registered[key];
             if (fencer.id == itm.id) {
-                console.log("replacing newlist with new fencer data ",itm);
+                console.log("FEBase: replacing newlist with new fencer data ",itm);
                 newlist[key] = itm;
             }
             else {
                 newlist[key] = fencer;
             }
         });
-        console.log("updating state after registered change");
+        console.log("FEBase: updating state after registered change");
         this.setState({ registered: newlist });
     }
 
@@ -101,29 +106,29 @@ export default class FEBase extends React.Component {
     }
 
     doGetRegistrations = (cid, doclear) => {
-        console.log("getting registrations");
         return registrations(0, 10000, { country: cid, event: this.props.item.id })
-            .then((cmp) => {
-                console.log("setting registrations of "+cid + ": " +cmp.data.list.length);
-                // filter out all fencers for the active registrations
-                if(cmp.data.list) {
-                    var allfencers={};
-                    if(!doclear) {
-                        allfencers = this.state.registered;
-                    }
-                    cmp.data.list.map((itm) => {
-                        var fid = itm.fencer;
-                        var key="k"+fid;
-                        if (!allfencers[key]) {
-                            var obj = this.adjustFencerData(itm.fencer_data);
-                            allfencers[key] = obj;
-                        }
-                        delete itm.fencer_data;
-                        allfencers[key].registrations.push(itm);
-                    });
-                    this.setState({registrations: cmp.data.list, registered: allfencers});
+            .then((cmp) => this.parseRegistrations(cmp.data.list,doclear));
+    }
+
+    parseRegistrations = (registrations, doclear) => {
+        // filter out all fencers for the active registrations
+        if (registrations) {
+            var allfencers = {};
+            if (!doclear) {
+                allfencers = this.state.registered;
+            }
+            registrations.map((itm) => {
+                var fid = itm.fencer;
+                var key = "k" + fid;
+                if (!allfencers[key]) {
+                    var obj = this.adjustFencerData(itm.fencer_data);
+                    allfencers[key] = obj;
                 }
+                delete itm.fencer_data;
+                allfencers[key].registrations.push(itm);
             });
+            this.setState({ registrations: registrations, registered: allfencers });
+        }
     }
 
     onCountrySelect = (val) => {
@@ -133,18 +138,20 @@ export default class FEBase extends React.Component {
     }
 
     countryHeader = () => {
-        console.log("generating country header for "+this.state.country);
+        var countries=this.props.countries.slice();
+        // add an Organisation at the top to allow all organisation-role fencers
+        countries.splice(0,0,{id:-1,name:'Organisation'});
         var country = (
             <div className='row'>
               <div className='col-4 vertcenter'>Select a country:</div>
               <div className='col-2'>
-                <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.state.country} options={this.props.countries} onChange={(e) => this.onCountrySelect(e.value)} />
+                <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.state.country} options={countries} onChange={(e) => this.onCountrySelect(e.value)} />
               </div>
               <div className='col-6'></div>
             </div>
         );
 
-        if (evfranking.eventcap == "hod") {
+        if (is_hod()) {
             country = (
                 <div className='row'>
                     <div className='col-12 textcenter'>

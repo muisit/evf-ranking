@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Fencer extends Base {
     public $table = "TD_Fencer";
@@ -53,8 +53,8 @@
         "fencer_picture" => array("rules" => "enum=Y,N,A,R")
     );
 
-    public function __construct($id=null) {
-        parent::__construct($id);
+    public function __construct($id=null,$forceload=false) {
+        parent::__construct($id,$forceload);
         $this->rules["fencer_dob"]["rule"]="date|lt=".strftime('%F',strtotime(time() - 20*365*24*60*60));
     }
 
@@ -101,19 +101,15 @@
 
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
         $qb = $this->select('TD_Fencer.*, c.country_name')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
-        ->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
-        error_log("calling filter for querybuilder");
+            ->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);
         return $qb->get();
     }
 
     public function count($filter,$special=null) {
-        $qb = $this->select("count(*) as cnt");
+        $qb = $this->numrows();
         $this->addFilter($qb,$filter,$special);
-        $result = $qb->get();
- 
-        if(empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $qb->count();
     }
 
     public function allByName($lastname,$firstname) {

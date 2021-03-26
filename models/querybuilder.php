@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class QueryBuilder {
     public function __construct($model, $issub=false) {
@@ -42,61 +42,22 @@
     public function delete() {
         if($this->_issub) return "";
         $sql = "DELETE FROM ".$this->_from;
-
-        if(sizeof($this->_where_clauses)) {
-            $first=true;
-            foreach($this->_where_clauses as $c) {
-                if($first) {
-                    $first=false;
-                    $sql.=" WHERE ".$c[1];
-                }
-                else {
-                    $sql .= ' '.$c[0] . ' '.$c[1];
-                }
-            }
-        }
-
+        $sql .= $this->buildClause("where");
         return $this->_model->prepare($sql,$this->_where_values);
     }
 
     public function update() {
-        if($this->_issub) return "";
+        if($this->_issub || sizeof($this->_select_fields) == 0) return "";
         $sql = "UPDATE ".$this->_from;
-        
-        if(sizeof($this->_joinclause)) {
-            foreach($this->_joinclause as $jc) {
-                $sql.= " ".$jc["dir"]." JOIN ".$jc["tab"]." ".$jc['al']." ON ".$jc['cl'];
-            }
-        }
-
-        $sql.=" SET ";
-        $first=true;
-        foreach($this->_select_fields as $f=>$n) {
-            $id=uniqid();
-            if(!$first) $sql.=", ";
-            $sql.=$n."={$id}";
-            $first=false;
-            $this->_where_values[$id]=$n;
-        }
-
-        if(sizeof($this->_where_clauses)) {
-            $first=true;
-            foreach($this->_where_clauses as $c) {
-                if($first) {
-                    $first=false;
-                    $sql.=" WHERE ".$c[1];
-                }
-                else {
-                    $sql .= ' '.$c[0] . ' '.$c[1];
-                }
-            }
-        }
-
+        $sql .= $this->buildClause("join");
+        $sql .= $this->buildClause("set");
+        $sql .= $this->buildClause("where");
         return $this->_model->prepare($sql,$this->_where_values);
     }
 
     public function count() {
-        $result = $this->_doget();
+        $sql = $this->_doget();
+        $result = $this->_model->prepare($sql, $this->_where_values);
         if(empty($result) || !is_array($result)) return 0;
         return intval($result[0]->cnt);
     }
@@ -117,60 +78,105 @@
             .implode(',', array_keys($this->_select_fields))
             ." FROM ".$this->_from;
 
-        if(sizeof($this->_joinclause)) {
-            foreach($this->_joinclause as $jc) {
-                $sql.= " ".$jc["dir"]." JOIN ".$jc["tab"]." ".$jc['al']." ON ".$jc['cl'];
-            }
-        }
-        if(sizeof($this->_where_clauses)) {
+        $sql .= $this->buildClause("join");
+        $sql .= $this->buildClause("where");
+        $sql .= $this->buildClause("groupby");
+        $sql .= $this->buildClause("having");
+        $sql .= $this->buildClause("orderby");
+        $sql .= $this->buildClause("limit");
+        return $sql;
+    }
+
+    private function buildClause($clausename, $skipSyntax=false) {
+        $retval="";
+        switch($clausename) {
+        case 'set':
             $first=true;
-            foreach($this->_where_clauses as $c) {
+            foreach($this->_select_fields as $f=>$n) {
+                $id=uniqid();
                 if($first) {
-                    $first=false;
-                    $sql.=" WHERE ".$c[1];
+                    $retval = " SET ";
                 }
                 else {
-                    $sql .= ' '.$c[0] . ' '.$c[1];
+                    $retval.=", ";
+                }
+                if($n === null) {
+                    $retval.="$f=NULL";
+                }
+                else {
+                    $retval.=$f."={".$id."}";
+                    $this->_where_values[$id]=$n;
+                }
+                $first = false;
+            }
+            break;
+        case 'join':
+            if(sizeof($this->_joinclause)) {
+                foreach($this->_joinclause as $jc) {
+                    $retval.= " ".$jc["dir"]." JOIN ".$jc["tab"]." ".$jc['al']." ON ".$jc['cl'];
                 }
             }
+            break;
+        case 'where':
+            if(sizeof($this->_where_clauses)) {
+                $first=true;
+                foreach($this->_where_clauses as $c) {
+                    if($first) {
+                        $first=false;
+                        if(!$skipSyntax) $retval.=" WHERE ";
+                        $retval.=$c[1];
+                    }
+                    else {
+                        $retval .= ' '.$c[0] . ' '.$c[1];
+                    }
+                }
+            }
+            break;
+        case 'groupby':
+            if(sizeof($this->_groupbyclause)) {
+                $retval = " GROUP BY ".implode(',',$this->_groupbyclause);
+            }
+            break;
+        case 'having':
+            if (sizeof($this->_havingclause)) {
+                $retval = " HAVING ".implode(',',$this->_havingclause);
+            }
+            break;
+        case 'orderby':
+            if (sizeof($this->_orderbyclause)) {
+                $retval= " ORDER BY ".implode(',',$this->_orderbyclause);
+            }
+            break;
+        case 'limit':
+            if(!empty($this->_limit) && intval($this->_limit) > 0) {
+                $retval .= " LIMIT ".intval($this->_limit);
+            }
+            if(!empty($this->_offset)) {
+                $retval .= " OFFSET ".intval($this->_offset);
+            }
+            break;
         }
-
-        if(sizeof($this->_groupbyclause)) {
-            $sql.=" GROUP BY ".implode(',',$this->_groupbyclause);
-        }
-        if(sizeof($this->_havingclause)) {
-            $sql.=" HAVING ".implode(',',$this->_havingclause);
-        }
-        if(sizeof($this->_orderbyclause)) {
-            $sql.=" ORDER BY ".implode(',',$this->_orderbyclause);
-        }
-        if(!empty($this->_limit) && intval($this->_limit) > 0) {
-            $sql .= " LIMIT ".intval($this->_limit);
-        }
-        if(!empty($this->_offset)) {
-            $sql .= " OFFSET ".intval($this->_offset);
-        }
-        return $sql;
+        return $retval;
     }
 
     private function _dosub() {
         //error_log("is subclause builder");
         $sql="";
-        if(sizeof($this->_where_clauses)) {
-            $first=true;
-            foreach($this->_where_clauses as $c) {
-                if($first) {
-                    $first=false;
-                    $sql.=$c[1];
-                }
-                else {
-                    $sql .= ' '.$c[0] . ' '.$c[1];
-                }
-            }
+
+        // allow SELECT in case of exists() clause
+        if(!empty($this->_from)) {
+            $sql = "SELECT "
+                . implode(',', array_keys($this->_select_fields))
+                . " FROM " . $this->_from;
+
+            $sql .= $this->buildClause("join");
         }
-        $this->_model->_where_clauses[]=array('AND','('.$sql.')');
-        $this->_model->_where_values=array_merge($this->_model->_where_values, $this->_where_values);
-        return $this->_model;
+
+        // regular WHERE subclause, but without the keyword if we don't have a from
+        $sql .= $this->buildClause("where",empty($this->_from));
+        // model is a QueryBuilder
+        $this->_model->_where_values = array_merge($this->_model->_where_values, $this->_where_values);
+        return $sql;
     }
 
     private $_select_fields=array();
@@ -220,54 +226,44 @@
     private $_where_clauses=array();
     private $_where_values=array();
     public function where($field,$comparison=null,$clause=null) {
+        return $this->andor_where($field,$comparison,$clause,"AND");
+    }
+
+    private function andor_where($field,$comparison,$clause,$andor) {
         if(empty($clause)) {
-            if(empty($comparison)) {
+            // if clause is null, but comparison is = or <>, compare with NULL
+            if (empty($comparison) || in_array($comparison, array("=", "<>"))) {
                 if(is_array($field)) {
                     foreach($field as $k=>$v) {
-                        $this->_where($k,'=',$v,"AND");
+                        $this->_where($k,'=',$v,$andor);
                     }
                 }
-                else if(is_callable($field)) {
-                    //error_log('where clause is a callable');
-                    $qb=$this->sub();
-                    //error_log("calling where clause");
-                    ($field)($qb);
-                    $qb->get();
-                }
                 else {
-                    // case where we provide a complete clause
-                    $this->_where_clauses[]=array("AND",$field);                    
+                    $this->_where($field, $comparison, $clause, $andor);
                 }
             }
             else {
-                $this->_where($field,'=',$comparison,"AND");
+                // where(field,value) => where(field,=,value)
+                $this->_where($field,'=',$comparison,$andor);
             }
         }
         else {
-            $this->_where($field,$comparison,$clause,"AND");
+            $this->_where($field,$comparison,$clause,$andor);
         }
         return $this;
     }
 
     public function or_where($field,$comparison=null,$clause=null) {
-        if(empty($clause)) {
-            if(empty($comparison)) {
-                if(is_array($field)) {
-                    foreach($field as $k=>$v) {
-                        $this->_where($k,'=',$v,"OR");
-                    }
-                }
-                else {
-                    $this->_where_clauses[]=array("OR",$field." IS NOT NULL");
-                }
-            }
-            else {
-                $this->_where($field,'=',$comparison,"OR");
-            }
-        }
-        else {
-            $this->_where($field,$comparison,$clause,"OR");
-        }
+        return $this->andor_where($field, $comparison, $clause, "OR");
+    }
+
+    public function where_in($field, $values) {
+        $this->_where($field,"in",$values);
+        return $this;
+    }    
+
+    public function where_exists($callable, $andor="AND") {
+        $this->_where($callable, "exists",null,$andor);
         return $this;
     }
 
@@ -278,10 +274,45 @@
             }
             $this->_where_clauses[]=array($andor,"$field IN $clause");
         }
+        else if(strtolower($comparison) == "exists") {
+            if (is_callable($field)) {
+                $qb = $this->sub();
+                ($field)($qb);
+                $sql = $qb->get();
+                $this->_where_clauses[] = array($andor, "exists(".$sql.")");
+            }
+        }
+        else if(is_callable($field) && empty($comparison) && empty($clause)) {
+            $qb = $this->sub();
+            //error_log("calling where clause");
+            ($field)($qb);
+            $sql = $qb->get();
+            $this->_where_clauses[] = array($andor, "(" . $sql . ")");   
+        }
         else {
-            $id=uniqid();
-            $this->_where_values[$id]=$clause;
-            $this->_where_clauses[]=array($andor,$field.$comparison.'{'.$id.'}');
+            if($clause === null) {
+                // this could be the case where we compare to NULL
+                // see if the query contains a space or a = sign. 
+                if(strpbrk($field," =") === false) {
+                    // regular field, compare to null
+                    $this->_where_clauses[] = array($andor, "$field is NULL");
+                }
+                else {
+                    $this->_where_clauses[] = array($andor, $field);
+                }
+            }
+            else if($clause === null && $comparison == "<>") {
+                $this->_where_clauses[]=array($andor,"$field is not NULL");
+            }
+            else if($clause === null && $comparison == "=") {
+                $this->_where_clauses[] = array($andor, "$field is NULL");
+            }
+            else if($clause !== null) {
+                $id=uniqid();            
+                $this->_where_values[$id]=$clause;
+                $this->_where_clauses[]=array($andor,$field.$comparison.'{'.$id.'}');
+            }
+            // else clause is null does not make sense for any other comparison
         }
     }
 

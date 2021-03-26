@@ -25,37 +25,31 @@
  */
 
 
- namespace EVFRanking;
+namespace EVFRanking\Models;
 
- class EventType extends Base {
-
-    public function __construct($id=null) {
-        $this->table = "TD_Event_Type";
-        $this->pk="event_type_id";
-        $this->fields=array("event_type_id","event_type_abbr","event_type_name","event_type_group");
-        parent::__construct($id);
-    }
-
-    public function export($result=null) {
-        if(empty($result)) {
-            $result=$this;
-        }
-        return array(
-            "id" => $result->event_type_id,
-            "name" => $result->event_type_name,
-            "abbr" => $result->event_type_abbr,
-            "group" => $result->event_type_group,
-        );
-    }
+class EventType extends Base {
+    public $table = "TD_Event_Type";
+    public $pk = "event_type_id";
+    public $fields = array("event_type_id","event_type_abbr","event_type_name","event_type_group");
+    public $fieldToExport = array(
+        "event_type_id" => "id",
+        "event_type_name" => "name",
+        "event_type_abbr" => "abbr",
+        "event_type_group" => "group"
+    );
+    public $rules = array(
+        "event_type_id" => "skip",
+        "event_type_name" => "trim",
+        "event_type_abbr" => "trim",
+        "event_type_group" => "trim"
+    );     
 
     public function selectAll($offset=0,$pagesize=0,$filter=null,$sort=null,$special) {
         return $this->select('*')->orderBy('event_type_name')->get();
     }
 
     public function count($filter=null) {
-        $result = $this->select("count(*) as cnt")->get();
-        if(empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $this->numrows()->count();
     }
  }
  

@@ -25,8 +25,7 @@
  */
 
 
-namespace EVFRanking;
-require_once(__DIR__ . '/baselib.php');
+namespace EVFRanking\Lib;
 
 class Activator extends BaseLib {
      const DBVERSION="1.0.0";
@@ -36,13 +35,20 @@ class Activator extends BaseLib {
         if ( $ts ) {
             wp_unschedule_event( $ts, 'evfranking_cron_hook' );
         }
+        $ts = wp_next_scheduled( 'evfranking_cron_hook_10m' );
+        if ( $ts ) {
+            wp_unschedule_event( $ts, 'evfranking_cron_hook_10m' );
+        }
     }
 
     public function activate() {
         if ( ! wp_next_scheduled( 'evfranking_cron_hook' ) ) {
             $date = strftime('%Y-%m-%d',time());
             $ts = strtotime($date) + (24+4) * 60 * 60; // schedule for 4 in the morning, starting 24 hours after the start of this day
-            wp_schedule_event( time(), 'daily', 'evfranking_cron_hook' );
+            wp_schedule_event( $ts, 'daily', 'evfranking_cron_hook' );
+        }
+        if ( ! wp_next_scheduled( 'evfranking_cron_hook_10m' ) ) {
+            wp_schedule_event( time(), '1_second', 'evfranking_cron_hook_10m' );
         }
     }
 
@@ -61,8 +67,9 @@ class Activator extends BaseLib {
         }
     }
 
+    // daily call
     public function cron() {
-        $model = $this->loadModel("Ranking");
+        $model = new \EVFRanking\Models\Ranking();
 
         // remove the old tournaments from the ranking automatically
         $model->unselectOldTournaments();
@@ -70,4 +77,31 @@ class Activator extends BaseLib {
         // then rebuild the rankings
         $model->calculateRankings();
     }
- }
+
+    // every 10 minutes
+    public function cron_10() {
+        $model = new \EVFRanking\Models\Accreditation();
+        $model->checkDirtyAccreditations();
+
+        // run the Queue as long as we have a time limit and it doesn't take longer than, say, 9 minutes
+        $start=time();
+        $delta=10*60; // total time we spend
+        $lastjob=0; // time for the last job
+        $queue = new \EVFRanking\Models\Queue();
+        while(time() < ($start + $delta - $lastjob)) {
+            $qstart=time();
+            // pass the estimation of the time we have left
+            if(!$queue->tick(($start+$delta) - time())) {
+                // end of the queue reached
+                break;
+            }
+            $qend=time();
+            // make sure we take looooong running jobs into account
+            // in our estimation of the worst-case delta time for
+            // our next job
+            if(($qend - $qstart) > $lastjob) {
+                $lastjob=$qend-$qstart;
+            }
+        }
+    }
+}

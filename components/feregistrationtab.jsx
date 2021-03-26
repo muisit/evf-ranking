@@ -1,7 +1,7 @@
 import { fencers } from "./api.js";
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { InputText } from 'primereact/inputtext';
-import { date_to_category_num, format_date } from './functions';
+import { date_to_category_num, format_date, is_organiser, is_sysop, is_hod, is_valid } from './functions';
 import React from 'react';
 import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
@@ -27,7 +27,11 @@ export default class FERegistrationTab extends FEBase {
         var thistarget=evt.target.value;
         console.log("target is ",thistarget);
         if(thistarget.length > 0) {
-            fencers(0, 10000, { name: evt.target.value, country: this.state.country }, "nf")
+            var filters = { name: evt.target.value};
+            if(this.state.country_item && is_valid(this.state.country_item.id)) {
+                filters.country=this.state.country;
+            }
+            fencers(0, 10000, filters, "nf")
                 .then((json) => {
                     if(this.state.fencer == thistarget) {
                         var fencers=[];
@@ -84,9 +88,9 @@ export default class FERegistrationTab extends FEBase {
 
     onFencerSelection = (tp, itm) => {
         if (tp == 'change') {
-            console.log("changing single registered fencer ",itm);
+            console.log("FERegistrationTab: changing single registered fencer ",itm);
+            this.setState({ selected_fencer: itm });
             this.changeSingleRegisteredFencer(itm);
-            this.setState({selected_fencer: itm});
         }
         else if (tp == 'close') {
             this.setState({ displaySelectDialog: false });
@@ -99,7 +103,6 @@ export default class FERegistrationTab extends FEBase {
     onFencerSelect = (itm) => {
         // newly suggested fencers do not have a registration list yet
         // unless they were already enrolled
-        console.log("onfencerselect ",itm);
         if (!itm.registrations) itm.registrations=[];
         var key = "k" + itm.id;
         var registered = Object.assign({}, this.state.registered);
@@ -128,10 +131,14 @@ export default class FERegistrationTab extends FEBase {
 
         var mycat = null;
         var events=[];
-        // HoD can only set HoD roles, the rest can set anything
+
+        // filter out valid roles for the capabilities
         var roles = this.props.roles.filter((itm) => {
-            return evfranking.eventcap !== "hod" || parseInt(itm.type) == 1;
+            if(is_hod() && parseInt(itm.type) == 1) return true;
+            if(is_organiser() && parseInt(itm.type) == 2) return true;
+            if(is_sysop()) return true;
         });
+
         if (fencer && this.state.sideevents && this.props.item) {
             mycat = date_to_category_num(fencer.birthday, this.props.item.opens);
 
@@ -150,6 +157,7 @@ export default class FERegistrationTab extends FEBase {
                     if (ev.category && ev.weapon) {
                         if (ev.category.value == mycat && ev.weapon.gender == fencer.gender) {
                             ev.is_athlete_event = true;
+                            ev.default_role="0"; // default role for athlete events is athlete
                         }
                     }
                 }
@@ -164,7 +172,6 @@ export default class FERegistrationTab extends FEBase {
     }
 
     renderContent() {
-
         // map participants per side event, so we can show totals of participants
         var pcount={"all":0};
         var acount={"all":0};
@@ -177,7 +184,6 @@ export default class FERegistrationTab extends FEBase {
         });
         Object.keys(this.state.registered).map((key) => {
             var fencer=this.state.registered[key];
-            console.log("fencer has registrations ",fencer.registrations);
             if(fencer.registrations && fencer.registrations.length > 0) {
                 pcount["all"]+=1;
                 var isathlete=false;
@@ -185,7 +191,6 @@ export default class FERegistrationTab extends FEBase {
                     var skey = "s" + reg.sideevent;
                     if(sevents[skey]) {
                         if(parseInt(sevents[skey].competition_id) > 0 && parseInt(reg.role) == 0) {
-                            console.log("event has a competition and participant has an athlete role");
                             isathlete=true;
                             acount[skey]+=1;
                         }
@@ -198,6 +203,8 @@ export default class FERegistrationTab extends FEBase {
             }
         });
 
+        var addcountries=[this.state.country_item];
+
         return (
             <div className='row topmargin'>
                 <div className='col-4 vertcenter'>Search fencers:</div>
@@ -209,23 +216,31 @@ export default class FERegistrationTab extends FEBase {
                         <div className='subtitle center'>No fencers found</div>
                     )}
                     {this.state.suggestions.length > 0 && (
-                        <ParticipantList fencers={this.state.suggestions} onSelect={this.onFencerSelect} roles={this.props.roles}/>
+                        <ParticipantList fencers={this.state.suggestions} onSelect={this.onFencerSelect}/>
                     )}
                     <div className="right" onClick={this.addFencer}>Add New Fencer</div>
-                    <FencerDialog country={this.props.country} countries={this.props.countries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
-                    <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} roles={this.props.roles}  event={this.props.item}/>
+                    <FencerDialog country={this.props.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
+                    <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} roles={this.props.roles}  event={this.props.item} country={this.state.country_item}/>
                 </div>
                 <div className='col-12'>
+                    {(is_hod() && is_valid(this.state.country_item.id)) && (
                     <Accordion id="evfrankingacc" activeIndex={0}>
-                        <AccordionTab header={"All Participants (" + pcount["all"] + "/" + acount["all"] + ")"}>
-                            <ParticipantList camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories}/>
+                        <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
+                            <ParticipantList roles={this.props.roles} country={this.state.country_item} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories}/>
                         </AccordionTab>
                         {this.state.sideevents.map((itm,idx) => (
-                            <AccordionTab header={itm.title + " (" + pcount["s" + itm.id] + (parseInt(itm.competition_id)> 0 ? ("/" + acount["s"+itm.id]) : "") + ")"} key={idx}>
+                            <AccordionTab header={itm.title + " (" + (is_valid(itm.competition_id) ? acount["s" + itm.id] : pcount["s" + itm.id]) + ")"} key={idx}>
                                 <ParticipantList event={itm} fencers={this.state.registered} onSelect={this.onFencerSelect} roles={this.props.roles} competitions={this.state.competitions} categories={this.props.categories}/>
                             </AccordionTab>
                         ))}
-                    </Accordion>
+                    </Accordion>)}
+                    {(is_organiser() || is_sysop()) && (
+                    <Accordion id="evfrankingacc" activeIndex={0}>
+                            <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
+                                Test
+                            <ParticipantList roles={this.props.roles} country={this.state.country_item} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories} />
+                            </AccordionTab>
+                    </Accordion>)}
                 </div>
             </div>
         );

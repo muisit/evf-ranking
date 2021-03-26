@@ -111,11 +111,14 @@ then
     echo "rm -rf $DEPLOYDIR"
     echo "mkdir -p $DEPLOYDIR/dist"
     echo "mkdir -p $DEPLOYDIR/models"
+    echo "mkdir -p $DEPLOYDIR/lib"
+    echo "mkdir -p $DEPLOYDIR/jobs"
     echo "mkdir -p $DEPLOYDIR/css"
 else
     rm -rf $DEPLOYDIR
     mkdir -p $DEPLOYDIR/models
     mkdir -p $DEPLOYDIR/lib
+    mkdir -p $DEPLOYDIR/jobs
     mkdir -p $DEPLOYDIR/dist
     mkdir -p $DEPLOYDIR/css
 fi
@@ -146,6 +149,15 @@ do
         echo "cp -v $i $DEPLOYDIR/lib"
     else
         cp -v $i $DEPLOYDIR/lib
+    fi
+done
+for i in `find ./ -type f -path ./jobs/\*`
+do
+    if [[ "x$DRY" = "x1" ]]
+    then
+        echo "cp -v $i $DEPLOYDIR/jobs"
+    else
+        cp -v $i $DEPLOYDIR/jobs
     fi
 done
 

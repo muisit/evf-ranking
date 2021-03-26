@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class EventRole extends Base {
     public $table = "TD_Event_Role";
@@ -47,14 +47,16 @@
     );
 
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
+        global $wpdb;
         return $this->select('*, u.user_nicename')
-        ->join("wp_users", "u", "TD_Event_Role.user_id=u.ID")
+        ->join($wpdb->base_prefix."users", "u", "TD_Event_Role.user_id=u.ID")
         ->offset($offset)->limit($pagesize)->orderBy(array("TD_Event_Role.id"))->get();
     }
 
     public function listByEvent($event) {
+        global $wpdb;
         return $this->select('*, u.user_nicename')
-        ->join("wp_users", "u", "TD_Event_Role.user_id=u.ID")
+        ->join($wpdb->base_prefix."users", "u", "TD_Event_Role.user_id=u.ID")
         ->where("event_id",intval($event))->orderBy(array("TD_Event_Role.id"))->get();
     }
 

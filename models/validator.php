@@ -25,7 +25,7 @@
  */
 
 
-namespace EVFRanking;
+namespace EVFRanking\Models;
 
 class Validator {
     public $model=null;
@@ -63,6 +63,8 @@ class Validator {
             $exp = isset($inToOut[$field]) ? $inToOut[$field] : $field;
             $allgood = $this->validateField($exp, $value) && $allgood;
         }
+        // TODO: should we run instead over all fieldToExport so we catch
+        // all the required fields as well?
 
         if(!$allgood) {
             if(!is_array($this->errors) || !sizeof($this->errors)) {
@@ -324,27 +326,26 @@ class Validator {
             if($msg === null) $msg = "{label} should be one of ".json_encode($params);
             break;
         case 'model':
-            require_once(__DIR__ . "/".strtolower($params[0]).".php");
+            error_log("validate for model value $value");
             try {
                 $id=intval($value);
-                $name = "\\EVFRanking\\".$params[0];
+                $name = "\\EVFRanking\\Models\\".$params[0];
                 $attrmodel = new $name($id);
-                $attrmodel->load();
-
-                if($attrmodel->{$attrmodel->pk} != $id) {
-                    $retval=false;                    
+                if(!$attrmodel->exists()) {
+                    $value=null;
+                    $retval=false;
                 }
                 if($msg === null) $msg = "Please select a valid value for {label}";
             }
             catch(Exception $e) {
                 if($msg === null) $msg = "{label} caused internal model error";
+                $value=null;
                 $retval=false;
             }
             break;
         case 'contains':
             // value is a list of contained models
-            require_once(__DIR__ . "/".strtolower($params[0]).".php");
-            $name = "\\EVFRanking\\".$params[0];
+            $name = "\\EVFRanking\\Models\\".$params[0];
             try {
                 $lst=array();
                 foreach($value as $objvals) {

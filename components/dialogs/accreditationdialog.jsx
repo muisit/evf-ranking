@@ -134,7 +134,7 @@ export default class AccreditationDialog extends React.Component {
 </div>);
 
         return (<Dialog header="Approve Picture" position="center" visible={this.props.display} className="accreditation-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
-    <h5>{ this.props.value.name }, {this.props.value.firstname }</h5>
+    <h5>{ this.props.value.name }, {this.props.value.firstname }, {this.props.value.country_name}</h5>
     <h5>Birthyear: { this.props.value.birthyear } Gender: {this.props.value.gender == 'M' ? 'Man': 'Woman'}</h5>
     <div className='container'>
         <div className='row'>

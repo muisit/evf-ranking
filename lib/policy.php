@@ -25,17 +25,16 @@
  */
 
 
-namespace EVFRanking;
+namespace EVFRanking\Lib;
 
-require_once(__DIR__.'/baselib.php');
 class Policy extends BaseLib {
     public function feEventToBeEvent($id) {
-        $model=$this->loadModel("Event");
+        $model=new \EVFRanking\Models\Event();
         return $model->findByFeId($id);
     }
 
     public function findEvent($id) {
-        $model = $this->loadModel("Event");
+        $model=new \EVFRanking\Models\Event();
         return $model->get($id);
     }
 
@@ -49,7 +48,7 @@ class Policy extends BaseLib {
     public function hodCountry() {
         $user = wp_get_current_user();
         if (!empty($user)) {
-            $model = $this->loadModel("Registrar");
+            $model=new \EVFRanking\Models\Registrar();
             $registrar = $model->findByUser($user->ID);
             if($registrar != null) {
                 return $registrar->country_id;
@@ -93,11 +92,6 @@ class Policy extends BaseLib {
                 $sid = isset($data["filter"]["sideevent"]) ? $data["filter"]["sideevent"] : null;
             }
 
-            // empty sid is allowed for list to retrieve all registrations of the entire event
-            if (empty($sid) && $action == "save") {
-               $evflogger->log("empty sid (1)");
-                return false;
-            }
             $eid = isset($data["model"]["event"]) ? $data["model"]["event"] : null;
             if(empty($eid)) {
                 $eid = isset($data["filter"]["event"]) ? $data["filter"]["event"] : null;
@@ -107,11 +101,13 @@ class Policy extends BaseLib {
                 return false;
             }
 
-            $smodel = $this->loadModel("SideEvent");
-            $sideevent = $smodel->get($sid);
+            $sideevent = new \EVFRanking\Models\SideEvent($sid);
+            if(!$sideevent->exists()) {
+                $sideevent=null;
+            }
 
-            $emodel = $this->loadModel("Event");
-            $event = $emodel->get($eid);
+            $event = new \EVFRanking\Models\Event($eid);
+            $event->load();
 
             // events don't match, bail
             if(!empty($sideevent) && $sideevent->event_id != $event->getKey()) {
@@ -125,24 +121,18 @@ class Policy extends BaseLib {
                 $evflogger->log("empty rid (25)");
                 return false;
             }
-            $rmodel=$this->loadModel("Registration");
-            $registration = $rmodel->get($rid);
-            if(empty($registration)) {
+            $registration = new \EVFRanking\Models\Registration($rid);
+            if(!$registration->exists()) {
                 $evflogger->log("no such registration (17)");
                 // it is allowed to delete a non-existing item
                 return true;
             }
-            $smodel = $this->loadModel("SideEvent");
-            $sideevent = $smodel->get($registration->registration_event);
-            if (empty($registration)) {
-                $evflogger->log("invalid registration (31)");
-                return false;
-            }
-            $emodel = $this->loadModel("Event");
-            $event = $emodel->get($sideevent->event_id);
+
+            $event = new \EVFRanking\Models\Event($registration->registration_mainevent);
+            $event->load();
         }
 
-        if ($event === null) {
+        if (empty($event) || !$event->exists()) {
             $evflogger->log("empty event (3)");
             return false;
         }
@@ -155,7 +145,7 @@ class Policy extends BaseLib {
         // eventcaps will check for the state of the event (open, closed)
         $caps = $event->eventCaps();
 
-        $isorganiser = in_array($caps, array("organiser", "accreditation", "cashier", "registrar"));
+        $isorganiser = in_array($caps, array("system","organiser", "accreditation", "cashier", "registrar"));
         $ishod = $caps == "hod" && $hodcountry != -1;
 
         // not privileged: no business here
@@ -173,7 +163,7 @@ class Policy extends BaseLib {
                 $evflogger->log("no event in filter (5)");
                 return false; // invalid filter setting
             }
-            if ($data["filter"]["event"] != $eid) {
+            if ($data["filter"]["event"] != $event->getKey()) {
                 $evflogger->log("filter event does not match model event (6)");
                 return false; // filter does not match
             }
@@ -200,7 +190,7 @@ class Policy extends BaseLib {
         }
         else if($action == "save") {
             // save is only allowed for HoD, organiser, registrar and cashier
-            if (!in_array($caps, array("organiser", "registrar", "hod","cashier"))) {
+            if (!in_array($caps, array("system","organiser", "registrar", "hod","cashier"))) {
                 $evflogger->log("caps $caps are incorrect (13)");
                 return false;
             }
@@ -211,9 +201,8 @@ class Policy extends BaseLib {
             }
             // for save actions, make sure the country_id setting is correct
             // we need to check this on the fencer that is going to be saved
-            $fencer = $this->loadModel("Fencer");
-            $fencer = $fencer->get($data["model"]["fencer"]);
-            if(empty($fencer)) {
+            $fencer = new \EVFRanking\Models\Fencer($data["model"]["fencer"]);
+            if(!$fencer->exists()) {
                 $evflogger->log("invalid fencer for save (14)");
                 return false; // no such fencer
             }
@@ -237,14 +226,13 @@ class Policy extends BaseLib {
         }
         else if($action == "delete") {
             // delete is only allowed for HoD, organiser and registrar
-            if(!in_array($caps, array("organiser","registrar","hod"))) {
+            if(!in_array($caps, array("system","organiser","registrar","hod"))) {
                 $evflogger->log("invalid caps $caps for delete (16)");
                 return false;
             }
 
-            $fencer = $this->loadModel("Fencer");
-            $fencer = $fencer->get($registration->registration_fencer);
-            if(empty($fencer)) {
+            $fencer = new \EVFRanking\Models\Fencer($data["model"]["fencer"]);
+            if(!$fencer->exists()) {
                 $evflogger->log("fencer does not exist (18)");
                 return false;
             }

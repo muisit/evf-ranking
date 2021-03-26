@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Base {
 
@@ -43,7 +43,7 @@
     private $_state="new";
     private $_ori_fields=array();
 
-    public function __construct($id=null) {
+    public function __construct($id=null,$forceload=false) {
         $this->_state = "new";
         if(!empty($id)) {
             if(is_array($id) || is_object($id)) {
@@ -52,6 +52,7 @@
             else {
                 $this->{$this->pk} = $id;
                 $this->_state="pending";
+                if($forceload) $this->load();
             }
         }
         if(sizeof($this->fieldToExport) == 0) {
@@ -62,7 +63,7 @@
     }
 
     public function getKey() {
-        return $this->{$this->pk};
+        return intval($this->{$this->pk});
     }
 
     public function setKey($id=null) {
@@ -88,8 +89,13 @@
         return $obj;
     }
 
+    public function exists() {
+        $this->load();
+        return !($this->isNew());
+    }
+
     public function isNew() {
-        return $this->_state == 'new' || $this->{$this->pk} <= 0;
+        return $this->_state == 'new' || $this->getKey() <= 0;
     }
 
     public function load() {
@@ -102,14 +108,14 @@
 
         global $wpdb;
 
-        $pkval = $this->{$this->pk};
+        $pkval = $this->getKey();
         $sql="select * from ".$this->table." where ".$this->pk."=%d";
         $sql = $wpdb->prepare($sql,array($pkval));
         $results = $wpdb->get_results($sql);
 
         $evflogger->log("load returns ".json_encode($results));
         if(empty($results) || sizeof($results) != 1) {
-            $this->{$this->pk} = null;
+            $this->{$this->pk} = -1;
             $this->_state = "new";
         }
         else {
@@ -146,7 +152,7 @@
             }
         }
         $this->_state = "loaded";
-        if(!isset($this->{$this->pk}) ||  $this->{$this->pk} < 0) {
+        if(!isset($this->{$this->pk}) ||  $this->getKey() < 0) {
             $this->_state = "new";
             $this->_ori_fields=array();
         }
@@ -168,11 +174,12 @@
                 error_log("trying an insert of ".json_encode($fieldstosave));
                 $wpdb->insert($this->table,$fieldstosave);
                 $this->{$this->pk} = $wpdb->insert_id;
-                error_log("inserted id is ".$this->{$this->pk});
+                //error_log("inserted id is ".$this->{$this->pk});
             }
             else {
                 error_log("calling update on ".$this->table." for ".json_encode($fieldstosave));
-                $wpdb->update($this->table, $fieldstosave, array($this->pk => $this->{$this->pk}));
+                $retval=$wpdb->update($this->table, $fieldstosave, array($this->pk => $this->getKey()));
+                //error_log("returned value is ".json_encode($retval));
             }
         }
         // save attached objects
@@ -188,7 +195,7 @@
 
     public function identical($other) {
         // if id's match, we're identical
-        if(!$this->isNew() && $this->{$this->pk} == $other->{$this->pk}) {
+        if(!$this->isNew() && $this->getKey() == $other->getKey()) {
             return true;
         }
         // else, compare all fields
@@ -246,13 +253,16 @@
     }
 
     public function delete($id=null) {
-        if($id === null) $id = $this->{$this->pk};
+        if($id === null) $id = $this->getKey();
         global $wpdb;
+        error_log("calling delete for $this->table and id $this->pk = $id");
         $retval = $wpdb->delete($this->table, array($this->pk => $id));
         return ($retval !== FALSE || intval($retval) < 1);
     }
 
     public function __get($key) {
+        // this probably doesn't work like this, as values set on the
+        // object do not invoke the __get and __set methods...
         if(!isset($this->$key) && $this->_state == "pending") {
             $this->load();
         }
@@ -270,12 +280,10 @@
     }
 
     public function select($p=null) {
-        require_once(__DIR__ . '/querybuilder.php');
         $qb=new QueryBuilder($this);
         return $qb->from($this->table)->select($p);
     }
     public function query($p=null) {
-        require_once(__DIR__ . '/querybuilder.php');
         $qb=new QueryBuilder($this);
         return $qb->from($this->table);
     }
@@ -324,6 +332,10 @@
                         $query=str_replace($m,"NULL",$query);
                         $replvals[]=$v;
                     }
+                    else if(is_object($v) && method_exists($v,"getKey")) {
+                        $query=str_replace($m,"%d",$query);
+                        $replvals[]=$v->getKey();
+                    }
                     else {
                         $query=str_replace($m,"%s",$query);
                         $replvals[]="$v";
@@ -341,7 +353,6 @@
 
     public function saveFromObject($obj) {
         //error_log('save from object using data '.json_encode($obj));
-        require_once(__DIR__ . "/validator.php");
         $validator = new Validator($this);
 
         if(!$validator->validate($obj)) {
@@ -357,12 +368,5 @@
         }
         return true;
     }
-
-    public function loadModel($name) {
-        require_once(__DIR__ . "/".strtolower($name).".php");
-        $cname = "\\EVFRanking\\".$name;
-        return $cname;
-    }
-
 }
  

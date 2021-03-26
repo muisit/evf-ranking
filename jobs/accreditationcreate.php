@@ -1,11 +1,11 @@
 <?php
 
 /**
- * EVF-Ranking BaseLib clas
+ * EVF-Ranking AccreditationCreate job clas
  *
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
- * @copyright           2020 Michiel Uitdehaag for muis IT
+ * @copyright           2020-2021 Michiel Uitdehaag for muis IT
  * @licenses            GPL-3.0-or-later
  *
  * This file is part of evf-ranking.
@@ -24,8 +24,20 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace EVFRanking\Lib;
+namespace EVFRanking\Jobs;
 
-class BaseLib {
+class AccreditationCreate extends BaseJob {
+
+    // first argument is an accreditation
+    public function create() {
+        $args= func_get_args();
+        $accreditation = sizeof($args) > 0 ? $args[0] : null;
+        $this->queue->setData("accreditation_id",is_object($accreditation) ? $accreditation->getKey() : intval($accreditation));
+        parent::create();
+    }
+
+    public function run() {
+        parent::run();
+
+    }
 }
-

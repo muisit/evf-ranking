@@ -25,9 +25,8 @@
  */
 
 
-namespace EVFRanking;
+namespace EVFRanking\Lib;
 
-require_once(__DIR__.'/baselib.php');
 class PictureManager extends BaseLib {
 
     public function display($fencer) {
@@ -52,11 +51,11 @@ class PictureManager extends BaseLib {
     }
 
     public function import($fid) {
-        $fencer=$this->loadModel('Fencer');
-        $fencer=$fencer->get($fid);
+        $fencer=new \EVFRanking\Models\Fencer($fid);
+        $fencer->load();
 
         $retval=array();
-        if(!empty($fencer)) {
+        if(!$fencer->isNew()) {
             error_log("fencer found, storing and replacing data");
             $this->createUploadDir("accreditations");
 

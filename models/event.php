@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Event extends Base {
     public $table = "TD_Event";
@@ -69,7 +69,7 @@
     );
     public $rules=array(
         "event_id" => "skip",
-        "event_name" => array("label"=>"Name", "rules"=>"trim|required","message"=>"Name is required"),
+        "event_name" => array("label"=>"Name", "rules"=>"trim|lte=100|required","message"=>"Name is required"),
         "event_open" => array("label"=>"Opens", "rules"=>"date|gt=2000-01-01|lt=2100-01-01|required","message"=>"Opening date is required"),
         "event_registration_open" => array("label"=>"Registration Start", "rules"=>"date|gt=2000-01-01|lt=2100-01-01","message"=>"Registration start date must be a valid date"),
         "event_registration_close" => array("label"=>"Registration Close", "rules"=>"date|gt=2000-01-01|lt=2100-01-01","message"=>"Registration close date must be a valid date"),
@@ -77,19 +77,19 @@
         "event_duration" => array("label"=>"Duration", "rules"=>"int"),
         "event_email" => array("label"=>"E-mail", "rules"=>"email", "message"=>"E-mail address is incorrect"),
         "event_web" => array("label"=>"Website", "rules"=>"url","message"=>"Website address is incorrect"),
-        "event_location" => array("label"=>"Location", "rules"=>"trim"),
+        "event_location" => array("label"=>"Location", "rules"=>"trim|lte=45"),
         "event_country" => array("label"=>"Country", "rules"=>"model=Country","message"=>"Please select a valid country"),
         "event_type" => array("label"=>"Type", "rules"=>"model=EventType", "message"=>"Please select a valid type"),
-        "event_currency_symbol" => array("label"=>"Currency symbol", "rules"=>"trim"),
-        "event_currency_name" => array("label"=>"Currency name", "rules"=>"trim"),
+        "event_currency_symbol" => array("label"=>"Currency symbol", "rules"=>"trim|lte=10"),
+        "event_currency_name" => array("label"=>"Currency name", "rules"=>"trim|lte=30"),
         "event_base_fee"=> array("label"=>"Base fee","rules"=>"float"),
         "event_competition_fee"=> array("label"=>"Competition fee","rules"=>"float"),
-        "event_bank" => array("label"=>"Bank name", "rules"=>"trim"),
-        "event_account_name" => array("label"=>"Bank account", "rules"=>"trim"),
+        "event_bank" => array("label"=>"Bank name", "rules"=>"trim|lte=100"),
+        "event_account_name" => array("label"=>"Bank account", "rules"=>"trim|lte=100"),
         "event_organisers_address" => array("label"=>"Account address", "rules"=>"trim"),
-        "event_iban" => array("label"=>"IBAN number", "rules"=>"trim"),
-        "event_swift" => array("label"=>"SWIFT code", "rules"=>"trim"),
-        "event_reference" => array("label"=>"Account reference", "rules"=>"trim"),
+        "event_iban" => array("label"=>"IBAN number", "rules"=>"trim|lte=40"),
+        "event_swift" => array("label"=>"SWIFT code", "rules"=>"trim|lte=20"),
+        "event_reference" => array("label"=>"Account reference", "rules"=>"trim|lte=255"),
         "event_in_ranking" => array("label"=>"In-Ranking", "rules"=>"bool"),
         "event_factor" => array("label" => "Factor","rules"=>"float"),
         "event_frontend" => array("label"=>"Select a valid, published front-end event", "rules"=>"model=Posts"),
@@ -166,9 +166,8 @@
     }
 
     public function competitions($id=null, $asObject=false) {
-        if($id === null) $id = $this->{$this->pk};
+        if($id === null) $id = $this->getKey();
         // find the competitions belonging to this event
-        require_once(__DIR__ . "/competition.php");
         $model = new Competition();
         $dt = $model->listByEvent($id);
 
@@ -188,10 +187,9 @@
     }
 
     public function sides($id=null, $asObject=false) {
-        if($id === null) $id = $this->{$this->pk};
+        if($id === null) $id = $this->getKey();
         // find the side events belonging to this event
-        $cname=$this->loadModel("SideEvent");
-        $model = new $cname();
+        $model = new SideEvent();
         $dt = $model->listByEvent($id);
 
         $retval = array();
@@ -199,7 +197,7 @@
             foreach ($dt as $c) {
                 if($asObject) {
                     error_log("creating a new side event object based on result");
-                    $retval[] = new $cname($c);
+                    $retval[] = new SideEvent($c);
                 }
                 else {
                     $retval[] = $model->export($c);
@@ -212,8 +210,7 @@
     public function roles($id = null, $asObject = false) {
         if ($id === null) $id = $this->{$this->pk};
         // find the roles belonging to this event
-        $cname = $this->loadModel("EventRole");
-        $model = new $cname();
+        $model = new EventRole();
         $dt = $model->listByEvent($id);
 
         $retval = array();
@@ -221,7 +218,7 @@
             foreach ($dt as $c) {
                 if ($asObject) {
                     error_log("creating a new event role object based on result");
-                    $retval[] = new $cname($c);
+                    $retval[] = new EventRole($c);
                 } else {
                     $retval[] = $model->export($c);
                 }
@@ -230,8 +227,7 @@
         return $retval;
     }
     public function roleOfUser($userid) {
-        $cname = $this->loadModel("EventRole");
-        $model = new $cname();
+        $model = new EventRole();
         return $model->roleOfUser($this->{$this->pk},$userid);
     }
 
@@ -248,25 +244,23 @@
                     $sides["c_".$se->competition_id] = $se;
                 }
             }
-            $wname=$this->loadModel("Weapon");
-            $wmodel=new $wname();
-            $cname=$this->loadModel("Category");
-            $cmodel=new $cname();
+            $wmodel=new Weapon();
+            $cmodel=new Category();
 
             foreach($this->competition_list as $c) {
                 error_log("setting the event ID");
-                $c->competition_event = $this->{$this->pk};
+                $c->competition_event = $this->getKey();
                 $c->save();
 
                 // make sure there is a SideEvent linked to this as well
                 $se=null;
-                if(!isset($sides["c_".$c->{$c->pk}])) {
+                if(!isset($sides["c_".$c->getKey()])) {
                     $se = new SideEvent();
-                    $se->event_id=$this->{$this->pk};
-                    $se->competition_id=$c->{$c->pk};
+                    $se->event_id=$this->getKey();
+                    $se->competition_id=$c->getKey();
                 }
                 else {
-                    $se = $sides["c_".$c->{$c->pk}];
+                    $se = $sides["c_".$c->getKey()];
                 }
 
                 // overwrite the SideEvent details if they were changed on the competition
@@ -299,7 +293,7 @@
             $old = $this->sides(null,true); // this includes any new competitions added above
             foreach($this->sides_list as $c) {
                 error_log("setting the event ID");
-                $c->event_id = $this->{$this->pk};
+                $c->event_id = $this->getKey();
                 $c->save();
 
                 for($i=0;$i<sizeof($old);$i++) {
@@ -323,7 +317,7 @@
             $old = $this->roles(null, true); // this includes any new competitions added above
             foreach ($this->roles_list as $c) {
                 error_log("setting the event ID");
-                $c->event_id = $this->{$this->pk};
+                $c->event_id = $this->getKey();
                 $c->save();
 
                 for ($i = 0; $i < sizeof($old); $i++) {
@@ -366,6 +360,11 @@
         // see if there is an event with this front-end id
         $retval="closed";
 
+        // if the user has manage_registration rights, return it as system role
+        if(current_user_can('manage_registration')) {
+            return "system";
+        }
+
         // if the user has management rights to this specific event, we always show it
         // as manageable, even when it is closed still (or again)
         if (intval($id) > 0) {
@@ -382,8 +381,7 @@
             $retval="open";
 
             // see if the current user is by accident a generic registrar
-            $cname = $this->loadModel("Registrar");
-            $model=new $cname();
+            $model=new Registrar();
             $registrar = $model->findByUser($id);
             if($registrar != null) {
                 error_log("user is a HoD");
@@ -392,5 +390,12 @@
         }
         return $retval;
     }
+
+    // this is similar to SideEvents::registrations except it selects on the overall event
+    public function registrations() {
+        $qb = SideEvent::BaseRegistrationSelection($this);
+        return $qb->where("TD_Registration.registration_mainevent", $this->getKey())->get();
+    }
+
  }
  

@@ -9,6 +9,7 @@ export function format_currency(val) {
 }
 
 export function format_date(dt) {
+    console.log("formatting date ",dt);
     if(!dt.getDate) dt=new Date(dt);
     return dt.getFullYear() +
         '-' + pad(dt.getMonth() + 1) +
@@ -70,4 +71,54 @@ export function jsonOutput(json) {
               {JSON.stringify(json,null,2)}
             </pre>
     </div>);
+}
+
+export function is_valid(id) {
+    id=parseInt(id);
+    return !isNaN(id) && id>0;
+}
+
+export function parse_net_error(err) {
+    if (   err.response 
+        && err.response.data
+        && err.response.data.messages 
+        && err.response.data.messages.length) {
+        var txt = "";
+        for (var i = 0; i < err.response.data.messages.length; i++) {
+            txt += err.response.data.messages[i] + "\r\n";
+        }
+        alert(txt);
+    }
+    else {
+        alert('Error storing the data. Please try again');
+    }    
+}
+
+// convenience functions to check on the event-related capabilities
+export function is_hod() {
+    return evfranking.eventcap == "hod";
+}
+
+export function is_organiser() {
+    return ["system","organiser","cashier","accreditation"].includes(evfranking.eventcap);
+}
+
+export function is_cashier() {
+    return evfranking.eventcap == "cashier";
+}
+
+export function is_registrar() {
+    return evfranking.eventcap == "registrar";
+}
+
+export function is_accreditor() {
+    return evfranking.eventcap == "accreditation";
+}
+
+export function is_administrator() {
+    return evfranking.eventcap == "organiser";
+}
+
+export function is_sysop() {
+    return evfranking.eventcap == "system";
 }

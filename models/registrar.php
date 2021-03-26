@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Registrar extends Base {
     public $table = "TD_Registrar";
@@ -46,10 +46,6 @@
         "user_nicename" => "skip"
     );
 
-
-    public function __construct($id=null) {
-        parent::__construct($id);
-    }
 
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";
@@ -77,21 +73,19 @@
     }
 
     public function selectAll($offset,$pagesize,$filter,$sort, $special=null) {
+        global $wpdb;
         $qb = $this->select('TD_Registrar.*, IFNULL(c.country_name,\'General Administration\') as country_name, u.user_nicename')
           ->join("TD_Country","c","TD_Registrar.country_id=c.country_id")
-          ->join("wp_users", "u", "TD_Registrar.user_id=u.ID")
+          ->join($wpdb->base_prefix ."users", "u", "TD_Registrar.user_id=u.ID")
           ->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);
         return $qb->get();
     }
 
     public function count($filter,$special=null) {
-        $qb = $this->select("count(*) as cnt");
+        $qb = $this->numrows();
         $this->addFilter($qb,$filter,$special);
-        $result = $qb->get();
- 
-        if(empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $qb->count();
     }
 
     public function findByUser($userid) {

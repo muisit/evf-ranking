@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Result extends Base {
     public $table = "TD_Result";
@@ -92,18 +92,14 @@
             case 'C': $orderBy[]="country_name desc"; break;
             }
         }
-        error_log('returning '.json_encode($orderBy));
         return $orderBy;
     }
 
     private function addFilter($qb, $filter,$special) {
-        error_log("adding filter");
         if(!empty(trim($filter))) {
             global $wpdb;
-            error_log("filter not empty");
             $filter=$wpdb->esc_like($filter);
             //$filter=str_replace("%","%%",$filter);
-            error_log("adding subclause for where filter");
             $qb->where( function($qb2) use ($filter) {
                 $qb2->where("fencer_surname like '%$filter%' or fencer_firstname like '%$filter%' or country_name like '%$filter%'");
             });
@@ -121,7 +117,6 @@
                     $qb->where("cm.competition_weapon", $doc->weapon_id);
                 }
                 if (isset($doc->competition_id)) {
-                    error_log("adding competition restriction");
                     $qb->where("cm.competition_id", $doc->competition_id);
                 }
             }
@@ -140,26 +135,21 @@
     }
 
     public function count($filter,$special=null) {
-        $qb = $this->select("count(*) as cnt")
+        $qb = $this->numrows()
             ->join("TD_Competition", "cm", "TD_Result.result_competition=cm.competition_id");
         $this->addFilter($qb,$filter,$special);
-        $result = $qb->get();
- 
-        if(empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $qb->count();
     }
 
     public function recalculate($competition_id) {
         $competition=null;
         if(!is_object($competition)) {
-            require_once(__DIR__ . "/competition.php");
             $competition = new Competition(intval($competition_id));
             $competition->load();
         }
 
         $results = $this->select('*')->where('result_competition',$competition->competition_id)->orderBy("result_place")->get();
         if($results && sizeof($results)) {
-            require_once(__DIR__ . "/event.php");
             $event = new Event($competition->competition_event);
             $event->load();
 
@@ -179,11 +169,8 @@
     }
 
     public function doImport($obj) {
-        require_once(__DIR__ . "/fencer.php");
         $fencer = new Fencer();
-        require_once(__DIR__ . "/competition.php");
         $competition = new Competition();
-        require_once(__DIR__ . "/event.php");
         $event = new Event();
 
         $obj=(array)$obj;
@@ -305,7 +292,6 @@
         // ranking consists of a list of pos,lastname,firstname,country values
         // Check for each entry that the combination of lastname, firstname, country exists
         //
-        require_once(__DIR__ . "/fencer.php");
         $model = new Fencer();
                 
         $retval=array("ranking"=>array());

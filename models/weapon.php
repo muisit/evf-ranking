@@ -25,37 +25,31 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Weapon extends Base {
-
-    public function __construct($id=null) {
-        $this->table = "TD_Weapon";
-        $this->pk="weapon_id";
-        $this->fields=array("weapon_id","weapon_abbr","weapon_name","weapon_gender");
-        parent::__construct($id);
-    }
-
-    public function export($result=null) {
-        if(empty($result)) {
-            $result=$this;
-        }
-        return array(
-            "id" => $result->weapon_id,
-            "name" => $result->weapon_name,
-            "abbr" => $result->weapon_abbr,
-            "gender" => $result->weapon_gender,
-        );
-    }
+    public $table = "TD_Weapon";
+    public $pk = "weapon_id";
+    public $fields = array("weapon_id", "weapon_abbr", "weapon_name", "weapon_gender");
+    public $fieldToExport = array(
+        "weapon_id" => "id",
+        "weapon_name" => "name",
+        "weapon_abbr" => "abbr",
+        "weapon_gender" => "gender"
+    );
+    public $rules = array(
+        "weapon_id" => "skip",
+        "weapon_name" => "trim",
+        "weapon_abbr" => "trim",
+        "weapon_gender" => "enum=M,F"
+    );     
 
     public function selectAll($offset=0,$pagesize=0,$filter=null,$sort=null,$special=null) {
         return $this->select('*')->orderBy('weapon_id')->get();
     }
 
     public function count($filter=null,$special=null) {
-        $result = $this->select("count(*) as cnt")->get();
-        if(empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $this->numrows()->count();
     }
  }
  

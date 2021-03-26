@@ -24,18 +24,22 @@ export default class RegistrationIndexPage extends React.Component {
         countries(0,1000,'',"n")
             .then(json => {
                 if(json) this.setState({ "countries": json.data.list, "countries_count": json.data.total});
-                if (this.state.countries_count >= 0 && this.state.eventtypes_count >= 0 && this.state.users_count >= 0) this.setState({ initializing: false });
+                this.checkInit();
         });
         eventtypes(0,1000,'','n')
             .then(json => {
                 if(json) this.setState({"eventtypes": json.data.list, "eventtypes_count": json.data.total});
-                if (this.state.countries_count >= 0 && this.state.eventtypes_count >= 0 && this.state.users_count >= 0) this.setState({ initializing: false });
+                this.checkInit();
         });
         users(0, 1000, '', 'n')
             .then(json => {
                 if (json) this.setState({ "users": json.data.list, "users_count": json.data.total });
-                if (this.state.countries_count>=0 && this.state.eventtypes_count>=0 && this.state.users_count>=0) this.setState({ initializing: false });
+                this.checkInit();
             });
+    }
+
+    checkInit = () => {
+        if (this.state.countries_count>=0 && this.state.eventtypes_count>=0 && this.state.users_count>=0) this.setState({ initializing: false });
     }
 
     render() {

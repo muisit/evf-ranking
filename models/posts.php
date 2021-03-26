@@ -1,7 +1,7 @@
 <?php
 
 /**
- * EVF-Ranking WP Frontend Events Model
+ * EVF-Ranking WP Posts Model
  * 
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
@@ -25,10 +25,10 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Posts extends Base {
-    public $table = "wp_posts";
+    public $table = "posts";
     public $pk = "ID";
     public $fields = array("ID", "post_title", "post_status", "post_type","post_content");
     public $fieldToExport = array(
@@ -39,8 +39,10 @@
         "post_content" => "content"
     );
 
-    public function __construct($id=null) {
-        parent::__construct($id);
+    public function __construct($id=null,$forceload=false) {
+        global $wpdb;
+        $this->table = $wpdb->base_prefix . $this->table;
+        parent::__construct($id,$forceload);
     }
 
     public function save() {
@@ -60,7 +62,7 @@
             $filter = $wpdb->esc_like($filter);
             $qb->where("post_title like '%$filter%'");
         }
-        error_log("special is ".json_encode($special));
+
         if ($special) {
             $doc = json_decode($special);
             if (is_object($doc)) {
@@ -80,12 +82,9 @@
     }
 
     public function count($filter, $special = null) {
-        $qb = $this->select("count(*) as cnt");
+        $qb = $this->numrows();
         $this->addFilter($qb, $filter, $special);
-        $result = $qb->get();
-
-        if (empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $qb->count();
     }
  }
  

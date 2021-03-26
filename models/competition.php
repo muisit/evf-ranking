@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Competition extends Base {
     public $table = "TD_Competition";
@@ -54,6 +54,12 @@
 
     public function listByEvent($event) {
         return $this->select('*')->where("competition_event",intval($event))->orderBy(array("competition_weapon","competition_category"))->get();
+    }
+
+    public function abbreviation() {
+        $cat = new Category($this->competition_category);
+        $wpn = new Weapon($this->competition_weapon);
+        return $wpn->weapon_abbr . $cat->category_abbr;
     }
 }
  

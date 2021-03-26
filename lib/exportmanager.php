@@ -25,9 +25,8 @@
  */
 
 
-namespace EVFRanking;
+namespace EVFRanking\Lib;
 
-require_once(__DIR__."/baselib.php");
 class ExportManager extends BaseLib {
 
     public $filetype;
@@ -37,26 +36,46 @@ class ExportManager extends BaseLib {
     public $event;
     public $category;
 
-    public function export($filetype, $sideevent) {
+    public $fencer_state;
+
+    public function export($filetype, $sideevent,$event) {
         $this->sideevent = $sideevent;
+        $this->event = $event;
         $this->filetype=$filetype;
-
-        $this->event = $this->loadModel('Event');
-        $this->event = $this->event->get($sideevent->event_id);
-
-        $this->category = $this->loadModel('Category');
+        $this->category = new \EVFRanking\Models\Category();
 
         $this->sideevents = $this->event->sides();
-        $data = $this->sideevent->registrations();
+        if(!empty($this->sideevent) && !$this->sideevent->isNew()) {
+            $data = $this->sideevent->registrations();
+        }
+        else {
+            $data = $this->event->registrations();
+        }
 
         $this->headers = array("name", "firstname", "country", "year-of-birth", "role", "organisation", "organisation_abbr", "type", "date", "days");
         if ($this->filetype == "participants") {
-            if (intval($this->sideevent->competition_id) > 0) {
-                $this->headers = array("name", "firstname", "country", "year-of-birth", "cat", "gender");
-            } else {
-                // side-event with no competition, only print out participant list
-                $this->headers = array("name", "firstname", "country", "role", "organisation");
+            if(empty($this->sideevent) || $this->sideevent->isNew()) {
+                // a list of all attendees
+                $this->headers = array("name", "firstname", "country", "roles","organisation","organisation_abbr", "events");
             }
+            else if (intval($this->sideevent->competition_id) > 0) {
+                // list of athletes
+                $this->headers = array("name", "firstname", "country", "year-of-birth", "cat", "gender");
+            } 
+            else {
+                // side-event with no competition, only print out participant list
+                $this->headers = array("name", "firstname", "country", "organisation");
+            }
+        }
+        if($this->filetype == "cashier") {
+            $this->headers=array("name","firstname","country","role","event","costs","payment","paid");
+        }
+        $this->fencer_state=array();
+        if((empty($this->sideevent) || $this->sideevent->isNew()) && $this->filetype == "participants") {
+            $this->precalc=array();
+            array_map(array($this,"header_precalc"),$data);
+            $data = array_values($this->precalc);
+            error_log("data is now ".json_encode($data));
         }
         $csv = array_map(array($this,"header_map"), array_filter($data, array($this,"header_filter") ));
         $csv = array_merge(array($this->headers), $csv);
@@ -124,19 +143,45 @@ class ExportManager extends BaseLib {
                 }
                 break;
             case 'date':
-                $retval[] = strftime('%Y-%m-%d', strtotime($this->sideevent->starts));
+                $retval[] = strftime('%Y-%m-%d', strtotime($row['starts']));
+                break;
+            case 'event':
+                if(empty($row['title'])) {
+                    $retval[]='generic';
+                }
+                else {
+                    $retval[] = $row['title'];
+                }
+                break;
+            case 'events':
+                // precalculated field
+                if(isset($row['events'])) {
+                    $retval[]=implode(',',$row['events']);
+                }
+                else {
+                    $retval[]="";
+                }
                 break;
             case 'role':
                 if (!empty($row['role_name'])) {
                     $retval[] = $row['role_name'];
                 } 
                 else {
-                    if ($this->filetype == "participants") {
-                        $retval[] = 'Participant';
+                    if (intval($row["competition_id"]) > 0) {
+                        $retval[] = 'Athlete';
                     } 
                     else {
-                        $retval[] = 'Athlete';
+                        $retval[] = 'Participant';
                     }
+                }
+                break;
+            case 'roles':
+                // precalculated field
+                if(isset($row['roles'])) {
+                    $retval[]=implode(',',$row['roles']);
+                }
+                else {
+                    $retval[]="";
                 }
                 break;
             case 'organisation':
@@ -211,7 +256,7 @@ class ExportManager extends BaseLib {
                 $days=array();
                 $seById=array();
                 foreach($this->sideevents as $se) {
-                    $se=new SideEvent($se);
+                    $se=new \EVFRanking\Models\SideEvent($se);
                     $se->realstart=strtotime($se->starts);
                     $date=strftime('%Y-%m-%d',$se->realstart);
                     $days[$date]=false;
@@ -219,9 +264,9 @@ class ExportManager extends BaseLib {
                 }
 
                 // find all registrations for this fencer
-                $model = $this->loadModel('Registration');
-                $this->loadModel('Fencer');
-                $fencer=new Fencer($row['registration_fencer']);
+                $model = new \EVFRanking\Models\Registration();
+                $fencer=new \EVFRanking\Models\Fencer($row['registration_fencer']);
+                $fencer->load();
                 $regs=$model->selectAllOfFencer($this->event,$fencer);
                 foreach($regs as $r) {
                     $key = "s" . $r->registration_event;
@@ -251,9 +296,74 @@ class ExportManager extends BaseLib {
                     $retval[] = implode('/',$txt);
                 }
                 break;
+            case 'payment':
+            case 'costs':
+            case 'paid':
+                // calculate costs for payment field in the same way
+                $cost = floatval($row["costs"]); // from sideevent
+                if(intval($row["competition_id"])>0) {
+                    $key="f".$row["registration_fencer"];
+                    $baseapplied = isset($this->fencer_state[$key]) && isset($this->fencer_state[$key]["base"]);
+
+                    $cost = floatval($row["event_competition_fee"]);
+                    if(!$baseapplied) {
+                        $cost += floatval($row["event_base_fee"]);
+                    }
+                    if(!isset($this->fencer_state[$key])) $this->fencer_state[$key]=array();
+                    // only mark 'base as applied' if we calculate the costs field
+                    if($hd=="costs") $this->fencer_state[$key]["base"]=true;
+                }
+                if($hd == "costs") {
+                    $retval[]=sprintf("%.2f",$cost);
+                }
+                else if($hd=="payment") {
+                    if($cost > 0.0) {
+                        switch($row['registration_payment']) {
+                        case 'I': $retval[]="individual"; break;
+                        case 'G': $retval[]="group"; break;
+                        case 'O': $retval[]="organisation"; break;
+                        case 'E': $retval[]="EVF"; break;
+                        default:
+                            $retval[]="other (".$row['registration_payment'].")";
+                            break;
+                        }
+                    }
+                    else {
+                        // no costs, no cost-payment setting
+                        $retval[]="";
+                    }
+                }
+                else if($hd=="paid") {
+                    if($cost > 0.0) {
+                        if ($row['paid'] == 'Y') $retval[] = "yes";
+                        else $retval[] = "no";
+                    }
+                    else {
+                        // no cost, always paid
+                        $retval[]="yes";
+                    }
+                }
+                break;
             }
         }
         return $retval;
+    }
+
+    private function header_precalc($row) {
+        $row = (array)$row;
+        $key ="f" . $row["registration_fencer"];
+        if(!isset($this->precalc[$key])) {
+            $this->precalc[$key]=$row;
+            $this->precalc[$key]["roles"]=array();
+            $this->precalc[$key]["events"]=array();
+        }
+        if (!empty($row['role_name'])) {
+            $this->precalc[$key]["roles"][] = $row['role_name'];
+        }
+        if(!empty($row['title'])) {
+            $this->precalc[$key]["events"][] = $row['title'];
+        }
+        return $row;
     }
 
     private function createCSV($data, $filename,$delimiter) {

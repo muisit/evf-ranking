@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class SideEvent extends Base {
     public $table = "TD_Event_Side";
@@ -58,24 +58,32 @@
         return $this->select('*')->where("event_id",intval($event))->orderBy(array("starts", "title","costs"))->get();
     }
 
-    public function registrations() {
-        return $this->select(
-                array('TD_Registration.*', 'f.fencer_surname', 'f.fencer_firstname', 'f.fencer_dob', 'fencer_gender',
-                      'c.country_name', 'c.country_abbr',
-                      'es.starts',
-                      'r.role_name','rt.org_declaration',
-                      'ct.category_value','ct.category_type', 'wp.weapon_gender'))
+    public static function BaseRegistrationSelection($obj) {
+        $qb=new QueryBuilder($obj);
+        return $qb->select(array(
+                'TD_Registration.*', 'f.fencer_surname', 'f.fencer_firstname', 'f.fencer_dob', 'fencer_gender',
+                'c.country_name', 'c.country_abbr',
+                'es.starts', 'es.costs','es.title','es.competition_id',
+                'e.event_base_fee','e.event_competition_fee','e.event_name',
+                'r.role_name', 'rt.org_declaration',
+                'ct.category_value', 'ct.category_type', 'wp.weapon_gender')
+            )
             ->from('TD_Registration')
-            ->join('TD_Fencer','f','TD_Registration.registration_fencer=f.fencer_id')
+            ->join('TD_Fencer', 'f', 'TD_Registration.registration_fencer=f.fencer_id')
             ->join('TD_Country', 'c', 'f.fencer_country=c.country_id')
             ->join('TD_Role', 'r', 'TD_Registration.registration_role=r.role_id')
             ->join('TD_Role_Type', 'rt', 'rt.role_type_id=r.role_type')
-            ->join('TD_Event_Side','es','es.id=TD_Registration.registration_event')
-            ->join('TD_Competition','cmp','es.competition_id=cmp.competition_id')
-            ->join('TD_Category','ct','cmp.competition_category=ct.category_id')
+            ->join('TD_Event_Side', 'es', 'es.id=TD_Registration.registration_event')
+            ->join('TD_Event', 'e', 'e.event_id=TD_Registration.registration_mainevent')
+            ->join('TD_Competition', 'cmp', 'es.competition_id=cmp.competition_id')
+            ->join('TD_Category', 'ct', 'cmp.competition_category=ct.category_id')
             ->join('TD_Weapon', 'wp', 'cmp.competition_weapon=wp.weapon_id')
-            ->where("TD_Registration.registration_event",$this->getKey())
-            ->orderBy(array("c.country_name","r.role_name","f.fencer_surname","f.fencer_firstname"))->get();
+            ->orderBy(array("c.country_name", "r.role_name", "f.fencer_surname", "f.fencer_firstname"));
+    }
+
+    public function registrations() {
+        $qb = SideEvent::BaseRegistrationSelection($this);
+        return $qb->where("TD_Registration.registration_event", $this->getKey())->get();
     }
 }
  

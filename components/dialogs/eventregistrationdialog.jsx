@@ -184,9 +184,11 @@ export default class EventRegistrationDialog extends React.Component {
         case 'reference':
         case 'frontend':
         case 'payments':
+            item[name] = value;
+            break;
         case 'reg_open':
         case 'reg_close':
-            item[name] = value;
+            item[name] = format_date(value);
             break;
         case 'currency':
             item.currency = value;
@@ -341,6 +343,15 @@ export default class EventRegistrationDialog extends React.Component {
           { id: "individual", name: "Individual payments only" },
         ];
 
+        var reg_open=null;
+        if(this.props.value.reg_open && this.props.value.reg_open.length) {
+          reg_open = new Date(this.props.value.reg_open);
+        }
+        var reg_close = null;
+        if (this.props.value.reg_close && this.props.value.reg_close.length) {
+          reg_close = new Date(this.props.value.reg_close);
+        }
+
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
 <TabView id="eventdialog" animate={true} defaultSelectedTabId="general">
@@ -358,13 +369,13 @@ export default class EventRegistrationDialog extends React.Component {
       <div>
         <label>Reg. Opens</label>
         <div className='input'>
-            <Calendar name="reg_open" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={this.props.value.reg_open}></Calendar>
+            <Calendar name="reg_open" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_open}></Calendar>
         </div>
       </div>
       <div>
         <label>Reg. Closes</label>
         <div className='input'>
-            <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={this.props.value.reg_close}></Calendar>
+            <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_close}></Calendar>
         </div>
       </div>
     <div>

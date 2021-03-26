@@ -25,9 +25,8 @@
  */
 
 
-namespace EVFRanking;
+namespace EVFRanking\Lib;
 
-require_once(__DIR__.'/baselib.php');
 class API extends BaseLib {
     public function createNonceText() {
         $user = wp_get_current_user();        
@@ -82,45 +81,58 @@ class API extends BaseLib {
 
         if($action == "evfranking") {
             $filetype = $this->fromGet("download");
-            $eid = $this->fromGet("event");
+            $sid = $this->fromGet("event");
+            $eid = $this->fromGet("mainevent");
             $picture = $this->fromGet("picture");
 
             if (!empty($eid) && in_array($filetype, array("accreditations", "participants"))) {
-                $model = $this->loadModel("SideEvent");
-                $sideevent = $model->get($eid);
-
-                if (!empty($sideevent)) {
+                $sideevent = new \EVFRanking\Models\SideEvent($sid);
+                $event = new \EVFRanking\Models\Event($eid);
+                if(empty($eid) && $sideevent->exists()) {
+                    $event=new \EVFRanking\Models\Event($sideevent->event_id);
+                }
+                if ($event->exists()) {
                     error_log("checking policy");
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("registration", "list", array(
                         "model" => array(
-                            "sideevent" => $sideevent->getKey(),
-                            "event" => $sideevent->event_id
+                            "event" => $event->getKey()
                         ),
                         "filter" => array(
-                            "event" => $sideevent->event_id
+                            "event" => $event->getKey()
                         )
                     ));
 
-                    require_once(__DIR__ . "/exportmanager.php");
                     $em = new ExportManager();
-                    $em->export($filetype,$sideevent);
+                    $em->export($filetype,$sideevent,$event);
                 }
             }
-            else if (!empty($eid) && is_numeric($picture)) {
-                error_log("displaying picture for ".$eid." and " .$picture);
-                $event = $this->loadModel("Event");
-                $event = $event->get($eid);
-                $fencer = $this->loadModel("Fencer");
-                $fencer = $fencer->get($picture);
+            else if (!empty($sid) && in_array($filetype, array("cashier"))) {
+                $event = new \EVFRanking\Models\Event($sid);
+                if ($event->exists()) {
+                    error_log("checking policy");
+                    // check the policy to see if the user can retrieve a listing
+                    $this->checkPolicy("registration", "list", array(
+                        "model" => array(
+                            "event" => $event->getKey()
+                        ),
+                        "filter" => array(
+                            "event" => $event->getKey()
+                        )
+                    ));
 
-                $this->loadModel("SideEvent");
+                    $em = new ExportManager();
+                    $em->export($filetype, null, $event);
+                }
+            }    
+            else if (!empty($sid) && is_numeric($picture)) {
+                $event = new \EVFRanking\Models\Event($sid);
+                $fencer = new \EVFRanking\Models\Fencer($picture);
 
-                if (!empty($event) && !empty($fencer)) {
-                    error_log("getting side events");
+                if ($event->exists() && $fencer->exists()) {
                     $sides = $event->sides();
                     if (!empty($sides)) {
-                        $sideevent = new SideEvent($sides[0]); // pick any sideevent
+                        $sideevent = new \EVFRanking\Models\SideEvent($sides[0]); // pick any sideevent
 
                         error_log("checking policy");
                         // check the policy to see if the user can retrieve a listing
@@ -135,7 +147,6 @@ class API extends BaseLib {
                             )
                         ));
 
-                        require_once(__DIR__ . "/picturemanager.php");
                         $pm = new PictureManager();
                         $pm->display($fencer);
                     }
@@ -153,14 +164,13 @@ class API extends BaseLib {
         $event = $this->fromPost("event");
 
         if (!empty($event) && $upload == "true")  {
-            $model = $this->loadModel("Event");
-            $event = $model->get($event);
-            $this->loadModel("SideEvent");
+            $event = new \EVFRanking\Models\Event($event);
+            $event->load();
 
-            if (!empty($event)) {
+            if (!$event->isNew()) {
                 $sides = $event->sides();
                 if(!empty($sides)) {
-                    $sideevent = new SideEvent($sides[0]); // pick any sideevent
+                    $sideevent = new \EVFRanking\Models\SideEvent($sides[0]); // pick any sideevent
                     error_log("checking policy");
                     // check the policy to see if the user can save a registration
                     $this->checkPolicy("registration", "save", array(
@@ -171,7 +181,6 @@ class API extends BaseLib {
                         )
                     ));
 
-                    require_once(__DIR__ . "/picturemanager.php");
                     $pm = new PictureManager();
                     $pm->import($fencer);
                 }
@@ -198,9 +207,7 @@ class API extends BaseLib {
         if(!is_array($path) || sizeof($path) == 0) {
             $path=array("index");
         }
-        //error_log('path is '.json_encode($path));
 
-        //error_log('data is '.json_encode($data));
         $retval=array();
         switch($path[0]) {
             default:
@@ -215,13 +222,13 @@ class API extends BaseLib {
             case "roles":
             case "registrars":
                     switch($path[0]) {
-                    case 'fencers': $model = $this->loadModel("Fencer"); break;
-                    case 'countries': $model = $this->loadModel("Country"); break;
-                    case 'results': $model = $this->loadModel("Result"); break;
-                    case 'events': $model = $this->loadModel("Event"); break;
-                    case 'roletypes': $model = $this->loadModel('RoleType'); break;
-                    case 'roles': $model = $this->loadModel('Role'); break;
-                    case 'registrars': $model = $this->loadModel('Registrar'); break;
+                    case 'fencers': $model = new \EVFRanking\Models\Fencer();break;
+                    case 'countries': $model = new \EVFRanking\Models\Country(); break;
+                    case 'results': $model = new \EVFRanking\Models\Result(); break;
+                    case 'events': $model = new \EVFRanking\Models\Event(); break;
+                    case 'roletypes': $model = new \EVFRanking\Models\RoleType(); break;
+                    case 'roles': $model = new \EVFRanking\Models\Role(); break;
+                    case 'registrars': $model = new \EVFRanking\Models\Registrar(); break;
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
@@ -277,7 +284,7 @@ class API extends BaseLib {
             // LIST and UPDATE
             case "migrations":
                 switch($path[0]) {
-                    case 'migrations': $model = $this->loadModel("Migration"); break;
+                    case 'migrations': $model = new \EVFRanking\Models\Migration(); break;
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
@@ -296,11 +303,11 @@ class API extends BaseLib {
             case "users":
             case "posts":
                 switch($path[0]) {
-                    case 'weapons': $model = $this->loadModel("Weapon"); break;
-                    case 'categories': $model = $this->loadModel("Category"); break;
-                    case 'types': $model = $this->loadModel("EventType"); break;
-                    case 'users': $model = $this->loadModel("User"); break;
-                    case 'posts': $model = $this->loadModel("Posts"); break;
+                    case 'weapons': $model = new \EVFRanking\Models\Weapon(); break;
+                    case 'categories': $model = new \EVFRanking\Models\Category(); break;
+                    case 'types': $model = new \EVFRanking\Models\EventType(); break; 
+                    case 'users': $model = new \EVFRanking\Models\User(); break;
+                    case 'posts': $model = new \EVFRanking\Models\Posts(); break;
                 }
                 $this->checkPolicy($path[0],"list");
                 $retval=array_merge($retval, $this->listAll($model,0,null,'','i',$special));
@@ -309,7 +316,7 @@ class API extends BaseLib {
             case 'ranking':
                 if(isset($path[1]) && $path[1] == "reset") {
                     $this->checkPolicy($path[0],"misc");
-                    $model = $this->loadModel("Ranking"); 
+                    $model = new \EVFRanking\Models\Ranking();
                     $total = $model->calculateRankings();
                     $retval=array(
                         "success" => TRUE,
@@ -318,10 +325,10 @@ class API extends BaseLib {
                 }
                 else if(isset($path[1]) && $path[1] == "list") {
                     $this->checkPolicy($path[0],"list");
-                    $model = $this->loadModel("Ranking");
+                    $model = new \EVFRanking\Models\Ranking();
                     $cid = intval(isset($modeldata['category_id']) ? $modeldata['category_id'] : "-1");
-                    $catmodel = $this->loadModel("Category");
-                    $catmodel = $catmodel->get($cid);
+                    $catmodel = new \EVFRanking\Models\Category($cid);
+                    $catmodel->load();
                     $wid = intval(isset($modeldata['weapon_id']) ? $modeldata['weapon_id'] : "-1");
                     if($cid > 0 && $wid > 0) {
                         $results = $model->listResults($wid,$catmodel);
@@ -336,7 +343,7 @@ class API extends BaseLib {
                 }
                 else if(isset($path[1]) && $path[1] == "detail") {
                     $this->checkPolicy($path[0],"view");
-                    $model = $this->loadModel("Ranking");
+                    $model = new \EVFRanking\Models\Ranking();
                     $cid = intval(isset($modeldata['category_id']) ? $modeldata['category_id'] : "-1");
                     $wid = intval(isset($modeldata['weapon_id']) ? $modeldata['weapon_id'] : "-1");
                     $fid = intval(isset($modeldata['id']) ? $modeldata['id'] : "-1");
@@ -349,19 +356,17 @@ class API extends BaseLib {
                 }
                 break;
             case "registration":
+                $model = new \EVFRanking\Models\Registration();
                 if (isset($path[1]) && $path[1] == "save") {
                     $this->checkPolicy($path[0], "save", array("filter" => $filter, "model" => $modeldata));
-                    $model = $this->loadModel("Registration");
                     $retval = array_merge($retval, $this->save($model, $modeldata));
                 } else if (isset($path[1]) && $path[1] == "delete") {
                     $this->checkPolicy($path[0], "delete", array("filter" => $filter, "model" => $modeldata));
-                    $model = $this->loadModel("Registration");
                     $retval = array_merge($retval, $this->delete($model, $modeldata));
                 }
                 else {
                     // we can list if we can administer the event belonging to the passed side-event
                     $this->checkPolicy($path[0], "list", array("filter"=>$filter, "model"=>$modeldata));
-                    $model = $this->loadModel("Registration");
                     $retval = array_merge($retval, $this->listAll($model, $offset, $pagesize, $filter, $sort, $special));
                 }                   
                 break;
@@ -388,7 +393,7 @@ class API extends BaseLib {
         }
         else {
             error_log('save successful');
-            $retval["id"] = $model->{$model->pk};
+            $retval["id"] = $model->getKey();
             $retval = array_merge($retval,array("model"=>$model->export()));
         }
         return $retval;
@@ -407,7 +412,7 @@ class API extends BaseLib {
         }
         else {
             error_log('delete successful');
-            $retval["id"] = $model->{$model->pk};
+            $retval["id"] = $model->getKey();
         }
         return $retval;
     }
@@ -442,8 +447,7 @@ class API extends BaseLib {
     }
 
     private function checkPolicy($model,$action,$obj=null) {
-        require_once(__DIR__ . "/policy.php");
-        $policy = new \EVFRanking\Policy();
+        $policy = new \EVFRanking\Lib\Policy();
         if(!$policy->check($model,$action,$obj)) {
             die(403);
         }

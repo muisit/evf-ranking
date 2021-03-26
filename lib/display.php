@@ -25,9 +25,9 @@
  */
 
 
- namespace EVFRanking;
+namespace EVFRanking\Lib;
 
- class Display {
+class Display {
     public static $policy=null;
     public static $instance=null;
     public static $jsparams=array();
@@ -81,8 +81,7 @@ HEREDOC;
     private function enqueue_code($script) {
         // insert a small piece of html to load the ranking react script
         wp_enqueue_script( 'evfranking', $script, array('jquery','wp-element'), '1.0.0' );
-        require_once(__DIR__ . '/api.php');
-        $dat = new \EVFRanking\API();
+        $dat = new API();
         $nonce = wp_create_nonce( $dat->createNonceText() );
         $params= array_merge(Display::$jsparams, array(
             'url' => admin_url('admin-ajax.php?action=evfranking'),
@@ -112,9 +111,7 @@ HEREDOC;
     // Check here if we are already logged in. If not, redirect. If so, display the Event registration
     // frontend page.
     public function registerRedirect($eventid) {
-        error_log("registerRedirect $eventid");
         if (Display::$policy === null) {
-            require_once(__DIR__ . '/policy.php');
             Display::$policy = new Policy();
         }
 
@@ -147,7 +144,6 @@ HEREDOC;
     public function eventButton($event) {
         $id = is_object($event) ? $event->ID : intval($event);
         if(Display::$policy === null) {
-            require_once(__DIR__.'/policy.php');
             Display::$policy=new Policy();                
         }
         $event = Display::$policy->feEventToBeEvent($id);

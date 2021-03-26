@@ -1,8 +1,7 @@
 import React from 'react';
 import FEBase from './febase';
-import {format_currency, jsonOutput } from './functions';
-import { registration } from './api';
-import { Checkbox } from 'primereact/checkbox';
+import { registrations } from './api';
+import {is_organiser} from "./functions";
 import AccreditationDialog from './dialogs/accreditationdialog';
 
 export default class FEAccreditorTab extends FEBase {
@@ -22,25 +21,24 @@ export default class FEAccreditorTab extends FEBase {
     }
 
     redirectList = (event, type) => {
-        var href=evfranking.url + "&download=" + type + "&event=" + event.id+"&nonce=" + evfranking.nonce;
+        var href = evfranking.url + "&download=" + type;
+        
+        if(!event) {
+            href += "&mainevent=" + this.props.item.id + "&nonce=" + evfranking.nonce;
+        }
+        else {
+            href += "&event=" + event.id + "&nonce=" + evfranking.nonce;
+        }
         window.open(href);
     }
 
-    loadAllRegistrations = () => {
-        if(!this.state.loadedAllFencers) {
-            var promises=[];
-            this.props.countries.map((cnt) => {
-                promises.push(this.doGetRegistrations(cnt.id));
-            });
-            return Promise.all(promises).then((values) => {
-                this.setState({loadedAllFencers:true});
-            });
-        }
-        return Promise.resolve("done");
+    doGetPendingPhotos = (cid, doclear) => {
+        return registrations(0, 10000, { country: cid, event: this.props.item.id },"cnf",{photoid:true})
+            .then((cmp) => this.parseRegistrations(cmp.data.list, doclear));
     }
 
     findFencerWithPicture = (startwith, direction) => {
-        return this.loadAllRegistrations()
+        return this.doGetPendingPhotos()
             .then(() => {
                 return this.doFindFencerWithPicture(startwith,direction);
             });
@@ -135,7 +133,6 @@ export default class FEAccreditorTab extends FEBase {
                         <thead>
                             <tr>
                             <th>Event</th>
-                            <th className='textcenter'>Accreditations</th>
                             <th className='textcenter'>Participants</th>
                             </tr>
                         </thead>
@@ -144,14 +141,6 @@ export default class FEAccreditorTab extends FEBase {
                             <tr key={'f'+event.id}>
                               <td>{event.title}</td>
                               <td className='textcenter'>
-                              {!(parseInt(event.competition_id)>0) && (
-                                    <i className='pi'></i>
-                              )}
-                              {parseInt(event.competition_id) > 0 && (
-                                    <i className='pi pi-download' onClick={()=>this.redirectList(event,"accreditations")}></i>
-                              )}
-                              </td>
-                              <td className='textcenter'>
                                     <i className='pi pi-list' onClick={() => this.redirectList(event, "participants")}></i>
                               </td>
                             </tr>
@@ -159,6 +148,13 @@ export default class FEAccreditorTab extends FEBase {
                         </tbody>
                     </table>
                 </div>
+                {is_organiser() && (
+                <div className='col-12'>
+                    <div className='textcenter'>
+                        <i className='pi pi-download' onClick={() => this.redirectList(null,"participants")}> All Participants</i>
+                    </div>
+                </div>
+                )}
                 <div className='col-12'>
                     <div className='textcenter'>
                         <span className='pi pi-search' onClick={() => this.onDialog('open')}>&nbsp;Inspect Photo's</span>

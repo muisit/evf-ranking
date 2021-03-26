@@ -203,8 +203,8 @@ export function registrars(offset,pagesize,filter,sort) {
 export function registrar(action, fields) {
     return fetchJson('registrars','registrars/' + action,fields);
 }
-export function registrations(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+export function registrations(offset,pagesize,filter,sort,special) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
     return fetchJson('registrations','registration',obj);
 }
 export function registration(action, fields) {

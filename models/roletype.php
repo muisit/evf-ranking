@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class RoleType extends Base {
     public $table = "TD_Role_Type";
@@ -41,11 +41,6 @@
         "role_type_name" => "trim|required",
         "org_declaration"=> "trim|enum=Country,Org,EVF,FIE"
     );
-
-
-    public function __construct($id=null) {
-        parent::__construct($id);
-    }
 
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";
@@ -77,12 +72,9 @@
     }
 
     public function count($filter,$special=null) {
-        $qb = $this->select("count(*) as cnt");
+        $qb = $this->numrows();
         $this->addFilter($qb,$filter,$special);
-        $result = $qb->get();
- 
-        if(empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $qb->count();
     }
 
     public function delete($id=null) {

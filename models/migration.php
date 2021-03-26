@@ -25,7 +25,7 @@
  */
 
 
- namespace EVFRanking;
+ namespace EVFRanking\Models;
 
  class Migration extends Base {
     public $table = "TD_Migration";
@@ -37,8 +37,8 @@
         "status"=>"int"
     );
 
-    public function __construct($id=null) {
-        parent::__construct($id);
+    public function __construct($id=null,$forceload=false) {
+        parent::__construct($id,$forceload);
 
         global $wpdb;
         $sql="select count(*) as cnt from TD_Migration";
@@ -55,9 +55,7 @@
     }
 
     public function save() {
-        error_log('saving migration');
         if(parent::save() && intval($this->status) == 1) {
-            error_log('save succesful, executing');
             try {
                 ob_start();
                 $this->execute();
@@ -132,6 +130,14 @@
             $migration = new Migration(array("name" => '009: Registrations 3', "status" => 0));
             $migration->save();
         }
+        if($cnt < 11) {
+            $migration = new Migration(array("name"=> '010: Extend reference field',"status"=>0));
+            $migration->save();
+        }
+        if($cnt < 12) {
+            $migration = new Migration(array("name"=> '011: Queues',"status"=>0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -199,18 +205,10 @@
             $wpdb->query("alter table TD_Event add column event_base_fee float null");
             $wpdb->query("alter table TD_Event add column event_competition_fee float null");
             $wpdb->query("ALTER TABLE `TD_Role_Type` ADD `org_declaration` ENUM('Country','EVF','Org','FIE') NULL AFTER `role_type_name`; ");
-            //$wpdb->query("DROP TABLE `TD_Access`;");
-            //$wpdb->query("DROP TABLE `TD_Assign`;");
-            //$wpdb->query("DROP TABLE `TD_Flex`;");
-            //$wpdb->query("DROP TABLE `TD_Function`;");
-            //$wpdb->query("DROP TABLE `TD_Log`;");
-            //$wpdb->query("DROP TABLE `TD_Note`;");
-            //$wpdb->query("DROP TABLE `TD_Person`;");
-            //$wpdb->query("DROP TABLE `TD_Person_Type`;");
             $wpdb->query("DROP TABLE IF EXISTS `TD_Registrar`");
             $wpdb->query("CREATE TABLE `TD_Registrar` ( `id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(11) NOT NULL, `country_id` int(11) DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8");
             $wpdb->query("DROP TABLE IF EXISTS `TD_Event_Role`");
-            $wpdb->query("CREATE TABLE `wordpress`.`TD_Event_Role` ( `id` INT NOT NULL AUTO_INCREMENT , `event_id` INT NOT NULL , `user_id` INT NOT NULL , `role_type` ENUM('organiser','registrar','accreditation','cashier') NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB");
+            $wpdb->query("CREATE TABLE `TD_Event_Role` ( `id` INT NOT NULL AUTO_INCREMENT , `event_id` INT NOT NULL , `user_id` INT NOT NULL , `role_type` ENUM('organiser','registrar','accreditation','cashier') NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB");
             $wpdb->query("DROP VIEW IF EXISTS `VW_Ranking`;");
             $wpdb->query("CREATE VIEW `VW_Ranking`  AS SELECT ".
                 " e.event_id, e.event_name, e.event_open, e.event_location, cnt.country_name, ".
@@ -237,6 +235,29 @@
             $wpdb->query("alter table TD_Registration add column registration_paid_hod enum('Y','N') null");
             $wpdb->query("alter table TD_Event add column event_payments varchar(20) null");
             $wpdb->query("alter table TD_Fencer add column fencer_picture enum('Y','N','A','R') null");
+            break;
+        case '010: Extend reference field':
+            $wpdb->query("ALTER TABLE `TD_Event` CHANGE `event_reference` `event_reference` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL; ");
+            $wpdb->query("ALTER TABLE `TD_Event` CHANGE `event_organisers_address` `event_organisers_address` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL; ");
+            $wpdb->query("ALTER TABLE `TD_Event` CHANGE `event_email` `event_email` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL; ");
+            $wpdb->query("ALTER TABLE `TD_Event` CHANGE `event_web` `event_web` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL; ");
+            $wpdb->query("DROP TABLE `TD_Access`;");
+            $wpdb->query("DROP TABLE `TD_Assign`;");
+            $wpdb->query("DROP TABLE `TD_Flex`;");
+            $wpdb->query("DROP TABLE `TD_Function`;");
+            $wpdb->query("DROP TABLE `TD_Log`;");
+            $wpdb->query("DROP TABLE `TD_Note`;");
+            $wpdb->query("DROP TABLE `TD_Person`;");
+            $wpdb->query("DROP TABLE `TD_Person_Type`;");
+            break;
+        case '011: Queues':
+            $wpdb->query("CREATE TABLE `TD_Queue` (`id` int(11) NOT NULL AUTO_INCREMENT,`state` varchar(20) NOT NULL,`payload` text NOT NULL,`attempts` int(11) NOT NULL,`started_at` datetime NULL,`finished_at` datetime NULL,`created_at` datetime NOT NULL,`available_at` datetime  NULL,`queue` varchar(20) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+            $wpdb->query("CREATE TABLE `TD_Accreditation` (`id` int(11) NOT NULL AUTO_INCREMENT ,`fencer_id` int(11) NOT NULL,`event_id` int(11) NOT NULL,`data` text COLLATE utf8_bin NOT NULL,`hash` varchar(512) COLLATE utf8_bin DEFAULT NULL,`template_id` int(11) NOT NULL,`file_id` varchar(255) COLLATE utf8_bin NULL,`generated` datetime NULL, `is_dirty` DATETIME NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin");
+            $wpdb->query("CREATE TABLE `TD_Accreditation_Template` (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(200) COLLATE utf8_bin NOT NULL,`content` text COLLATE utf8_bin NOT NULL,PRIMARY KEY(`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin");
+            $wpdb->query("alter table TD_Registration add column registration_mainevent int null");
+            $wpdb->query("ALTER TABLE `TD_Registration` CHANGE `registration_event` `registration_event` INT(11) NULL; ");
+            $wpdb->query("ALTER TABLE `TD_Registration` ADD `registration_payment` CHAR(1) NULL AFTER `registration_mainevent`; ");
+            $wpdb->query("ALTER TABLE `TD_Registration` DROP `registration_individual`;");
             break;
         default:
             break;

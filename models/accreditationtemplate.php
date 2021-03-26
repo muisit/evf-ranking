@@ -1,7 +1,7 @@
 <?php
 
 /**
- * EVF-Ranking Country Model
+ * EVF-Ranking RoleType Model
  * 
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
@@ -27,21 +27,19 @@
 
  namespace EVFRanking\Models;
 
- class Country extends Base {
-    public $table = "TD_Country";
-    public $pk="country_id";
-    public $fields=array("country_id","country_abbr","country_name","country_registered");
+ class AccreditationTemplate extends Base {
+    public $table = "TD_Accreditation_Template";
+    public $pk="id";
+    public $fields=array("id","name","content");
     public $fieldToExport=array(
-        "country_id" => "id",
-        "country_abbr" => "abbr",
-        "country_name" => "name",
-        "country_registered" => "registered",
+        "id" => "id",
+        "name" => "name",
+        "content"=>"content"
     );
     public $rules = array(
-        "country_id"=>"skip",
-        "country_abbr" => "trim|upper|eq=3|required",
-        "country_name" => "trim|gte=3|required",
-        "country_registered" => "bool|required"
+        "id"=>"skip",
+        "name" => "trim|required|lte=200",
+        "content"=> "trim"
     );
 
     private function sortToOrder($sort) {
@@ -51,10 +49,10 @@
             $c=$sort[$i];
             switch($c) {
             default:
-            case 'i': $orderBy[]="country_id asc"; break;
-            case 'I': $orderBy[]="country_id desc"; break;
-            case 'n': $orderBy[]="country_name asc"; break;
-            case 'N': $orderBy[]="country_name desc"; break;
+            case 'i': $orderBy[]="id asc"; break;
+            case 'I': $orderBy[]="id desc"; break;
+            case 'n': $orderBy[]="name asc"; break;
+            case 'N': $orderBy[]="name desc"; break;
             }
         }
         return $orderBy;
@@ -63,7 +61,7 @@
     private function addFilter($qb, $filter,$special) {
         if(!empty(trim($filter))) {
             $filter=str_replace("%","%%",$filter);
-            $qb->where("country_name","like","%$filter%");
+            $qb->where("name","like","%$filter%");
         }
     }
 
@@ -74,26 +72,19 @@
     }
 
     public function count($filter,$special=null) {
-        $qb = $this->select("count(*) as cnt");
+        $qb = $this->numrows();
         $this->addFilter($qb,$filter,$special);
-        $result = $qb->get();
- 
-        if(empty($result) || !is_array($result)) return 0;
-        return intval($result[0]->cnt);
+        return $qb->count();
     }
 
     public function delete($id=null) {
-        if($id === null) $id = $this->{$this->pk};
+        if($id === null) $id = $this->getKey();
 
-        // check that country is not used in Fencer or Event
-        $nr1 = $this->numrows()->from("TD_Fencer")->where("fencer_country",$id)->count();
-        $nr2 = $this->numrows()->from("TD_Event")->where("event_country",$id)->count();
+        // check that template is not used in accreditation
+        $nr1 = $this->numrows()->from("TD_Accreditation")->where("template_id",$id)->count();
         $this->errors=array();
         if($nr1>0) {
-            $this->errors[]="Cannot delete country that is still used for fencers";
-        }
-        if($nr2>0) {
-            $this->errors[]="Cannot delete country that is still used for events";
+            $this->errors[]="Cannot delete Accreditation Template that is still used for Accreditations";
         }
         if(sizeof($this->errors)==0) {
             return parent::delete($id);

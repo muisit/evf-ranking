@@ -75,12 +75,20 @@ class ExportManager extends BaseLib {
             $this->precalc=array();
             array_map(array($this,"header_precalc"),$data);
             $data = array_values($this->precalc);
-            error_log("data is now ".json_encode($data));
         }
         $csv = array_map(array($this,"header_map"), array_filter($data, array($this,"header_filter") ));
+        usort($csv, array($this,"header_sort"));
         $csv = array_merge(array($this->headers), $csv);
         $this->createCSV($csv, $this->filetype . "_" . $this->sideevent->title . ".csv", ",");
         return true;
+    }
+
+    private function header_sort($a1, $a2) {
+        for($i=0;$i<sizeof($a1);$i++) {
+            $cmp = strcmp($a1[$i],$a2[$i]);
+            if($cmp != 0) return $cmp;
+        }
+        return 0;
     }
 
     private function header_filter($row) {
@@ -147,7 +155,7 @@ class ExportManager extends BaseLib {
                 break;
             case 'event':
                 if(empty($row['title'])) {
-                    $retval[]='generic';
+                    $retval[]='';
                 }
                 else {
                     $retval[] = $row['title'];
@@ -378,5 +386,40 @@ class ExportManager extends BaseLib {
         fclose($f);
         ob_flush();
         exit();
+    }
+
+    public function exportSummary($event, $type, $typeid) {
+        $filename = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(),$type,intval($typeid));
+        if(file_exists($filename)) {
+            header('Content-Disposition: inline;');
+            header('Content-Type: application/pdf');
+            header('Expires: ' . (time() + 2 * 24 * 60 * 60));
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($filename));
+            readfile($filename);
+            exit();
+        }
+        die(403);
+    }
+    public function exportAccreditation($event, $id) {
+        $accr=new \EVFRanking\Models\Accreditation($id,true);
+        if($accr->exists() && intval($accr->event_id) == intval($event->getKey())) {
+            $path=$accr->getPath();
+            if($accr->isDirty() || !file_exists($path)) {
+                die(403);
+            }
+            else {
+                header('Content-Disposition: inline;');
+                header('Content-Type: application/pdf');
+                header('Expires: ' . (time() + 2 * 24 * 60 * 60));
+                header('Cache-Control: must-revalidate');
+                header('Pragma: public');
+                header('Content-Length: ' . filesize($path));
+                readfile($path);
+                exit();
+            }
+        }
+        die(403);
     }
 }

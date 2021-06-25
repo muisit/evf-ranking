@@ -1,3 +1,5 @@
+import moment from 'moment';
+
 export function pad(number) {
     if (number < 10) {
         return '0' + number;
@@ -8,32 +10,60 @@ export function format_currency(val) {
     return parseFloat(val).toFixed(2);
 }
 
+export function format_datetime(dt) {
+    return moment(dt).format("YYYY-MM-DD HH:mm:ss");
+};
 export function format_date(dt) {
-    console.log("formatting date ",dt);
-    if(!dt.getDate) dt=new Date(dt);
-    return dt.getFullYear() +
-        '-' + pad(dt.getMonth() + 1) +
-        '-' + pad(dt.getDate());
+    return moment(dt).format("YYYY-MM-DD");
 };
 var months=["January","February","March","April","May","June","July","August","September","October","November","December"];
 export function format_date_fe(dt) {
-    if(!dt.getDate) dt=new Date(dt);
-    return dt.getDate() + " " + months[dt.getMonth()] + " " + dt.getFullYear();
+    var mmt = moment(dt);
+    return mmt.date() + " " + months[mmt.month()] + " " + mmt.year();
 }
 var short_months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 export function format_date_fe_short(dt) {
-    if(!dt.getDate) dt=new Date(dt);
-    return dt.getDate() + " " + short_months[dt.getMonth()];
+    var mmt = moment(dt);
+    return mmt.date() + " " + short_months[mmt.month()];
+}
+
+export function get_yob(dt) {
+    var mmt = moment(dt);
+    return parseInt(mmt.year());
+}
+
+export function random_hash() {
+    return moment().format("YYYYMMDDHHmmss");
+}
+
+export function parse_float(val, def) {
+    if(def === undefined) def=0.0;
+    var retval=parseFloat(val);
+    if(isNaN(val)) retval=def;
+    return retval;
+}
+
+export function parse_int(val, def) {
+    if(def === undefined) def=0;
+    var retval=parseInt(val);
+    if(isNaN(val)) retval=def;
+    return retval;
+}
+
+export function parse_date(dt) {
+    var retval=moment(dt);
+    if(!retval || !retval.isValid()) retval=moment();
+    return retval;
 }
 
 export function date_to_category_num(dt, wrt) {
-    var date=new Date(dt);
-    var date2=new Date(wrt);
-    var yearold=date.getFullYear();
-    var yearnew = date2.getFullYear();
+    var date=moment(dt);
+    var date2=moment(wrt);
+    var yearold=date.year();
+    var yearnew = date2.year();
     var diff=yearnew-yearold;
 
-    if(date2.getMonth() > 7) {
+    if(date2.month() > 7) {
         // add 1 if the event takes place in aug-dec, in which case we take birthyears as-of-next-january
         diff+=1;
     }
@@ -42,6 +72,11 @@ export function date_to_category_num(dt, wrt) {
     if(catnum>5) catnum=5;
     if(catnum < 1) catnum=0;
     return catnum;
+}
+
+export function my_category_is_older(mycat, theircat) {
+    if(mycat <= 0) return false; // no category for wrong birthdays
+    return mycat > theircat;
 }
 
 export function date_to_category(dt,wrt) {
@@ -88,9 +123,11 @@ export function parse_net_error(err) {
             txt += err.response.data.messages[i] + "\r\n";
         }
         alert(txt);
+        console.log("parse net error, result with backend error ",txt);
     }
     else {
-        alert('Error storing the data. Please try again');
+        alert('Error storing the data. Please try again!');
+        console.log("parse net error, result: ",err);
     }    
 }
 
@@ -99,8 +136,8 @@ export function is_hod() {
     return evfranking.eventcap == "hod";
 }
 
-export function is_organiser() {
-    return ["system","organiser","cashier","accreditation"].includes(evfranking.eventcap);
+export function is_organisation() {
+    return ["system","organiser","registrar","cashier","accreditation"].includes(evfranking.eventcap);
 }
 
 export function is_cashier() {
@@ -115,7 +152,7 @@ export function is_accreditor() {
     return evfranking.eventcap == "accreditation";
 }
 
-export function is_administrator() {
+export function is_organiser() {
     return evfranking.eventcap == "organiser";
 }
 

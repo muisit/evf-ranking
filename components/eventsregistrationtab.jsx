@@ -39,7 +39,6 @@ export default class EventsRegistrationTab extends PagedTab {
 
         Promise.all([p1,p2])
           .then((results) => {
-            console.log("assigning sideevents and roles", results);
             if(results.length == 2) {
                 var item = Object.assign({ sides: results[0], roles: results[1] }, event.data);
                 this.setState({ item: item, displayDialog: true });  

@@ -31,11 +31,7 @@ class PictureManager extends BaseLib {
 
     public function display($fencer) {
         if($fencer->fencer_picture != 'N') {
-            $upload_dir = wp_upload_dir();
-            $dirname = $upload_dir['basedir'] . '/accreditations';
-
-            $filename = $dirname."/fencer_".$fencer->getKey().".jpg";
-
+            $filename = $fencer->getPath();
             if(file_exists($filename)) {
                 header('Content-Disposition: inline;');
                 header('Content-Type: image/jpeg');
@@ -50,33 +46,99 @@ class PictureManager extends BaseLib {
         die(403);
     }
 
-    public function import($fid) {
-        $fencer=new \EVFRanking\Models\Fencer($fid);
-        $fencer->load();
+    private function extToMime($ext) {
+        switch(strtolower($ext)) {
+        default:
+        case 'jpg': return "image/jpeg";
+        case 'png': return "image/png";
+        case 'gif': return "image/gif";
+        }
+    }
+    private function mimeToExt($ext) {
+        switch(strtolower($ext)) {
+        case 'image/jpg':
+        case 'image/jpeg': return "jpg";
+        case 'image/png': return "png";
+        case 'image/gif': return "gif";
+        }
+        return null;
+    }
 
+    public function template($template, $fileid) {
+        $templatecontent = json_decode($template->content,true);
+        if(isset($templatecontent["pictures"])) {
+            foreach($templatecontent["pictures"] as $img) {
+                if($img["file_id"] == $fileid) {
+                    $upload_dir = wp_upload_dir();
+                    $dirname = $upload_dir['basedir'] . '/templates';
+
+                    $filename = $dirname ."/img_". $template->getKey() ."_". $img["file_id"] .".". $img["file_ext"];
+
+                    if (file_exists($filename)) {
+                        header('Content-Disposition: inline;');
+                        header('Content-Type: '.$this->extToMime($img["file_ext"]));
+                        header('Expires: ' . (time() + 2 * 24 * 60 * 60));
+                        header('Cache-Control: must-revalidate');
+                        header('Pragma: public');
+                        header('Content-Length: ' . filesize($filename));
+                        readfile($filename);
+                        exit();
+                    }
+
+                }
+            }
+        }
+        die(403);
+    }
+
+    public function importTemplate($template) {
+        $retval = array();
+        if ($template->exists()) {
+            // basename of the model upload dir, requires common knowledge of the wp_base_upload_dir in
+            // both the picture manager and the accreditation-template model.... not so pretty
+            $this->createUploadDir(basename($template->getDir("pictures")));
+
+            foreach ($_FILES as $username => $content) {
+                $type = $content["type"];
+                $loc = $content["tmp_name"];
+                $fname = $content["name"];
+                $ext = $this->mimeToExt($type);
+
+                if (!empty($loc) && !empty($ext) && file_exists($loc) && is_readable($loc)) {
+                    $id = uniqid();
+                    $filename = $template->getPath("pictures", $id, $ext);
+                    @move_uploaded_file($loc,  $filename);
+                    if (file_exists($filename)) {
+                        $size=getimagesize($filename);
+                        $tmpl = array("width" => $size[0], "height"=>$size[1], "file_ext" => $ext, "file_id" => $id, "file_name" => basename($fname));
+                        $template->addPicture($tmpl);
+                        $template->save();
+                        $retval["picture"] = $tmpl;
+                    }
+                } else {
+                    $retval["error"] = "Unable to convert image, please upload a valid photo";
+                }
+            }
+        }
+        return $retval;
+    }
+
+    public function import($fencer) {
         $retval=array();
-        if(!$fencer->isNew()) {
-            error_log("fencer found, storing and replacing data");
+        if($fencer->exists()) {
             $this->createUploadDir("accreditations");
 
             foreach($_FILES as $username => $content) {
-                $size=$content["size"];
                 $type=$content["type"];
-                $fname=$content["name"];
                 $loc=$content["tmp_name"];
-                $error=$content["error"];
-                error_log("file $username was called $fname and is located at $loc. It has size $size and type $type. Error: $error");
 
                 $loc = $this->convertToAccreditation($loc,$type);
                 if(!empty($loc) && file_exists($loc) && is_readable($loc)) {
-                    $upload_dir = wp_upload_dir();
-                    $filename = $upload_dir['basedir'] . "/accreditations/fencer_" . $fencer->getKey() . ".jpg";
-
+                    $filename = $fencer->getPath();
                     @move_uploaded_file( $loc,  $filename);
                     if(file_exists($filename)) {
                         $fencer->fencer_picture='Y'; // new picture
                         $fencer->save();
-                        $retval['model']=$fencer->export();
                     }
                 }
                 else {
@@ -84,13 +146,7 @@ class PictureManager extends BaseLib {
                 }
             }
         }
-
-        if (!isset($retval["error"])) {
-            wp_send_json_success($retval);
-        } else {
-            wp_send_json_error($retval);
-        }
-        wp_die();
+        return $retval;
     }
 
     private function createUploadDir($dirname) {
@@ -110,7 +166,6 @@ DEMARK;
     }
 
     private function convertToAccreditation($filename, $type) {
-        error_log("converting image at $filename to accreditation photo");
         $imageTmp=null;
         if (preg_match('/jpg|jpeg/i', $type)) {
             $imageTmp = imagecreatefromjpeg($filename);
@@ -127,9 +182,7 @@ DEMARK;
 
 
         if(!empty($imageTmp)) {
-            error_log("succesfully loaded image");
             if(!imageistruecolor($imageTmp)) {
-                error_log("converting to true color");
                 $bg = imagecreatetruecolor(imagesx($imageTmp), imagesy($imageTmp));
                 imagefill($bg, 0, 0, imagecolorallocate($bg, 255, 255, 255));
                 imagealphablending($bg, TRUE);
@@ -147,13 +200,12 @@ DEMARK;
             if($h <=0 || $w <=0) return null;
 
             $ourratio = floatval($w) / $h;
-            error_log("width $w, height $h, ratio $ourratio vs $ratio");
+            //error_log("width $w, height $h, ratio $ourratio vs $ratio");
 
             if($ratio > $ourratio) {
                 // image is too high
                 $requiredHeight = intval($w / $ratio);
                 $offsetY = ($h - $requiredHeight)/2;
-                error_log("cropping height to using $w/$ratio = $requiredHeight from offset $offsetY");
                 $imageTmp = imagecrop($imageTmp,array(
                     'x' => 0,
                     'y' => $offsetY,
@@ -163,10 +215,8 @@ DEMARK;
             }
             else if($ratio < $ourratio) {
                 // image is too wide
-                error_log("cropping width");
                 $requiredWidth = intval($h * $ratio);
                 $offsetX = ($w - $requiredWidth) / 2;
-                error_log("cropping width using $h*$ratio = $requiredWidth from offset $offsetX");
                 $imageTmp = imagecrop($imageTmp, array(
                     'x' => $offsetX,
                     'y' => 0,
@@ -178,13 +228,11 @@ DEMARK;
 
         if(!empty($imageTmp)) {
             // scale the image to 413x531
-            error_log("scaling image to 413x531");
             $imageTmp = imagescale($imageTmp, 413,-1, IMG_BICUBIC);
         }
 
         if(!empty($imageTmp)) {
             // convert to JPEG
-            error_log("storing image");
             imagejpeg($imageTmp, $filename, 90);
             imagedestroy($imageTmp);
             return $filename;

@@ -54,7 +54,6 @@ export default class ImportDialog extends React.Component {
             var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
             ranking.push(obj);
         }
-        console.log(ranking);
     }
 
     printRanking = () => {
@@ -64,7 +63,6 @@ export default class ImportDialog extends React.Component {
             var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
             ranking.push(obj);
         }
-        console.log(ranking);
     }
 
     onCloseDialog = (event) => {
@@ -105,14 +103,13 @@ export default class ImportDialog extends React.Component {
         for(var i=start; i<this.props.value.object.ranking.length && i< (start+10);i++) {
             checkme.push(this.props.value.object.ranking[i]);
         }
-        console.log('checking ',checkme);
+
         this.setState({current_check: start+10},() => {
             result('importcheck',{
                 ranking: checkme
             })
             .then((res) => {
                 // parse results
-                console.log("parsing results");
                 var ranking=this.props.value.object.ranking.slice();
                 if(res && res.data.ranking) {
                     for(var i in res.data.ranking) {
@@ -152,8 +149,6 @@ export default class ImportDialog extends React.Component {
                         }
                     }
 
-                    for(var j in ranking) console.log(ranking[j].pos + "/" + ranking[j].lastname);
-
                     var item=this.props.value;
                     item.object.ranking=ranking;
                     if (this.props.onChange) this.props.onChange(item);
@@ -164,8 +159,6 @@ export default class ImportDialog extends React.Component {
     }
 
     onConvert = () => {
-        console.log('converting text');
-
         // set the default gender based on the selected competition
         if(this.props.weapons && this.props.competition) {
             for(var j in this.props.weapons) {
@@ -222,7 +215,6 @@ export default class ImportDialog extends React.Component {
                 else {
                     obj.country_check="nok";
                 }
-                console.log("pushing "+obj.pos + "/" + obj.lastname);
                 result.push(obj);
             }
             return result;
@@ -239,7 +231,6 @@ export default class ImportDialog extends React.Component {
 
     onChange = (event) => {
         var item=this.props.value;
-        console.log("changing "+event.target.name);
         switch(event.target.name) {
         case 'text': 
             item[event.target.name] = event.target.value; break;
@@ -248,26 +239,20 @@ export default class ImportDialog extends React.Component {
     }
 
     onSuggest = (tp,itm) => {
-        console.log("calling "+tp);
         if(tp === 'close') {
             this.setState({showDialog:false,item:null});
         }
         if(tp === 'save') {
             this.setState({showDialog:false,item:null});
-            console.log('applying change for item ',this.state.item);
             // change the value of the item at this index itm.index
             var ranking=this.props.value.object.ranking.map((rnk,idx) => {
-                console.log("ranking "+rnk.index+" " + rnk.pos + "/" + rnk.fencer_id);
                 if(rnk.index == this.state.item.index) {
-                    console.log('found index item');
                     return this.state.item;
                 }
                 return rnk;
             });
-            console.log("ranking ",ranking);
             var item=this.props.value;
             item.object.ranking=ranking;
-            console.log('propagating change upwards');
             if (this.props.onChange) this.props.onChange(item);
         }
         if(tp === 'change') {
@@ -276,7 +261,6 @@ export default class ImportDialog extends React.Component {
     }
 
     selectRow = (itm) => {
-        console.log("opening dialog for selected import row ",itm);
         this.printRanking();
         this.setState({showDialog: true, item: itm});
     }

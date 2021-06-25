@@ -5,11 +5,19 @@
 
 .bordertop { border-top-width: 1px; border-style: solid; border-color: black;}
 .topmargin { padding-top: 10px; }
-.textcenter { text-align: center; }
+.textcenter { text-align: center !important; }
+.textright { text-align: right !important; }
+.textleft { text-align: left !important; }
 .vertcenter  { vertical-align: center; align-items: center; display:flex;}
+.clearfix:after {display:table;content:"";clear:both;}
 .blue { color: #66f; }
 .red { color: #f00; }
 .green { color: #4c4; }
+.bgred { background-color: #f99; }
+.bggreen { background-color: #4c4; }
+.right { float: right; }
+.cright { float: right; clear: both; }
+.smallprint { font-size: 0.6rem; }
 
 .entry-content table thead th.textcenter { text-align: center; }
 table.style-stripes > tbody tr:nth-child(2n+1) {
@@ -18,6 +26,7 @@ table.style-stripes > tbody tr:nth-child(2n+1) {
 table.style-stripes-body > tbody:nth-child(2n+1) tr {
     background-color: #dde9f6;
 }
+table.compact { width: auto; }
 
 .pager { position: relative; }
 .pager .slider { width: 80%; padding-right: 20px; }
@@ -78,6 +87,7 @@ table.style-stripes-body > tbody:nth-child(2n+1) tr {
     background: #888; 
     color:black; 
 }
+.p-multiselect-panel, .p-colorpicker-panel, .p-dropdown-panel { z-index: 1001000 !important;}
 
 .p-input-icon-left a {
     padding: 0.2rem 2rem 0rem 2rem;
@@ -135,6 +145,8 @@ div.table-action i a { padding: 0; }
 #evfregistration-root .p-dialog-content .sideevent label { height: 1.5rem; line-height: 1.5rem; }
 
 #evfregistration-frontend-root table { line-height: 1.5rem; }
+.entry-content #evfregistration-frontend-root ul li { margin-left: 0.5em; }
+
 #evfregistration-frontend-root .fencer-select-dialog .p-dialog-content .state-icons { width: 2rem; }
 #evfregistration-frontend-root .fencer-select-dialog .fencer-select-events td,
 #evfregistration-frontend-root .fencer-select-dialog .fencer-select-events td  .p-checkbox
@@ -142,7 +154,6 @@ div.table-action i a { padding: 0; }
 #evfregistration-frontend-root .fencer-select-dialog .fencer-select-events tbody.athlete { background-color: #9f9; }
 #evfregistration-frontend-root .incorrect-cat { background-color: #f99; }
 
-#evfregistration-frontend-root .right { float: right; clear: both; }
 #evfregistration-frontend-root .center { width: 100%; margin: 0px auto; text-align: center; align-items: center; }
 
 #evfregistration-frontend-root .cashier .details-close { display: none; }
@@ -154,3 +165,78 @@ div.table-action i a { padding: 0; }
 
 #evfregistration-frontend-root .accreditation { width: 100% ; }
 #evfregistration-frontend-root .accreditation img { width: 413px; margin: 0 auto 0 auto; display: block;}
+
+.templateeditor span.pi { font-size: 8pt; }
+.templateeditor .canvas span.pi {z-index: 1000; display: block; margin-right: -10px; float: right;}
+.templateeditor .toolbox { display: block; position: relative; width: 250px; float: left; padding-right: 10px; background-color: white;}
+.templateeditor .toolbox .component { display: block; width: 240px; margin: 2px 2px; background-color: #eee; padding: 2px 5px;}
+.templateeditor .canvas { display:block; position: relative; width: 420px;height: 594px; background-color: #eee; float: left;}
+.templateeditor .debug { display: block; position: relative; width: 250px; float: left; background-color: #f8a;}
+.templateeditor .canvas .canvasmargins {
+    display: block;
+    position: absolute;
+    width: 380px;
+    height: 554px;
+    top: 20px;
+    left: 20px;
+    background-color: #888;
+    opacity: 0.2;
+}
+.templateeditor .canvas .element { 
+    display: block;
+    border: 1px solid black;
+    line-height: 1.1em;
+    width: 100%;
+    height: 100%;
+    font-size: inherit;
+    font-style: inherit;
+}
+.templateeditor .canvas .qrelement { line-height: inherit; }
+.templateeditor .canvas .elementwrapper { width: auto; height:auto; position: absolute;}
+.templateeditor .canvas .element.orgdecl,
+.templateeditor .canvas .element.roles,
+.templateeditor .canvas .element.dates,
+.templateeditor .canvas .element.accid,
+.templateeditor .canvas .element.name { width: 100%; height: 100%; }
+
+.templateeditor .canvas .element.accid .qrcode { width: 100%; position: relative; }
+.templateeditor .canvas .element.accid .qrcode:after { content: ""; display: block; padding-bottom: 100%; }
+.templateeditor .canvas .element.accid .qrcode div { position: absolute; width: 100%; height: 100%; background-color: white; }
+.templateeditor .settings { display: block; float: left; width: 250px; position: relative; margin-left: 15px;}
+.templateeditor .textelement p { margin: 0;}
+
+.templateeditor .photoid { 
+    background-image: url('photoid.png'); 
+    background-size: 100%;
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+}
+.templateeditor .image {
+    background-size: 100%;
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+}
+
+.inputform label { display: block; width: 100px; height: 40px; line-height: 40px; font-weight: 700; float: left; clear: both;}
+.inputform.wide label {width: 20%; }
+.inputform div { line-height: 40px; }
+.inputform div div.input { width: 149px; float: left; }
+.inputform.wide div div.input  { width: 80%; }
+.inputform div div.input .p-inputtext { width: 148px; }
+.inputform div div.input .p-dropdown { width: 148px; }
+.inputform div div.input .inputint input { width: 60px; }
+.inputform.wide div div.input img { width: auto; }
+
+.inputform .p-inputfield-radiobutton label { line-height: 25px; font-size: 1em; float: none; width: auto; height: auto; display: inline; font-weight: normal; padding-left: 10px;}
+.inputform .p-inputfield-radiobutton .p-radiobutton {vertical-align: top; }
+.inputform .p-checkbox { vertical-align: middle; }
+.inputform .p-inputswitch { vertical-align: middle; }
+
+.inputform div.input table tr.header { border-width: 0 0 2px 0; border-style: solid; border-color: black; }
+
+#evfregistration-frontend-root .filter-event { width: 45%; float: left; }
+.filter-event .p-checkbox { vertical-align: middle; }
+.filter-title { background-color: #eee; }
+.filter-header { background-color: #eee; padding: 5px;}

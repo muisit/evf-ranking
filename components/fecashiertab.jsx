@@ -1,6 +1,6 @@
 import React from 'react';
 import FEBase from './febase';
-import {format_currency, is_hod, is_valid, parse_net_error, is_organiser } from './functions';
+import {format_currency, is_hod, is_valid, parse_net_error, is_organisation } from './functions';
 import { registration } from './api';
 import { Checkbox } from 'primereact/checkbox';
 
@@ -32,6 +32,7 @@ export default class FECashierTab extends FEBase {
                     return itm;
                 }
             }
+            return reg;
         });
         fencer.registrations = regs;
         this.changeSingleRegisteredFencer(fencer);
@@ -86,7 +87,6 @@ export default class FECashierTab extends FEBase {
     }
 
     openDetails = (fencer) => {
-        console.log("opening details for fencer ",fencer);
         if(this.state.fencerDetails === fencer.id) {
             this.setState({ fencerDetails: -1 });
         }
@@ -138,7 +138,6 @@ export default class FECashierTab extends FEBase {
                         else {
                             reg.paid_hod='N';
                         }
-                        console.log("setting paid status of " + reg.id +  " for HoD to "+reg.paid_hod)
                     }
                     else {
                         if (reg.paid != 'Y') {
@@ -147,7 +146,6 @@ export default class FECashierTab extends FEBase {
                         else {
                             reg.paid = 'N';
                         }
-                        console.log("setting paid status of " + reg.id + " for Cashier to " + reg.paid)
                     }
                     regtochange = reg;
                 }
@@ -158,20 +156,34 @@ export default class FECashierTab extends FEBase {
             }
             break;
         case 'allpaid':
-            console.log("allpaid event");
+            // if there are any payments unchecked, check them all. Else uncheck them
+            var allchecked=true;
+            regs.map((reg) => {
+                if(is_hod() && reg.paid_hod != 'Y') allchecked=false;
+                if(!is_hod() && reg.paid != 'Y') allchecked=false;
+            });
             // mark all registrations as paid
-            // this does not allow unmarking
             regs.map((reg) => {
                 var changed=false;
-                if(is_hod() && reg.paid_hod!='Y') {
-                    console.log("setting paid status of " + reg.id +  " for HoD to Y")
-                    reg.paid_hod = 'Y';
-                    changed=true;
+                if(is_hod()) {
+                    if(!allchecked && reg.paid_hod != 'Y' ) {
+                        reg.paid_hod = 'Y';
+                        changed=true;
+                    }
+                    else if(allchecked && reg.paid_hod == 'Y') {
+                        reg.paid_hod = 'N';
+                        changed = true;
+                    }
                 }
-                else if(!is_hod() && reg.paid!='Y') {
-                    console.log("setting paid status of "+reg.id +  " for Cashier to Y")
-                    reg.paid='Y';
-                    changed=true;
+                else {
+                    if(!allchecked && reg.paid != 'Y') {
+                        reg.paid='Y';
+                        changed=true;
+                    }
+                    else if(allchecked && reg.paid == 'Y') {
+                        reg.paid = 'N';
+                        changed = true;
+                    }
                 }
                 if(changed) {
                     this.saveRegistration(fencer, reg);
@@ -183,12 +195,13 @@ export default class FECashierTab extends FEBase {
 
     renderContent() {
         var sideEventById=this.eventsToObj();
-        var as_organiser = !is_valid(this.state.country_item.id) && is_organiser();
+        var as_organiser = !is_valid(this.state.country_item.id) && is_organisation();
 
-        var group_costs=0.0;
-        var individual_costs=0.0;
-        var open_group=0.0;
-        var open_individual=0.0;
+        var group_costs=0.0; // total of all group-payments
+        var individual_costs=0.0; // total of all individual payments
+        var open_group=0.0; // total group payments still not at organisation
+        var open_individual=0.0; // total individual payments still not at organisation
+        var remaining_group=0.0; // total group payments still not at HoD
         // sort all registered fencers in athletes and non-athletes
         var fencers=Object.keys(this.state.registered).map((key) => {
             var fencer = this.state.registered[key];
@@ -201,36 +214,49 @@ export default class FECashierTab extends FEBase {
             fencer.state="ok";
             if(fencer.registrations) {
                 var regs = fencer.registrations.map((reg) => {
-                    console.log("fencer registration ",reg);
+                    // Requirement 2.1.5: only events with a fee are listed
+                    if(!reg) return {filter_me: false };
+
                     var se = sideEventById["e" + reg.sideevent] || null;
                     var is_comp = se && is_valid(se.competition_id);
                     var costs=0.0;
 
                     if(is_comp && parseInt(reg.role) == 0) {
+                        // Requirement 2.1.6: use the competition fee for competitions
                         costs = parseFloat(this.props.item.competition_fee);
+                        // Requirement 2.1.7: use the base fee once per participant
                         if (fencer.is_athlete < 0) {
-                            fencer.is_athlete = reg.id;
+                            fencer.is_athlete = reg.id; // Requirement 2.1.7: check using base fee once only
                             costs += parseFloat(this.props.item.base_fee);
                         }
                     }
                     else if(!is_comp) {
-                        console.log("reg not for competition")
                         // side events have their own specific costs for any participant
                         if(se) {
-                            console.log("registration for ",se.title);
                             costs = parseFloat(se.costs);
                         }
                         // if no side-event, then there are no costs
+                        // this occurs for event-wide roles like trainer, coach, team armourer
                     }
 
-                    // determine the overall payment method. Only look at registrations
-                    // that cost something. And only look at I,G for hods or
-                    // E,O for organisers
-                    if(costs>0.0 
-                      && ( (['I', 'G'].includes(reg.payment) && !as_organiser)
-                        || (['E', 'O'].includes(reg.payment) && as_organiser)
-                        )
-                      ) {
+                    // Requirement 2.1.5: only list events that come with a price
+                    reg.filter_me = (costs > 0.0);
+                    if(reg.filter_me) {
+                        if (as_organiser) {
+                            // Requirement 2.1.11: display E and O types for organisation-invitees
+                            // filter out any registrations that are not paid by the organisation
+                            reg.filter_me = ['E', 'O'].includes(reg.payment);
+                        }
+                        else {
+                            // Requirement 2.1.12: display I and G types for country-participants
+                            // only display individual and group payments
+                            reg.filter_me = ['I', 'G'].includes(reg.payment);
+                        }
+                    }
+
+                    // if still listed, see if the overall payment can be displayed, or is
+                    // 'complicated'
+                    if(reg.filter_me) {
                         if (![reg.payment, '?'].includes(fencer.paysIndividual)) {
                             fencer.paysIndividual = 'C'; // complicated
                         }
@@ -239,16 +265,7 @@ export default class FECashierTab extends FEBase {
                         }
                     }
 
-                    reg.filter_me = true;
-                    if (as_organiser) {
-                        // filter out any registrations that are not paid by the organisation
-                        reg.filter_me = ['E', 'O'].includes(reg.payment);
-                    }
-                    else {
-                        // only display individual and group payments
-                        reg.filter_me = ['I', 'G'].includes(reg.payment);
-                    }
-
+                    // Requirement 2.1.14: create a convenience total for individual and group payments
                     // keep track of all open group and individual costs
                     if (reg.payment == 'I') {
                         individual_costs+=costs;
@@ -259,17 +276,22 @@ export default class FECashierTab extends FEBase {
                     }
                     else if(reg.payment == 'G') {
                         group_costs += costs;
+                        // for group payments, calculate the amount that needs to be paid to the HoD
+                        if(is_hod() && reg.paid_hod != 'Y') {
+                            remaining_group += costs;
+                        }
                         if(reg.paid != 'Y') {
                             open_group += costs;
                         }
                     }
 
-                    if(reg.filter_me && costs > 0.0) {
+                    if(reg.filter_me) {
                         // no sideevent, no costs, so se must be set here
                         fencer.costs_for.push([se, reg,costs]);
                         fencer.total_costs += costs;
 
                         // only take paid status of actual cost-registrations into account
+                        // Requirement 2.1.15: HoD and Cashier manage different payments
                         if(is_hod()) {
                             if(reg.payment == 'G') {
                                 // HoD's are only concerned with group payments
@@ -302,23 +324,13 @@ export default class FECashierTab extends FEBase {
             }
             return fencer;
         })
-            // filter out non-paying participants (coaches, etc)
+            // Requirement 2.1.5: filter out non-paying participants (coaches, etc)
             .filter((fencer) => {
                 // only show items that have an associated cost
                 if(parseFloat(fencer.total_costs) <= 0.0) return false;
-                if(!fencer.registrations || fencer.registrations.length==0){
-                    console.log("calculated costs for fencer, but not left over registrations ",fencer);
-                }
-
-                if(as_organiser) {
-                    // Looking at this as an Organiser
-                    // only show items with non I and G payments (regular, through HoD)
-                    if(['I','G'].includes(fencer.paysIndividual)) {
-                        return false;
-                    }
-                }
                 return true;
             })
+            // Requirement 2.1.18: sort athletes first, then by name
             .sort(function(a1,a2) {
                 if(a1.is_athlete && !a2.is_athlete) return -1;
                 if(a2.is_athlete && !a1.is_athlete) return 1;
@@ -406,7 +418,7 @@ export default class FECashierTab extends FEBase {
                                     <td>{se.title}</td>
                                     <td>{this.props.item.symbol} {cost.toFixed(2)}</td>
                                     <td>
-                                        {(!is_hod() || !fencer.paysIndividual) && (
+                                        {(!is_hod() || fencer.paysIndividual=='G') && (
                                         <Checkbox name={"paid-"  + fencer.id + '-'+reg.id} onChange={this.onChangeEl} checked={checked} />
                                         )}
                                     </td>
@@ -415,7 +427,7 @@ export default class FECashierTab extends FEBase {
                                         {reg.paid=='Y' && (<i className='pi pi-thumbs-up'></i>)}
                                         {!reg.paid == 'Y' && (<span className='pi'></span>)}
                                         </div>)}
-                                    {is_organiser() && (<div>
+                                    {is_organisation() && (<div>
                                         {reg.payment == 'I' && "Ind."}
                                         {reg.payment == 'G' && "Grp"}
                                         {reg.payment == 'O' && "Org"}
@@ -455,8 +467,12 @@ export default class FECashierTab extends FEBase {
                             <td>{this.props.item.symbol} {format_currency(group_costs)}</td>
                         </tr>
                         {open_group > 0.0 && (<tr>
-                            <td className='label'>Remaining group costs:</td>
+                            <td className='label'>Transferrable group costs:</td>
                             <td>{this.props.item.symbol} {format_currency(open_group)}</td>
+                        </tr>)}
+                        {remaining_group > 0.0 && (<tr>
+                            <td className='label'>Receivable group costs:</td>
+                            <td>{this.props.item.symbol} {format_currency(remaining_group)}</td>
                         </tr>)}
                         {individual_costs > 0.0 && (<tr>
                             <td className='label'>Individual costs:</td>
@@ -505,7 +521,7 @@ export default class FECashierTab extends FEBase {
                     </table>
                 </div>
                 )}
-                {is_organiser() && (
+                {is_organisation() && (
                 <div className='col-12'>                    
                     <i className='pi pi-download' onClick={() => this.redirectList("cashier")}> Payment Spreadsheet</i>
                 </div>

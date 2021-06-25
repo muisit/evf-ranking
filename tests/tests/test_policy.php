@@ -3,6 +3,7 @@
 namespace EVFTest;
 
 class Test_Policy extends BaseTest {
+    public $disabled=true;
 
     public function init() {
         parent::init();

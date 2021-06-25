@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             1.1.5
+ * Version:             1.2.0
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag
@@ -37,6 +37,21 @@
  * You should have received a copy of the GNU General Public License
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
+define('EVFRANKING_PLUGIN_PATH', plugin_dir_path(__FILE__));
+
+if(defined('WP_DEBUG')) {
+    // wait time before we automatically refresh a dirty accreditation
+    // Set this to something like 600 seconds in production. For DEV, this can 
+    // be set at 0.
+    define('EVFRANKING_RENEW_DIRTY_ACCREDITATONS',0); 
+    // wait time for the 10-minute-queue. On dev, we don't want to wait that long
+    define('EVFRANKING_CRON_WAIT_HOOK','1_second');
+
+}
+else {
+    define('EVFRANKING_RENEW_DIRTY_ACCREDITATONS', 600);
+    define('EVFRANKING_CRON_WAIT_HOOK', '2_minutes');
+}
 
 function evfranking_activate() {
     $activator = new \EVFRanking\Lib\Activator();
@@ -51,10 +66,19 @@ function evfranking_deactivate() {
     $activator = new \EVFRanking\Lib\Activator();
     $activator->deactivate();
 }
+function evfranking_uninstall() {
+    $activator = new \EVFRanking\Lib\Activator();
+    $activator->uninstall();
+}
 
 function evfranking_plugins_loaded() {
     $activator = new \EVFRanking\Lib\Activator();
-    $activator->upgrade();
+    $activator->loaded();
+}
+
+function evfranking_plugins_upgraded($obj,$options) {
+    $activator = new \EVFRanking\Lib\Activator();
+    $activator->upgrade($obj,$options);
 }
 
 function evfranking_display_admin_page() {
@@ -99,15 +123,6 @@ function evfranking_admin_menu() {
 	);
 }
 
-function evfranking_cron_exec() {
-    $activator = new \EVFRanking\Lib\Activator();
-    $activator->cron();
-}
-function evfranking_cron_exec_10m() {
-    $activator = new \EVFRanking\Lib\Activator();
-    $activator->cron_10();
-}
-
 function evfranking_ranking_shortcode($atts) {
     $actor = \EVFRanking\Lib\Display::Instance();
     return $actor->rankingShortCode($atts);
@@ -118,7 +133,10 @@ function evfranking_results_shortcode($atts) {
 }
 
 function evfranking_rewrite_add_rewrites() {
+    // should match the event button link in \EVFRanking\Lib\Display
     add_rewrite_rule('register/(\d+)/?$', 'index.php?suppress_filters=1&evfranking_register=$matches[1]', 'top');
+    // should match the accreditation ID link in \EVFRanking\Util\PDFCreator
+    add_rewrite_rule('accreditation/([-0-9]+)/?$', 'index.php?suppress_filters=1&evfranking_accredit=$matches[1]', 'top');
 }
 
 function simpleBT() {
@@ -130,7 +148,25 @@ function simpleBT() {
     return $retval;
 }
 
+function evfranking_cron_exec() {
+    $activator = new \EVFRanking\Lib\Activator();
+    $activator->cron();
+}
+function evfranking_cron_exec_10m() {
+    $activator = new \EVFRanking\Lib\Activator();
+    $activator->cron_10();
+}
+
 function evfranking_add_cron_interval( $schedules ) { 
+    $schedules['1_minutes'] = array(
+        'interval' => 1*60,
+        'display'  => esc_html__( 'Every Minute' ), );
+    $schedules['2_minutes'] = array(
+        'interval' => 2*60,
+        'display'  => esc_html__( 'Every 2 Minutes' ), );
+    $schedules['5_minutes'] = array(
+        'interval' => 5*60,
+        'display'  => esc_html__( 'Every 5 Minutes' ), );
     $schedules['10_minutes'] = array(
         'interval' => 10*60,
         'display'  => esc_html__( 'Every 10 Minutes' ), );
@@ -143,7 +179,9 @@ function evfranking_add_cron_interval( $schedules ) {
 if (defined('ABSPATH')) {
     register_activation_hook( __FILE__, 'evfranking_activate' );
     register_deactivation_hook( __FILE__, 'evfranking_deactivate' );
+    register_uninstall_hook(__FILE__, 'evfranking_uninstall');
     add_action('plugins_loaded', 'evfranking_plugins_loaded');
+    add_action('upgrader_process_complete', 'evfranking_plugins_upgraded',10,2);
 
     add_action( 'admin_enqueue_scripts', 'evfranking_enqueue_scripts' );
     add_action( 'admin_menu', 'evfranking_admin_menu' );
@@ -166,20 +204,27 @@ if (defined('ABSPATH')) {
                 $posts[]=$post;
             }
         }
+        if (empty($posts) && isset($q->query["evfranking_accredit"])) {
+            $actor = \EVFRanking\Lib\Display::Instance();
+            $post = $actor->registerAccreditRedirect($q->query["evfranking_accredit"]);
+            if($post != null) {
+                $posts=array();
+                $posts[]=$post;
+            }
+        }
         return $posts;
     },2,99);
 
     // use admin_init instead of init, because we only need to add a rewrite for a possible flush,
     // which can only be done from inside the admin area
     add_action('admin_init', function () {
-        error_log("\r\n\r\nevfranking init");
         // add rewrite rules in case someone decides to flush the cache
         evfranking_rewrite_add_rewrites();
     });
 
     add_filter('query_vars', function ($query_vars) {
-        error_log("adding query vars");
         $query_vars[] = 'evfranking_register';
+        $query_vars[] = 'evfranking_accredit';
         return $query_vars;
     });
 
@@ -190,6 +235,7 @@ if (defined('ABSPATH')) {
 }
 
 class TestLogger {function log($txt) {error_log($txt); }}
+global $evflogger;
 $evflogger = new TestLogger();
 
 function evfranking_autoloader( $name ) {

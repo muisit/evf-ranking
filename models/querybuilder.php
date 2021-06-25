@@ -73,7 +73,6 @@
         return $this->_model->prepare($sql, $this->_where_values);
     }
     private function _doget() {
-        //error_log('query builder for get');
         $sql = strtoupper($this->_action)." "
             .implode(',', array_keys($this->_select_fields))
             ." FROM ".$this->_from;
@@ -113,7 +112,13 @@
         case 'join':
             if(sizeof($this->_joinclause)) {
                 foreach($this->_joinclause as $jc) {
-                    $retval.= " ".$jc["dir"]." JOIN ".$jc["tab"]." ".$jc['al']." ON ".$jc['cl'];
+                    if(strpos($jc["tab"]," ") !== FALSE) {
+                        // add brackets around the subquery
+                        $retval .= " " . $jc["dir"] . " JOIN (" . $jc["tab"] . ") " . $jc['al'] . " ON " . $jc['cl'];
+                    }
+                    else {
+                        $retval.= " ".$jc["dir"]." JOIN ".$jc["tab"]." ".$jc['al']." ON ".$jc['cl'];
+                    }
                 }
             }
             break;
@@ -160,7 +165,6 @@
     }
 
     private function _dosub() {
-        //error_log("is subclause builder");
         $sql="";
 
         // allow SELECT in case of exists() clause
@@ -174,8 +178,12 @@
 
         // regular WHERE subclause, but without the keyword if we don't have a from
         $sql .= $this->buildClause("where",empty($this->_from));
+
+        // in case of complicated subclauses, support group by and having
+        $sql .= $this->buildClause("groupby");
+        $sql .= $this->buildClause("having");
         // model is a QueryBuilder
-        $this->_model->_where_values = array_merge($this->_model->_where_values, $this->_where_values);
+        $this->_model->_where_values = $this->_model->_where_values + $this->_where_values;
         return $sql;
     }
 
@@ -230,18 +238,12 @@
     }
 
     private function andor_where($field,$comparison,$clause,$andor) {
-        if(empty($clause)) {
-            // if clause is null, but comparison is = or <>, compare with NULL
-            if (empty($comparison) || in_array($comparison, array("=", "<>"))) {
-                if(is_array($field)) {
-                    foreach($field as $k=>$v) {
-                        $this->_where($k,'=',$v,$andor);
-                    }
-                }
-                else {
-                    $this->_where($field, $comparison, $clause, $andor);
-                }
-            }
+        if($clause === null) {
+            // use strict comparison mode to avoid having in_array(0,array('=','<>')) return true
+            if(in_array($comparison, array("=", "<>"),true)) {
+                // if clause is null, but comparison is = or <>, compare with NULL
+                $this->_where($field, $comparison, $clause, $andor);
+            }            
             else {
                 // where(field,value) => where(field,=,value)
                 $this->_where($field,'=',$comparison,$andor);
@@ -257,8 +259,8 @@
         return $this->andor_where($field, $comparison, $clause, "OR");
     }
 
-    public function where_in($field, $values) {
-        $this->_where($field,"in",$values);
+    public function where_in($field, $values,$andor="AND") {
+        $this->_where($field,"in",$values,$andor);
         return $this;
     }    
 
@@ -282,9 +284,8 @@
                 $this->_where_clauses[] = array($andor, "exists(".$sql.")");
             }
         }
-        else if(is_callable($field) && empty($comparison) && empty($clause)) {
+        else if(is_callable($field)) {
             $qb = $this->sub();
-            //error_log("calling where clause");
             ($field)($qb);
             $sql = $qb->get();
             $this->_where_clauses[] = array($andor, "(" . $sql . ")");   
@@ -293,21 +294,19 @@
             if($clause === null) {
                 // this could be the case where we compare to NULL
                 // see if the query contains a space or a = sign. 
-                if(strpbrk($field," =") === false) {
-                    // regular field, compare to null
-                    $this->_where_clauses[] = array($andor, "$field is NULL");
-                }
-                else {
+                if(strpbrk($field," =") !== false) {
+                    // field is a subquery, this is ->where(<subquery>)
                     $this->_where_clauses[] = array($andor, $field);
                 }
+                else if($comparison == "<>") {
+                    $this->_where_clauses[]=array($andor,"$field is not NULL");
+                }
+                else {
+                    // default case, comparision should be '=' or empty
+                    $this->_where_clauses[] = array($andor, "$field is NULL");
+                }
             }
-            else if($clause === null && $comparison == "<>") {
-                $this->_where_clauses[]=array($andor,"$field is not NULL");
-            }
-            else if($clause === null && $comparison == "=") {
-                $this->_where_clauses[] = array($andor, "$field is NULL");
-            }
-            else if($clause !== null) {
+            else {
                 $id=uniqid();            
                 $this->_where_values[$id]=$clause;
                 $this->_where_clauses[]=array($andor,$field.$comparison.'{'.$id.'}');
@@ -317,8 +316,15 @@
     }
 
     private $_from=null;
-    public function from($table) {
-        $this->_from=$table;
+    public function from($table, $alias=null) {
+        if(is_callable($table) && $alias !== null) {
+            $qb=$this->sub();
+            ($table)($qb);
+            $this->_from="(".$qb->get().") as $alias";
+        }
+        else {
+            $this->_from=$table;
+        }
         return $this;
     }
 
@@ -327,6 +333,11 @@
         if(empty($dr)) {
             $dr="left";
         }
+        if(is_callable($table)) {
+            $qb = $this->sub();
+            ($table)($qb);
+            $table = $qb->get();
+        }
         $this->_joinclause[]=array("tab"=>$table, "al"=>$alias, "cl"=>$onclause, "dir"=>$dr);
         return $this;
     }
@@ -334,18 +345,14 @@
     private $_orderbyclause=array();
     public function orderBy($field, $dr=null) {
         if(is_array($field)) {
-            //error_log('array of orderBy');
             foreach($field as $k=>$v) {
                 if(is_numeric($k)) {
-                    //error_log('field is numeric, orderBy is '.$v);
                     $this->_orderbyclause[]=$v;
                 }
                 else if(in_array(strtolower($v),array("asc","desc"))) {
-                    //error_log('value is asc/desc, key is '.$k.' '.$v);
                     $this->_orderbyclause[]="$k $v";
                 }
                 else {
-                    //error_log('full clause in key '.$k);
                     $this->_orderbyclause[]=$k;
                 }
             }

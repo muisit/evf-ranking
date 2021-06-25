@@ -90,11 +90,9 @@
     function calculateCategoryAges($requested_category)
     {
         $catval = intval($requested_category->category_value);
-        error_log("calculating age range for $catval");
 
         // determine the qualifying year
         $qualifying_year = intval(date('Y'));
-        error_log("qualifying_year is $qualifying_year");
         if(intval(date('m')) > 7) {
             $qualifying_year+=1;
         }
@@ -140,7 +138,6 @@
         " group by fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr ".
         " order by total_points DESC, fencer_surname, fencer_firstname, fencer_id";
         $results = $wpdb->get_results($sql);
-        error_log("SQL: $sql");
 
         $retval=array();
         $pos=1;

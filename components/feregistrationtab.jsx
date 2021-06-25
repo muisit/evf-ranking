@@ -1,7 +1,7 @@
-import { fencers } from "./api.js";
+import { fencers, accreditation } from "./api.js";
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { InputText } from 'primereact/inputtext';
-import { date_to_category_num, format_date, is_organiser, is_sysop, is_hod, is_valid } from './functions';
+import { parse_date, date_to_category_num, format_date, is_organisation, is_sysop, is_hod, is_valid, my_category_is_older, is_accreditor, is_organiser } from './functions';
 import React from 'react';
 import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
@@ -18,6 +18,7 @@ export default class FERegistrationTab extends FEBase {
             displayFencerDialog: false,
             displaySelectDialog: false,
             suggestions: [],
+            accreditations: [],
             fencer_events: [], // sideevents with fencer-specific convenience data
         });
     }
@@ -25,7 +26,7 @@ export default class FERegistrationTab extends FEBase {
     autocomplete = (evt) => {
         this.setState({fencer:evt.target.value});
         var thistarget=evt.target.value;
-        console.log("target is ",thistarget);
+
         if(thistarget.length > 0) {
             var filters = { name: evt.target.value};
             if(this.state.country_item && is_valid(this.state.country_item.id)) {
@@ -50,14 +51,13 @@ export default class FERegistrationTab extends FEBase {
                 });
         }
         else {
-            console.log("empty target, clearing suggestions");
             this.setState({ suggestions: [] });
         }
     }
 
     addFencer = () => {
-        var dt=new Date(this.props.item.opens);
-        dt=new Date(dt.getFullYear()-40,dt.getMonth()+1,dt.getDate());
+        var dt=parse_date(this.props.item.opens);
+        dt.add(-40,'y');
         this.setState({fencer_object: {
             id: -1,
             name:"",
@@ -65,6 +65,10 @@ export default class FERegistrationTab extends FEBase {
             birthday: format_date(dt),
             country: this.state.country
         }, displayFencerDialog:true});
+    }
+
+    onFencerEdit = (fencer) => {
+        this.setState({fencer_object: fencer, displayFencerDialog: true});
     }
 
     onFencer = (tp, itm) => {
@@ -75,20 +79,14 @@ export default class FERegistrationTab extends FEBase {
             this.setState({ displayFencerDialog: false });
         }
         else if (tp == 'save') {
-            console.log("fencer returned is ",itm);
             itm = this.adjustFencerData(itm);
-            var key="k" + itm.id;
-            // this is a new fencer by definition
-            itm.registrations=[];
-            var registered=Object.assign({},this.state.registered);
-            registered[key]=itm;
-            this.setState({suggestions:[itm],registered:registered});
+            this.replaceRegistration(itm);
+            this.setState({suggestions:[itm]});
         }
     }
 
     onFencerSelection = (tp, itm) => {
         if (tp == 'change') {
-            console.log("FERegistrationTab: changing single registered fencer ",itm);
             this.setState({ selected_fencer: itm });
             this.changeSingleRegisteredFencer(itm);
         }
@@ -108,7 +106,26 @@ export default class FERegistrationTab extends FEBase {
         var registered = Object.assign({}, this.state.registered);
         registered[key] = itm;
         var events=this.selectEventsForFencer(itm);
+
+        // for accreditation purposes, retrieve the list of current badges first
+        if(is_accreditor() || is_organiser() || is_sysop()) {
+            this.loadAccreditations(this.props.item.id, itm.id);
+        }
         this.setState({displaySelectDialog: true, selected_fencer: itm, registered:registered, fencer_events:events });
+    }
+
+    loadAccreditations = (eid,fid) => {
+        if(!eid && !fid) {
+            this.setState({accreditations:[]});
+        }
+        else {
+            return accreditation("fencer", { event: eid, fencer: fid })
+                .then((json) => {
+                    if(json.data.list) {
+                        this.setState({accreditations: json.data.list});
+                    }
+                });
+        }
     }
 
     selectEventsForFencer = (fencer) => {
@@ -134,13 +151,27 @@ export default class FERegistrationTab extends FEBase {
 
         // filter out valid roles for the capabilities
         var roles = this.props.roles.filter((itm) => {
-            if(is_hod() && parseInt(itm.type) == 1) return true;
-            if(is_organiser() && parseInt(itm.type) == 2) return true;
-            if(is_sysop()) return true;
+            if (is_hod() && itm.org=='Country')  return true;
+            if (is_organisation() && (itm.org == 'Org' || itm.org=='Country')) return true;
+            if (is_sysop()) return true; // allow all roles for system administrators
+            return false;
+        });
+        roles.sort((a,b) => {
+            if (a.org == 'Country' && b.org != 'Country') return -1;
+            if (b.org=='Country' && a.org!='Country') return 1;
+            if (a.org=='Org' && b.org != 'Org') return -1;
+            if (b.org == 'Org' && a.org != 'Org') return 1;
+
+            if(a.name < b.name) return -1;
+            if(a.name > b.name) return 1;
+            return 0;
         });
 
         if (fencer && this.state.sideevents && this.props.item) {
             mycat = date_to_category_num(fencer.birthday, this.props.item.opens);
+
+            var weaponevents={};
+            var allweaponevents={};
 
             events = this.state.sideevents.map((event) => {
                 var ev = Object.assign({}, event);
@@ -158,12 +189,46 @@ export default class FERegistrationTab extends FEBase {
                         if (ev.category.value == mycat && ev.weapon.gender == fencer.gender) {
                             ev.is_athlete_event = true;
                             ev.default_role="0"; // default role for athlete events is athlete
+                            weaponevents[ev.weapon.abbr]=ev;
+                        }
+                        if(my_category_is_older(mycat,ev.category.value) && ev.weapon.gender == fencer.gender) {
+                            if(!allweaponevents[ev.weapon.abbr]) allweaponevents[ev.weapon.abbr]=[];
+                            allweaponevents[ev.weapon.abbr].push(ev);
                         }
                     }
                 }
                 else {
                     // not an athlete event
                     ev.is_sideevent=true;
+                }
+                return ev;
+            });
+
+            // see if we need to open up events of a younger category
+            var openevents={};
+            for(var i in allweaponevents) {
+                // look only in events that have no athlete-weapon-event for this fencer
+                if(!weaponevents[i]) {
+                    // check all events and pick the one for the highest category
+                    var highestcat=-1;
+                    for(var j in allweaponevents[i]) {
+                        var ev=allweaponevents[i][j];
+                        if(ev.category.value > highestcat) highestcat=ev.category.value;
+                    }
+                    openevents[i]=highestcat;
+                }
+            }
+
+            // now set the is_athlete flag on the events we need to open for a younger category as well
+            events = events.map((ev) => {
+                if (ev.competition_id && cmpById["k" + ev.competition_id]) {
+                    if (ev.category && ev.weapon) {
+                        var hasOwnCat = openevents[ev.weapon.abbr];
+                        if(hasOwnCat && ev.weapon.gender == fencer.gender && ev.category.value == hasOwnCat) {
+                            ev.is_athlete_event = true;
+                            ev.default_role="0"; // default role for athlete events is athlete
+                        }
+                    }
                 }
                 return ev;
             });
@@ -216,29 +281,28 @@ export default class FERegistrationTab extends FEBase {
                         <div className='subtitle center'>No fencers found</div>
                     )}
                     {this.state.suggestions.length > 0 && (
-                        <ParticipantList fencers={this.state.suggestions} onSelect={this.onFencerSelect}/>
+                        <ParticipantList fencers={this.state.suggestions} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
                     )}
-                    <div className="right" onClick={this.addFencer}>Add New Fencer</div>
-                    <FencerDialog country={this.props.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
-                    <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} roles={this.props.roles}  event={this.props.item} country={this.state.country_item}/>
+                    <div className="cright" onClick={this.addFencer}>Add New Fencer</div>
+                    <FencerDialog apidata={{event: this.props.item.id, country: this.state.country }} country={this.props.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
+                    <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} roles={this.props.roles}  event={this.props.item} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations}/>
                 </div>
                 <div className='col-12'>
                     {(is_hod() && is_valid(this.state.country_item.id)) && (
                     <Accordion id="evfrankingacc" activeIndex={0}>
                         <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
-                            <ParticipantList roles={this.props.roles} country={this.state.country_item} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories}/>
+                                <ParticipantList roles={this.props.roles} country={this.state.country_item} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories} onEdit={this.onFencerEdit}/>
                         </AccordionTab>
                         {this.state.sideevents.map((itm,idx) => (
                             <AccordionTab header={itm.title + " (" + (is_valid(itm.competition_id) ? acount["s" + itm.id] : pcount["s" + itm.id]) + ")"} key={idx}>
-                                <ParticipantList event={itm} fencers={this.state.registered} onSelect={this.onFencerSelect} roles={this.props.roles} competitions={this.state.competitions} categories={this.props.categories}/>
+                                <ParticipantList event={itm} fencers={this.state.registered} onSelect={this.onFencerSelect} roles={this.props.roles} competitions={this.state.competitions} categories={this.props.categories} onEdit={this.onFencerEdit}/>
                             </AccordionTab>
                         ))}
                     </Accordion>)}
-                    {(is_organiser() || is_sysop()) && (
+                    {is_organisation() && (
                     <Accordion id="evfrankingacc" activeIndex={0}>
                             <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
-                                Test
-                            <ParticipantList roles={this.props.roles} country={this.state.country_item} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories} />
+                                <ParticipantList roles={this.props.roles} country={this.state.country_item} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories} onEdit={this.onFencerEdit}/>
                             </AccordionTab>
                     </Accordion>)}
                 </div>

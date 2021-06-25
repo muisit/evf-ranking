@@ -69,7 +69,6 @@
     );
 
     private function sortToOrder($sort) {
-        error_log("adding sort based on $sort");
         if(empty($sort)) $sort="i";
         $orderBy=array();
         for($i=0;$i<strlen($sort);$i++) {
@@ -180,7 +179,6 @@
 
         $errors=array();
         if(!$competition->isNew()) {
-            error_log("checking import into competition");
             $event = $event->get($competition->competition_event);
             $factor=floatval($event->event_factor);
             // error situation, but we'll correct and ignore
@@ -193,7 +191,6 @@
                 foreach($obj["ranking"] as $entry) {
                     $pos = intval($entry["pos"]);
                     $fencerid = intval($entry["fencer_id"]);
-                    error_log("position $pos, fencer $fencerid");
                     $fmodel = $fencer->get($fencerid);
                     if(!$fmodel || $fmodel->isNew()) {
                         $errors[]="Unknown fencer at position $pos called ".$entry["lastname"].", ".$entry["firstname"]."\r\n";
@@ -205,13 +202,11 @@
                 }
 
                 if(sizeof($errors) == 0) {
-                    error_log("no errors, importing everything");
                     $totalparticipants=sizeof($obj["ranking"]);
                     $this->clear($competition->competition_id);
                     foreach($obj["ranking"] as $entry) {
                         $pos = intval($entry["pos"]);
                         $fencerid = intval($entry["fencer_id"]);
-                        error_log("calculating result for position $pos, fencer $fencerid");
                         $res = $this->createResult($competition, $fencerid, $pos, $totalparticipants);
                         $this->recalculateResult($res,$factor);
                     }
@@ -248,8 +243,6 @@
     private function recalculateResult($res, $factor) {
         $pos=$res->result_place;
         $total=$res->result_entry;
-        error_log("recalculating result for ".$res->result_fencer." at $pos/$total with factor $factor");
-        error_log("current values: ".$res->result_points."/".$res->result_de_points."/".$res->result_podium_points."/".$res->result_total_points);
 
         $max_points = 50;        
         if($pos > 0)
@@ -285,7 +278,6 @@
 
         $res->result_total_points =  $factor * ($res->result_points + $res->result_de_points + $res->result_podium_points);
         $res->save();
-        error_log("new values: ".$res->result_points."/".$res->result_de_points."/".$res->result_podium_points."/".$res->result_total_points);
     }
 
     public function doImportCheck($ranking) {
@@ -334,7 +326,6 @@
                 $ccheck='nok';
                 $ctext='Incorrect country';
                 $acheck='nok';
-                error_log("adding ".json_encode($values)." to suggestions");
                 $suggestions=array($model->export($values));
             }
 
@@ -367,9 +358,7 @@
                 $values = array_merge($ln,$fn,$cn);
                 foreach($keys as $k) {
                     if(isset($values[$k])) {
-                        error_log("exporting values ".json_encode($values[$k]));
                         $vs = $model->export($values[$k]);
-                        error_log("pushing ".json_encode($vs));
                         $suggestions[]=$vs;
                     }
                 }

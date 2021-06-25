@@ -59,7 +59,6 @@
     }
 
     private function sortToOrder($sort) {
-        error_log('sort to order for '.$sort);
         if(empty($sort)) $sort="i";
         $orderBy=array();
         for($i=0;$i<strlen($sort);$i++) {
@@ -80,7 +79,6 @@
             case 'B': $orderBy[]="fencer_dob desc"; break;
             }
         }
-        error_log('returning '.json_encode($orderBy));
         return $orderBy;
     }
 
@@ -131,6 +129,38 @@
             ->where("c.country_abbr",$name)->get();
     }
 
+    public function getPath() {
+        $upload_dir = wp_upload_dir();
+        $dirname = $upload_dir['basedir'] . '/accreditations';
+        $filename = $dirname . "/fencer_" . $this->getKey() . ".jpg";
+        return $filename;
+    }
+
+    public function save() {
+        if(parent::save()) {
+            $accr=new Accreditation();
+            $accr->makeDirty($this->getKey());
+
+            return true;
+        }
+        return false;
+    }
+
+    public function filterData($data, $caps) {
+        // filter out irrelevant data depending on the capability
+        $retval=array();
+        if(in_array($caps, array("accreditation"))) {
+            $retval=array(
+                "id" => isset($data["id"]) ? $data["id"] :-1,
+                "picture" => isset($data["picture"]) ? $data["picture"] : 'N'
+            );
+        }
+        // system and registrars can save all fencer data
+        else if(in_array($caps, array("system", "organiser", "registrar"))) {
+            $retval=$data;
+        }
+        return parent::filterData($retval,$caps);
+    }
 
 }
  

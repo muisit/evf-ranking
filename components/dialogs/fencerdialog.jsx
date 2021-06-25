@@ -37,7 +37,7 @@ export default class FencerDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        fencer('save',this.props.value)
+        fencer('save',Object.assign({},this.props.value, this.props.apidata ? this.props.apidata : {}))
             .then((json) => {
                 this.loading(false);
                 var itm=Object.assign({},this.props.value);
@@ -105,7 +105,6 @@ export default class FencerDialog extends React.Component {
     }
 
     render() {
-      console.log("rendering fencers dialog for ",this.props.value);
         var footer=(<div>
         <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
         <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />

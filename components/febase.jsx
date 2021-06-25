@@ -1,5 +1,5 @@
 import { competitions, sideevents, registrations, abort_all_calls } from "./api.js";
-import { format_date_fe, date_to_category, date_to_category_num, format_date, is_hod, is_valid } from './functions';
+import { parse_date, format_date_fe, date_to_category, date_to_category_num, format_date, is_hod, is_valid } from './functions';
 import { Dropdown } from 'primereact/dropdown';
 import React from 'react';
 
@@ -20,7 +20,6 @@ export default class FEBase extends React.Component {
             sideevents: [],
             registrations: [],
             registered: {},
-            roles: [],
             competitions: []
         };
     }
@@ -32,18 +31,21 @@ export default class FEBase extends React.Component {
         }
         this.props.countries.map((cnt, idx) => {
             if (cnt.id == id) {
-                console.log("setting default HoD country to " + cnt.name);
                 retval = cnt;
             }
         });
-        console.log("country from id returns " + (retval ? retval.name : "nothing"));
         return retval;
     }
 
     componentDidMount = () => {
+        this._componentDidMount();
+    }
+
+    _componentDidMount = () => {
         if(this.props.item.id > 0) {
             sideevents(this.props.item.id).then((cmp1) => { 
                 var sortedevents = cmp1.data.list.slice();
+                // Requirement 3.1.2: sort events first, then by title
                 sortedevents.sort(function (e1, e2) {
                     // we sort competitions first, so if one item has a competition_id and the other not, return a value
                     if (e1.competition_id > 0 && !e2.competition_id) return -1; // e1 before e2
@@ -76,27 +78,24 @@ export default class FEBase extends React.Component {
             fencer.category = "No veteran";
             fencer.category_num = -1;
             fencer.birthyear = "unknown";
-            fencer.birthday=format_date(new Date());
+            fencer.birthday=format_date(parse_date());
         }
         fencer.fullgender = fencer.gender == 'M' ? "Man" : "Woman";
-        fencer.registrations = [];
+        if(!fencer.registrations) fencer.registrations = [];
         return fencer;
     }
 
     changeSingleRegisteredFencer = (itm) => {
-        console.log("FEBase: change Single Registered Fencer, creating new registered list using ",itm);
         var newlist = {};
         Object.keys(this.state.registered).map((key) => {
             var fencer = this.state.registered[key];
             if (fencer.id == itm.id) {
-                console.log("FEBase: replacing newlist with new fencer data ",itm);
                 newlist[key] = itm;
             }
             else {
                 newlist[key] = fencer;
             }
         });
-        console.log("FEBase: updating state after registered change");
         this.setState({ registered: newlist });
     }
 
@@ -131,8 +130,20 @@ export default class FEBase extends React.Component {
         }
     }
 
+    replaceRegistration = (fencer) => {
+        var key="k" + fencer.id;
+        var allfencers = Object.assign({}, this.state.registered);
+        if(allfencers[key]) {
+            fencer.registrations = allfencers[key].registrations;
+        }
+        else {
+            fencer.registrations=[];
+        }
+        allfencers[key]=fencer;
+        this.setState({registered: allfencers});
+    }
+
     onCountrySelect = (val) => {
-        console.log("setting country to "+val);
         // retrieve the list of registrations for the selected country
         this.setState({ 'country': val, "country_item": this.countryFromId(val) }, this.getRegistrations);
     }
@@ -164,8 +175,7 @@ export default class FEBase extends React.Component {
     }
 
     render() {
-        var startdate = new Date(this.props.item.opens);
-        startdate = format_date_fe(startdate);
+        var startdate = format_date_fe(this.props.item.opens);
 
         return (<div className='container'>
             {this.countryHeader()}

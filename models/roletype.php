@@ -65,6 +65,11 @@
         }
     }
 
+    public static function ListAll() {
+        $model=new RoleType();
+        return $model->selectAll(null, null, "","n");
+    }
+
     public function selectAll($offset,$pagesize,$filter,$sort, $special=null) {
         $qb = $this->select('*')->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);
@@ -75,6 +80,15 @@
         $qb = $this->numrows();
         $this->addFilter($qb,$filter,$special);
         return $qb->count();
+    }
+
+    public static function FindByType($orgdecl) {
+        $model=new RoleType();
+        $rt=$model->select("*")->where("org_declaration",$orgdecl)->first();
+        if(!empty($rt)) {
+            $model->read($rt);            
+        }
+        return $model;
     }
 
     public function delete($id=null) {

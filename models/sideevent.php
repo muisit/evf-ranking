@@ -85,5 +85,38 @@
         $qb = SideEvent::BaseRegistrationSelection($this);
         return $qb->where("TD_Registration.registration_event", $this->getKey())->get();
     }
+
+    public static function SelectCompetitions($event) {
+        $model = new SideEvent();
+        $events = $model->query()->select("id")->from("TD_Event_Side")
+        ->where("event_id", $event->getKey())
+            ->where_exists(function ($qb) {
+                $qb->select("*")->from("TD_Competition")->where("competition_id=TD_Event_Side.competition_id");
+            })->get();
+        return $events;
+    }
+
+    public function selectAccreditations($event) {
+        // select accreditations for all fencers that registered for this side event
+        // only select actual participants (role=0)
+        $templateIdByType = AccreditationTemplate::TemplateIdsByRoleType($event);
+        $athleteTemplates = isset($templateIdByType["r0"]) ? $templateIdByType["r0"] : array();
+
+        $accr = new Accreditation();
+        $se=$this;
+        $res = $accr->select('*')
+            ->where_exists(function($qb) use($se) {
+                $qb->select("*")->from("TD_Registration")
+                    ->where("registration_event",$se->getKey())
+                    ->where("registration_fencer=TD_Accreditation.fencer_id");
+            })
+            ->where_in("template_id", $athleteTemplates)
+            ->where('event_id', $event->getKey())
+            ->get();
+        $retval = array();
+        foreach ($res as $r) $retval[] = new Accreditation($r);
+        return $retval;
+    }    
+
 }
  

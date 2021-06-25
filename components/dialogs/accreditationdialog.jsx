@@ -4,14 +4,14 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Checkbox } from 'primereact/checkbox';
-import { format_date_fe_short, date_to_category_num, date_to_category, jsonOutput } from "../functions";
+import { random_hash, is_accreditor, is_organiser, is_sysop } from "../functions";
 
 export default class AccreditationDialog extends React.Component {
     constructor(props, context) {
         super(props, context);
 
         this.state = {
-            imageHash: Date.now()
+            imageHash: random_hash()
         };
     }
 
@@ -26,7 +26,8 @@ export default class AccreditationDialog extends React.Component {
     saveFencer = (item) => {
         fencer('save', {
             id: item.id,
-            picture: item.picture
+            picture: item.picture,
+            event: this.props.event.id
         })
             .then((json) => {
                 var itm = Object.assign({}, this.props.value);
@@ -59,9 +60,8 @@ export default class AccreditationDialog extends React.Component {
             if (json.data.model) {
                 itm = Object.assign({}, itm, json.data.model);
             }
-            console.log("saving item ",itm);
             this.save(itm);
-            this.setState({imageHash: Date.now()});
+            this.setState({imageHash: random_hash()});
         })
         .catch((err) => {
             if (err.response.data.messages && err.response.data.messages.length) {
@@ -110,7 +110,7 @@ export default class AccreditationDialog extends React.Component {
             return (null);
         }
 
-        var canapprove = ["accreditor", "organiser"].includes(evfranking.eventcap) && this.props.value.picture != 'N';
+        var canapprove = (is_accreditor() || is_organiser() || is_sysop()) && this.props.value.picture != 'N';
         var approvestates = [{
             name: "Newly uploaded",
             id: "Y"
@@ -133,7 +133,7 @@ export default class AccreditationDialog extends React.Component {
         <Button label="Close" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
 
-        return (<Dialog header="Approve Picture" position="center" visible={this.props.display} className="accreditation-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+        return (<Dialog baseZIndex={100000} header="Approve Picture" position="center" visible={this.props.display} className="accreditation-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
     <h5>{ this.props.value.name }, {this.props.value.firstname }, {this.props.value.country_name}</h5>
     <h5>Birthyear: { this.props.value.birthyear } Gender: {this.props.value.gender == 'M' ? 'Man': 'Woman'}</h5>
     <div className='container'>
@@ -157,7 +157,6 @@ export default class AccreditationDialog extends React.Component {
     }
 
     renderPicture () {
-        console.log("rendering picture for ",this.props.value);
         // display the accreditation photo
         // anyone that can view this dialog can upload a better image
         var canapprove=["accreditor","organiser"].includes(evfranking.eventcap) && this.props.value.picture!='N';

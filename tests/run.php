@@ -6,8 +6,7 @@ foreach($argv as $arg) {
     if ($arg == "-s" || $arg == "--silent") $verbose = false;
 }
 
-function loadClassFile($filename)
-{
+function loadClassFile($filename) {
     $classes = get_declared_classes();
     require_once($filename);
     $diff = array_diff(get_declared_classes(), $classes);
@@ -21,17 +20,36 @@ function loadClassFile($filename)
     return null;
 }
 
+function evftest_autoloader( $name ) {
+    if(!strncmp($name,'EVFRanking\\',11)) {
+        $elements = explode('\\', strtolower($name));
+        // require at least EVFRanking\<sub>\<name>, so 3 elements
+        if(sizeof($elements) > 2 && $elements[0] == "evfranking") {
+            $fname = $elements[sizeof($elements)-1] . ".php";
+            $dir = implode("/",array_splice($elements,1,-1)); // remove the evfranking part
+            if(file_exists(__DIR__."/../".$dir ."/".$fname)) {
+                include(__DIR__."/../".$dir."/".$fname);
+            }
+        }
+    }
+}
+
+spl_autoload_register('evftest_autoloader');
+// load the PDF implementation upfront, so we can subclass its main class
+require_once('../../ext-libraries/libraries/tcpdf/tcpdf.php');
 require_once("base.php");
+
 // run all tests in this directory
 $tstdir = dirname(__FILE__) .'/tests';
 $objects = scandir($tstdir);
 $alltests = array();
 foreach ($objects as $filename) {
     $path = $tstdir . "/" . $filename;
-    if ($filename != '.' && $filename != '..' && is_file($path)) {
+    $ext = $pi = pathinfo($path, PATHINFO_EXTENSION);
+    if ($filename != '.' && $filename != '..' && $ext == "php" && is_file($path)) {
         $model = loadClassFile($path);
-        if (!empty($model) && method_exists($model,"run")) {
-            $alltests[$model->title . uniqid()]=$model;
+        if (!empty($model) && method_exists($model,"run") && (!isset($model->disabled) || !$model->disabled)) {
+            $alltests[$model->name . uniqid()]=$model;
         }
     }
 }
@@ -42,7 +60,7 @@ $numtests=0;
 $success=0;
 $fails=0;
 foreach ($alltests as $key=>$model) {
-    echo "Running tests for ".$model->title."\r\n";
+    echo "Running tests for ".$model->name."\r\n";
     $model->run();
     echo "Tests: ".$model->count." Success: ".$model->success." Fails: ".$model->fails."\r\n";
     $success+=$model->success;

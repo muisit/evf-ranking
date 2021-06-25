@@ -16,7 +16,6 @@ export default class MigrationDialog extends React.Component {
     }
 
     close = () => {
-        console.log('closing migration dialog');
         if(this.props.onClose) this.props.onClose();
     }
 
@@ -27,7 +26,6 @@ export default class MigrationDialog extends React.Component {
 
     onCloseDialog = (event) => {
         if(parseInt(this.props.value.old_status) == 0) {
-            console.log('status is 0');
             this.loading(true);
 
             migration('save',{
@@ -36,7 +34,6 @@ export default class MigrationDialog extends React.Component {
                 status: 1})
                 .then((json) => {
                     this.loading(false);
-                    console.log('saving migration value');
                     this.save(this.props.value);
                 })
                 .catch((err) => {
@@ -52,9 +49,6 @@ export default class MigrationDialog extends React.Component {
                     }
                 });
         }
-        else {
-            console.log('not closing because status is '+parseInt(this.props.value.old_status));
-        }
     }
     
 
@@ -65,7 +59,6 @@ export default class MigrationDialog extends React.Component {
     onChangeEl = (event) => {
         switch(event.target.name) {
         case 'status':
-            console.log('setting status element to '+event.target.value);
             if(event.target.value == '1') {
                 var item=this.props.value;
                 item.status='1';

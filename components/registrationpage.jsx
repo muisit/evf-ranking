@@ -3,9 +3,12 @@ import { TabView, TabPanel } from 'primereact/tabview';
 import FERegistrationTab from './feregistrationtab';
 import FECashierTab from './fecashiertab';
 import FEAccreditorTab from './feaccreditortab';
+import FEAccrTemplateTab from './feaccrtemplatetab';
+import FEOverviewTab from "./feoverviewtab";
+import FEAccreditationTab from './feaccreditationtab';
 
 import { countries, singleevent, weapons, categories, roles } from "./api.js";
-import {is_hod, is_organiser, is_sysop, is_administrator, is_registrar, is_accreditor, is_cashier } from "./functions";
+import { parse_date, is_hod, is_organiser, is_sysop, is_organisation, is_registrar, is_accreditor, is_cashier } from "./functions";
 
 export default class RegistrationPage extends React.Component {
     constructor(props, context) {
@@ -28,13 +31,13 @@ export default class RegistrationPage extends React.Component {
     componentDidMount = () => {
         singleevent("view",{id: evfranking.eventid})
             .then(json => {
-                var opensat = new Date(json.data.item.reg_open);
-                var closesat = new Date(json.data.item.reg_close);
-                var now = new Date();
+                var opensat = parse_date(json.data.item.reg_open);
+                var closesat = parse_date(json.data.item.reg_close);
+                var now = parse_date();
                 this.setState({
                     item: json.data.item,  
-                    notopenyet: (now.getTime() < opensat.getTime()),
-                    isclosed: (now.getTime() > closesat.getTime())
+                    notopenyet: now.isBefore(opensat),
+                    isclosed: closesat.isBefore(now)
                 });
             });
         countries(0, 1000, '', "n")
@@ -73,60 +76,73 @@ export default class RegistrationPage extends React.Component {
         }
         
         var closedmessage="";
-        if(!is_organiser() && this.state.notopenyet) {
+        if(!is_organisation() && this.state.notopenyet) {
             closedmessage=" (not open)";
         }
-        if (!is_organiser() && this.state.isclosed) {
+        if (!is_organisation() && this.state.isclosed) {
             closedmessage = " (closed for registration)";
         }
 
-        var regtab = (null);
-        var cashiertab = (null);
-        var accrtab=(null);
+        var overviewtab = (<TabPanel id="overview" header="Overview">
+            <FEOverviewTab item={this.state.item} countries={this.state.countries} weapons={this.state.weapons} categories={this.state.categories} roles={this.state.roles} />
+        </TabPanel>);
+        var regtab = (<TabPanel id="register" header="Registration">
+            <FERegistrationTab item={this.state.item} countries={this.state.countries} weapons={this.state.weapons} categories={this.state.categories} roles={this.state.roles} />
+        </TabPanel>);
+        var cashiertab = (<TabPanel id="cashier" header="Cashier">
+            <FECashierTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} />
+        </TabPanel>);
+        var accrtab = (<TabPanel id="badges" header="Badges">
+            <FEAccreditorTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} />
+        </TabPanel>);
+        var accrtab1 = (<TabPanel id="accreditation" header="Accreditation">
+            <FEAccreditationTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} weapons={this.state.weapons} categories={this.state.categories} />
+        </TabPanel>);
+        var accrtab2 = (<TabPanel id="accrtemplates" header="Templates">
+            <FEAccrTemplateTab item={this.state.item} roles={this.state.roles} />
+        </TabPanel>);
 
-        if (is_sysop() || is_administrator() || is_registrar() || is_hod()) {
-            regtab = (<FERegistrationTab item={this.state.item} countries={this.state.countries} weapons={this.state.weapons} categories={this.state.categories} roles={this.state.roles} />);
+        var canregister = (is_sysop() || is_organiser() || is_registrar() || is_hod());
+        var cancashier = (is_sysop() || is_organiser() || is_cashier() || is_hod());
+        var canaccredit = (is_sysop() || is_organiser() || is_accreditor());
+        var canaccredit2 = (is_sysop() || is_organiser());
+
+        if(canaccredit2) {
+            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
+                {overviewtab}
+                {canregister && regtab}
+                {cancashier && cashiertab}
+                {canaccredit && accrtab1}
+                {canaccredit && accrtab}
+                {canaccredit2 && accrtab2}
+            </TabView>);
+        }
+        else if(is_hod()) {
+            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
+                {overviewtab}
+                {canregister && regtab}
+                {cancashier && cashiertab}
+            </TabView>);
+        }
+        else if (canregister) {
+            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
+                {overviewtab}
+                {canregister && regtab}
+            </TabView>);
+        }
+        else if(cancashier) {
+            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
+                {overviewtab}
+                {cancashier && cashiertab}
+            </TabView>);
+        }
+        else if(canaccredit) {
+            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
+                {overviewtab}
+                {canaccredit && accrtab1}
+                {canaccredit && accrtab}
+            </TabView>);
         }
 
-        if(is_sysop() || is_administrator() || is_cashier() || is_hod()) {
-            cashiertab = (<FECashierTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} />);
-        }
-
-        if (is_sysop() || is_administrator() || is_accreditor()) {
-            accrtab = (<FEAccreditorTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} />);
-        }
-
-        var content = (null);
-        if(is_administrator() || is_hod() || is_sysop()) {
-            // tabbed view for users with more capabilities
-            regtab = (<TabPanel id="register" header="Registration">{regtab}</TabPanel>);
-            cashiertab = (<TabPanel id="cashier" header="Cashier">{cashiertab}</TabPanel>);
-            if(is_hod()) {
-                content = (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="register">
-                    {regtab}
-                    {cashiertab}
-                </TabView>
-                );
-            }
-            else {
-                accrtab = (<TabPanel id="accreditor" header="Accreditor">{accrtab}</TabPanel>);
-                content = (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="register">
-                    {regtab}
-                    {cashiertab}
-                    {accrtab}
-                </TabView>
-                );
-            }
-        }
-        else {
-            // non-tabbed view if only one tab is visible anyway
-            content = (<div>
-                {regtab}
-                {cashiertab}
-                {accrtab}
-            </div>)
-        }
-
-        return content;
     }
 }

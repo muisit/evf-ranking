@@ -31,7 +31,7 @@
     public $table = "TD_Registration";
     public $pk="registration_id";
     public $fields=array("registration_id","registration_fencer","registration_role","registration_event","registration_costs","registration_date",
-        "registration_paid","registration_payment", "registration_paid_hod", "registration_mainevent");
+        "registration_paid","registration_payment", "registration_paid_hod", "registration_mainevent", "registration_state");
     public $fieldToExport=array(
         "registration_id" => "id",
         "registration_fencer" => "fencer",
@@ -43,19 +43,21 @@
         "registration_paid" => "paid",
         "registration_paid_hod" => "paid_hod",
         "registration_payment" => "payment",
+        "registration_state" => "state"
 
     );
     public $rules = array(
         "registration_id"=>"skip",
         "registration_fencer" => "model=Fencer|required",
-        "registration_role" => "model=Role",
+        "registration_role" => "model=Role,null",
         "registration_mainevent" => "model=Event|required",
         "registration_event" => "model=SideEvent",
         "registration_costs" => "float|gte=0",
         "registration_date" => "date",
         "registration_paid" => "bool|default=N",
         "registration_paid_hod" => "bool|default=N",
-        "registration_payment" => "enum=I,G,O,F,E"
+        "registration_payment" => "enum=I,G,O,F,E",
+        "registration_state" => "enum=R,P,C"
     );
 
     public function export($result=null) {
@@ -132,48 +134,33 @@
         return $qb->count();
     }
 
-    public function saveFromObject($obj) {
-        // further restrict the saving of data depending on the specific capabilities of the user
-        // The policy already checked that the current user is allowed to register fencers on the selected
-        // event and sideevent. We now check that:
-        // - cashier can only change the paid field
-        // - registrars cannot change the paid field
-        // - organiser can set anything
-        error_log("saveFromObject for registration");
-        $event = new Event($obj["event"]);
-        if (!$event->exists()) return false;
-        
-        $sideevent=new SideEvent();
-        $sideevent=$sideevent->get($obj["sideevent"]);
-        // sideevent can be empty for non-athlete roles
-
-        $caps = $event->eventCaps();
-
-        if($caps == "cashier") {
-            // make sure only the paid field is present in the object data
-            $newobject=array();
-            if(isset($obj["paid"])) {
-                // cashiers can only check the paid status
-                $newobject["paid"] = $obj["paid"];
-            }
-            return parent::saveFromObject($newobject);
-        }
-        else if($caps == "registrar" || $caps=="hod" ||  $caps == "organiser" || $caps=="system") {
-            if(($caps == "registrar" || $caps=="hod") && isset($obj["paid"])) {
+    public function filterData($data, $caps) {
+        if ($caps == "cashier") {
+            return array(
+                "id" => isset($data["id"]) ? $data["id"] : -1,
+                "paid" => isset($data["paid"]) ? $data["paid"] : 'N'
+            );
+        } 
+        else if ($caps == "accreditation") {
+            return array(
+                "id" => isset($data["id"]) ? $data["id"] : -1,
+                "state" => isset($data["state"]) ? $data["state"] : 'R'
+            );
+        } 
+        else if ($caps == "registrar" || $caps == "hod") {
+            if(isset($data["paid"])) {
                 // registrars and hods cannot set the cashier-paid status
-                unset($obj["paid"]);
+                unset($data["paid"]);
             }
-            // we're not checking if the hod is saving a registration for a fencer
-            // of the HoD's country. That is checked in the policy already
-            return parent::saveFromObject($obj);
         }
-        // other roles are not allowed to save any data, but this should have been checked in the general policy
-        return false;
+        return $data;
     }
 
     public function save() {
+        $wasnew=false;
         if($this->isNew()) {
             $this->registration_date = strftime('%Y-%m-%d');
+            $wasnew=true;
         }
         if(empty($this->registration_role)) {
             $this->registration_role = 0;// athlete role by default
@@ -196,6 +183,14 @@
             // save succesful, make all accreditations for this fencer dirty
             $model=new Accreditation();
             $model->makeDirty($this->registration_fencer,$this);
+
+//            if($wasnew) {
+//                Audit::Create($this, "created");
+//            }
+//            else {
+//                Audit::Create($this,"updated");
+//            }
+
             return true;
         }
         return false;
@@ -208,7 +203,6 @@
         }
         if(empty($model)) {
             // deleting a non-existing registration always succeeds
-            error_log("deleting empty registration... returning true");
             return true;
         }
         
@@ -220,15 +214,81 @@
         // we do not check whether the HoD is deleting a registration for a fencer
         // belonging to the same country. That is done in the policy already
         if ($caps == "registrar" || $caps == "organiser" || $caps=="hod" || $caps=="system") {
-            error_log("deleting registration through parent");
             if(parent::delete($model->getKey())) {
                 // delete succesful, make all accreditations for this fencer dirty
                 $amodel=new Accreditation();
                 $amodel->makeDirty($model->registration_fencer,$model);
+                // clear the whole audit log for this registration
+                Audit::Clear($model);
                 return true;
             }
         }
         return false;
+    }
+
+    public function overview($eid) {
+        $event=new Event($eid,true);
+        $retval=array();
+        if($event->exists()) {
+            $sides = $event->sides(null,true);
+            $sidesById=array();
+            foreach($sides as $s) $sidesById["s".$s->getKey()]=$s;
+
+            $rtype = RoleType::ListAll();
+            $roletypeById=array();
+            foreach($rtype as $r) $roletypeById["r".$r->role_type_id]=new RoleType($r);
+
+            $roles = Role::ListAll();
+            $roleById = array();
+            foreach ($roles as $r) $roleById["r" . $r->role_id] = new Role($r);
+
+            // create an overview of participants per country per sideevent
+            $res=$this->select('registration_event, registration_role, fencer_country, count(*) as cnt')
+                ->join("TD_Fencer","f","f.fencer_id=TD_Registration.registration_fencer")
+                ->where("registration_mainevent",$event->getKey())
+                ->groupBy("registration_event, registration_role, fencer_country")
+                ->get();
+            foreach($res as $row) {
+                $c = $row->fencer_country;
+                $ckey="c".$c;
+                if(!isset($retval[$ckey])) $retval[$ckey]=array();
+
+                $se=$row->registration_event;                
+                $skey=empty($se) ? "sorg" : "s".$se;
+                $tot=$row->cnt;
+                $rl=$row->registration_role;
+
+                if(intval($rl) == 0 && isset($sidesById[$skey])) {
+                    // athlete or participant
+                    $retval[$ckey][$skey]=(isset($retval[$ckey][$skey]) ? $retval[$ckey][$skey] : 0) + $tot;
+                }
+                else {
+                    $skey='sorg'; // organiser role
+                    $rkey="r".$rl;
+                    if(isset($roleById[$rkey])) {
+                        // registration with a specific role
+                        $role=$roleById[$rkey];
+                        $rtkey = "r".$role->role_type;
+                        if(isset($roletypeById[$rtkey])) {
+                            $rt=$roletypeById[$rtkey];
+                            switch($rt->org_declaration) {
+                            case 'Country': break;
+                            case 'Org': $ckey='corg'; $skey=$rkey; break;
+                            case 'EVF': $ckey='coff'; $skey=$rkey; break;
+                            case 'FIE': $ckey='coff'; $skey=$rkey; break;
+                            }
+                        }
+                        // else keep the ckey set to the country, but set the skey to sorg
+                        // to mark this as an organisatory entry
+                    }
+                    // else: no role and no side event... this would be an error, but treat it as
+                    // a generic country-organiser
+                        
+                    $retval[$ckey][$skey] = (isset($retval[$ckey][$skey]) ? $retval[$ckey][$skey] : 0) + $tot;
+                }
+            }
+        }
+        return $retval;
     }
  }
  

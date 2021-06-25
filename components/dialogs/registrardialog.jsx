@@ -107,7 +107,6 @@ export default class RegistrarDialog extends React.Component {
         };
         var countries = this.props.countries.slice();
         countries.splice(0,0,nullvalue);
-        console.log("countries is ",countries);
 
         return (<Dialog header="Edit Registrar" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
       <div>

@@ -31,21 +31,17 @@ class BaseJob {
     public $_log=array();
 
     public function __construct(\EVFRanking\Models\Queue $queue=null) {
-        error_log("basejob constructor");
         if(empty($queue)) {
-            error_log("creating new queue model for job");
             $queue = new \EVFRanking\Models\Queue();
+            $queue->queue = "default";
         }
         $this->queue = $queue;
     }
 
     public function create() {
-        error_log("setting queue values for new queue job");
         $this->queue->state = "new";
         $this->queue->setKey(-1);
-        $this->queue->queue = "default";
         $this->queue->setData("model",get_class($this));
-        error_log("saving queue data");
         $this->queue->save();
     }
 
@@ -65,6 +61,15 @@ class BaseJob {
         global $evflogger;
         if(!empty($evflogger)) $evflogger->log($txt);
         $this->_log[]=$txt;
+    }
+
+    protected function fail($msg=null) {
+        if(!empty($msg)) {
+            $this->log($msg);
+        }
+        $logs = $this->queue->getData("logs", array());
+        $this->queue->setData("logs", $logs + $this->_log);
+        $this->queue->fail();
     }
 
     protected function yield() {

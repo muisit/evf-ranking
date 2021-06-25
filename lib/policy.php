@@ -73,225 +73,85 @@ class Policy extends BaseLib {
         return $userdata;
     }
 
-    public function checkRegistration($model, $action, $data) {
-        global $evflogger;
-        $evflogger->log(json_encode($data));
-        // if hodcountry === null, this is a general administrator. If it is -1, there is no record
-        // this is a rather turn-around way of interpreting data...
-        $hodcountry = $this->hodCountry();
-        $evflogger->log("hodCountry is $hodcountry");
+    private function loadModelsForPolicy($data,$modelname) {
+        $event = null;
+        $sideevent = null;
+        $basemodel = null;
+        $fencer=null;
 
-        $event=null;
-        $sideevent=null;
-        $registration=null;
-        
-        if($action == "save" || $action == "list") {
-            // retrieve the event from the modeldata or filter
+        if(isset($data["model"])) {
             $sid = isset($data["model"]["sideevent"]) ? $data["model"]["sideevent"] : null;
-            if (empty($sid)) {
+            if (empty($sid) && isset($data["filter"])) {
                 $sid = isset($data["filter"]["sideevent"]) ? $data["filter"]["sideevent"] : null;
             }
 
             $eid = isset($data["model"]["event"]) ? $data["model"]["event"] : null;
-            if(empty($eid)) {
+            if (empty($eid) && isset($data["filter"])) {
                 $eid = isset($data["filter"]["event"]) ? $data["filter"]["event"] : null;
             }
-            if(empty($eid)) {
-                $evflogger->log("empty eid (2)");
-                return false;
+
+            $sideevent = new \EVFRanking\Models\SideEvent($sid, true);
+            if (!$sideevent->exists()) {
+                $sideevent = null;
             }
 
-            $sideevent = new \EVFRanking\Models\SideEvent($sid);
-            if(!$sideevent->exists()) {
-                $sideevent=null;
+            $event = new \EVFRanking\Models\Event($eid, true);
+            if(!$event->exists()) {
+                $event = null;
             }
 
-            $event = new \EVFRanking\Models\Event($eid);
-            $event->load();
-
-            // events don't match, bail
-            if(!empty($sideevent) && $sideevent->event_id != $event->getKey()) {
-                $evflogger->log("sideevent does not match event (4)");
-                return false;
-            }
-        }
-        else if($action == "delete") {
             $rid = isset($data["model"]["id"]) ? $data["model"]["id"] : null;
-            if (empty($rid)) {
-                $evflogger->log("empty rid (25)");
-                return false;
-            }
-            $registration = new \EVFRanking\Models\Registration($rid);
-            if(!$registration->exists()) {
-                $evflogger->log("no such registration (17)");
-                // it is allowed to delete a non-existing item
-                return true;
+            $modelname="\\EVFRanking\\Models\\$modelname";
+            $basemodel = new $modelname($rid, true);
+            if(!$basemodel->exists()) {
+                $basemodel = null;
             }
 
-            $event = new \EVFRanking\Models\Event($registration->registration_mainevent);
-            $event->load();
+            $fid = isset($data["model"]["fencer"]) ? $data["model"]["fencer"] : null;
+            $fencer = new \EVFRanking\Models\Fencer($fid);
+            if (!$fencer->exists()) {
+                $fencer = null;
+            }            
         }
-
-        if (empty($event) || !$event->exists()) {
-            $evflogger->log("empty event (3)");
-            return false;
-        }
-
-        if(!in_array($action, array("list","save","delete"))) {
-            $evflogger->log("invalid action (7)");
-            return false;
-        }
-
-        // eventcaps will check for the state of the event (open, closed)
-        $caps = $event->eventCaps();
-
-        $isorganiser = in_array($caps, array("system","organiser", "accreditation", "cashier", "registrar"));
-        $ishod = $caps == "hod" && $hodcountry != -1;
-
-        // not privileged: no business here
-        // this includes users not logged in yet. The login page should've been presented before the
-        // application is opened
-        if(!$isorganiser && !$ishod) {
-            $evflogger->log("no organiser and no hod ($caps) (8)");
-            return false;
-        }        
-
-        // if we are listing, check that the proper list filters are set
-        if($action == "list") {
-            // make sure event is set in the filter
-            if (!isset($data["filter"]["event"])) {
-                $evflogger->log("no event in filter (5)");
-                return false; // invalid filter setting
-            }
-            if ($data["filter"]["event"] != $event->getKey()) {
-                $evflogger->log("filter event does not match model event (6)");
-                return false; // filter does not match
-            }
-
-            if($isorganiser) {
-                $evflogger->log("is organiser, listing allowed (21)");
-                return true;
-            }
-            // generic HoDs are always allowed to act on event registration while it is open
-            if (empty($hodcountry)) {
-                $evflogger->log("is hod for all countries (10)");
-                return true;
-            }
-            if(!isset($data["filter"]["country"])) {
-                $evflogger->log("no country filter set (11)");
-                return false; // invalid filter setting
-            }
-            // check on correct filter for this HoD
-            if(intval($data["filter"]["country"]) === intval($hodcountry)) {
-                $evflogger->log("hod country is set in filter, allow listing registrations (12)");
-                return true;
-            }
-            $evflogger->log("invalid settings for listing");
-        }
-        else if($action == "save") {
-            // save is only allowed for HoD, organiser, registrar and cashier
-            if (!in_array($caps, array("system","organiser", "registrar", "hod","cashier"))) {
-                $evflogger->log("caps $caps are incorrect (13)");
-                return false;
-            }
-
-            if(!isset($data["model"]["fencer"])) {
-                $evflogger->log("no fencer data set (22)");
-                return false;
-            }
-            // for save actions, make sure the country_id setting is correct
-            // we need to check this on the fencer that is going to be saved
-            $fencer = new \EVFRanking\Models\Fencer($data["model"]["fencer"]);
-            if(!$fencer->exists()) {
-                $evflogger->log("invalid fencer for save (14)");
-                return false; // no such fencer
-            }
-
-            if ($isorganiser) {
-                $evflogger->log("is organiser ($caps), save allowed (23)");
-                return true;
-            }
-            // generic HoDs are always allowed to act on event registration while it is open
-            if (empty($hodcountry)) {
-                $evflogger->log("is hod for all countries (24)");
-                return true;
-            }
-
-            // check on correct country for this HoD
-            if (intval($fencer->fencer_country) === intval($hodcountry)) {
-                $evflogger->log("fencer country matches hod country (15)");
-                return true;
-            }
-            $evflogger->log("HoD country invalid $hodcountry vs ".$fencer->country_id);
-        }
-        else if($action == "delete") {
-            // delete is only allowed for HoD, organiser and registrar
-            if(!in_array($caps, array("system","organiser","registrar","hod"))) {
-                $evflogger->log("invalid caps $caps for delete (16)");
-                return false;
-            }
-
-            $fencer = new \EVFRanking\Models\Fencer($data["model"]["fencer"]);
-            if(!$fencer->exists()) {
-                $evflogger->log("fencer does not exist (18)");
-                return false;
-            }
-
-            if ($isorganiser) {
-                $evflogger->log("is organiser, delete allowed (27)");
-                return true;
-            }
-            // generic HoDs are always allowed to act on event registration while it is open
-            if (empty($hodcountry)) {
-                $evflogger->log("is hod for all countries (28)");
-                return true;
-            }
-
-            // check on correct country for this HoD
-            if (intval($fencer->fencer_country) === intval($hodcountry)) {
-                $evflogger->log("country matches hodcountry (19)");
-                return true;
-            }
-        }
-
-        // wrong action, closed registration, no capabilities, id's don't match
-        $evflogger->log("invalid action, caps ($caps), model or id (20)");
-        return false;
+        return array($sideevent,$event, $basemodel,$fencer);
     }
+
 
     public function check($model, $action, $data) {
         global $evflogger;
-        // complicated policy check for the registration list/save/delete
-        if($model == "registration") return $this->checkRegistration($model, $action,$data);
 
-        $policies = array(       // List     View        Update/Create      Delete      Misc
+        $policies = array(        // List     View        Update/Create      Delete      Misc
             # Common tables
-            "fencers" => array(     "any",   "any",      "reg",             "rank",     "noone"    ),
-            "events" => array(      "any",   "any",      "reg",             "rank",     "noone"    ),
+            "fencers" => array(      "any",   "any",      "fsave",           "rank",     "noone"    ),
+            "events" => array(       "any",   "any",      "reg",             "rank",     "noone"    ),
+            "audit" => array(        "eaccr", "eaccr",    "noone",           "noone",    "noone"    ),
 
             # Results and Rankings
-            "results" => array(     "any",   "any",      "rank",            "rank",     "rank"     ),
-            "ranking"=>array(       "any",   "any",      "rank",            "rank",     "noone"    ),
-            "competitions" => array("any",   "any",      "rank",            "rank",     "noone"    ),
+            "results" => array(      "any",   "any",      "rank",            "rank",     "rank"     ),
+            "ranking"=>array(        "any",   "any",      "rank",            "rank",     "noone"    ),
+            "competitions" => array( "any",   "any",      "rank",            "rank",     "noone"    ),
 
             # Registration and Accreditation
-            "sides" => array(       "any",   "any",      "reg",             "reg",      "noone"    ),
-            "eventroles" => array(  "reg",   "reg",      "reg",             "reg",      "noone"    ),
-            "registrars" => array(  "reg",   "reg",      "reg",             "reg",      "noone"    ),
+            "sides" => array(        "any",   "any",      "reg",             "reg",      "noone"    ),
+            "eventroles" => array(   "reg",   "reg",      "reg",             "reg",      "noone"    ),
+            "registrars" => array(   "reg",   "reg",      "reg",             "reg",      "noone"    ),
+            "templates" => array(    "eaccr", "eaccr",    "eaccr",           "eaccr",    "reg"      ),
+            "registration" => array( "rlist", "rlist",    "rsave",           "rdel",     "noone"    ),
+            "accreditation" => array("vaccr", "vaccr",    "noone",           "noone",    "noone"    ),
 
             # base tables
-            "weapons"=>array(       "any",   "rank",     "rank",            "rank",     "noone"    ),
-            "categories" => array(  "any",   "rank",     "rank",            "rank",     "noone"    ),
-            "countries"=> array(    "any",   "rank",     "rank",            "rank",     "noone"    ),
-            "types" => array(       "any",   "rank",     "rank",            "rank",     "noone"    ),
-            "roles" => array(       "any",   "rank",     "rank",            "rank",     "noone"    ),
-            "roletypes" => array(   "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "weapons"=>array(        "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "categories" => array(   "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "countries"=> array(     "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "types" => array(        "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "roles" => array(        "any",   "rank",     "rank",            "rank",     "noone"    ),
+            "roletypes" => array(    "any",   "rank",     "rank",            "rank",     "noone"    ),
 
             # Purely sysadmin-type
             # registration can list them, rank can see them. Update, delete and misc are all forbidden
-            "users" => array(       "reg",   "rank",     "noone",           "noone",    "noone"    ),
-            "posts" => array(       "reg",   "rank",     "noone",           "noone",    "noone"    ),
-            "migrations" => array(  "rank",  "rank",     "rank",            "noone",    "noone"    ),
+            "users" => array(        "reg",   "rank",     "noone",           "noone",    "noone"    ),
+            "posts" => array(        "reg",   "rank",     "noone",           "noone",    "noone"    ),
+            "migrations" => array(   "rank",  "rank",     "rank",            "noone",    "noone"    ),
         );
 
         $idx=-1;
@@ -311,13 +171,336 @@ class Policy extends BaseLib {
         }
 
         $evflogger->log("base capa to test is $base");
-        if($base == "any") return true;
+        if ($base == "any") return true;
+        if ($base == "noone") return false;
 
+        return $this->hasCapa($base,$data);
+    }
+
+    private function hasCapa($capa,$data) {        
         $userdata=$this->findUser();
-        if($base == "rank" && $userdata["rankings"]===true) return true;
-        if($base == "reg" && ($userdata["rankings"]===true || $userdata["registration"]===true)) return true;
+        switch($capa) {
+        // has manage_rankings capability, a super-user power
+        case "rank": return $userdata["rankings"] === true;
+        // has manage_registration capability, a super-user power
+        case "reg": return ($userdata["rankings"] === true || $userdata["registration"] === true);
+        // is allowed to edit accreditation templates
+        case "eaccr": return $this->hasCapaEaccr($data); 
+        // is allowed to view and generate accreditations
+        case 'vaccr': return $this->hasCapaVaccr($data);
+        //
+        // the registration capa's also check on additional supplied data
+        // and restrict the fields that can be changed/deleted/updated
+        //
+        // can see a listing of registrations (HoD, registrar)
+        case 'rlist': return $this->hasCapaListRegs($data);
+        // can view an individual registration (HoD, registrar)
+        case 'rview': return $this->hasCapaViewRegs($data);
+        // can update registrations (HoD, registrar)
+        case 'rsave': return $this->hasCapaSaveRegs($data);
+        // can remove registrations (HoD, registrar)
+        case 'rdel': return $this->hasCapaDelRegs($data);
+        // special capa for saving fencers, which is restricted to registrars 
+        case 'fsave': return $this->hasCapaSaveFencer($userdata, $data);
+        default: break;
+        }
 
         return false;
+    }
+
+    private function isValidHod($cid) {
+        global $evflogger;
+        $hodcountry = $this->hodCountry();
+
+        // generic HoDs are always allowed to act on event registration while it is open
+        if (empty($hodcountry)) {
+            return true;
+        }
+        // check on correct filter for this HoD
+        if (intval($cid) === intval($hodcountry)) {
+            return true;
+        }
+        $evflogger->log("invalid HoD");
+        return false;
+
+    }
+
+    private function hasCapaSaveFencer($userdata, $data) {
+        global $evflogger;
+        // if the user has registration capabilities, always allow
+        if ($userdata["rankings"] === true || $userdata["registration"] === true) {
+            return true;
+        }
+
+        // else we allow saving new fencers for registrars
+        // and update the accreditation photo for accreditors
+        list($sideevent, $event, $fencer, $fencer2) = $this->loadModelsForPolicy($data, "Fencer");
+
+        // the sideevent and fencer2 settings are bogus, event should be valid
+        if(empty($event) || !$event->exists())  {
+            $evflogger->log("invalid event, but event was expected");
+            return false;
+        }
+
+        // check on country only if we have additional data as well. If we are only saving 
+        // the accreditation photo id, country and name do no exist
+        if (   isset($data["model"]["name"])
+            || isset($data["model"]["firstname"])
+            || isset($data["model"]["gender"])
+            || isset($data["model"]["birthday"])
+        ) {
+            $cid=isset($data["model"]["country"]) ? $data["model"]["country"] : -1;
+            $country=new \EVFRanking\Models\Country($cid,true);
+            if(!$country->exists()) {
+                $evflogger->log("invalid country, but fencer should be linked to a valid country");
+                return false;
+            }
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "registrar", "accreditation"));
+
+        if ($isorganiser) {
+            $evflogger->log("organiser/registrar/accreditor is allowed");
+            return true;
+        }
+
+        if($this->isValidHod($country->getKey())) {
+            $evflogger->log("HoD for this country is allowed");
+            return true;
+        }
+        $evflogger->log("not a HoD, not an organiser, no registration-capa: not allowed to save fencer");
+        return false;
+    }
+
+    private function hasCapaEaccr($data)
+    {
+        global $evflogger;
+        list($sideevent, $event, $template, $fencer) = $this->loadModelsForPolicy($data,"AccreditationTemplate");
+
+        if(!empty($template) && $template->exists()) {
+            if(!empty($event) && $event->getKey() != $template->event_id) {
+                $evflogger->log("invalid event specified (1)");
+                return false;
+            }
+            else {
+                $event = new \EVFRanking\Models\Event($template->event_id,true);
+                if(!$event->exists()) {
+                    $evflogger->log("invalid event for template (2)");
+                    return false;
+                }
+            }
+        }
+
+        // if we have no template, we need an event
+        if(empty($template) || !$template->exists()) {
+            if (empty($event) || !$event->exists()) {
+                $evflogger->log("no event specified (3)");
+                return false;
+            }
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "accreditation"));
+
+        if (!$isorganiser) {
+            $evflogger->log("no organiser ($caps) (4)");
+            return false;
+        }
+        return true;
+    }
+
+    private function hasCapaVaccr($data) {
+        global $evflogger;
+        list($sideevent, $event, $accreditation, $fencer) = $this->loadModelsForPolicy($data, "Accreditation");
+
+        if (!empty($accreditation) && $accreditation->exists()) {
+            if (!empty($event) && $event->getKey() != $accreditation->event_id) {
+                $evflogger->log("invalid event specified (1)");
+                return false;
+            } else {
+                $event = new \EVFRanking\Models\Event($accreditation->event_id, true);
+                if (!$event->exists()) {
+                    $evflogger->log("invalid event for accreditation (2)");
+                    return false;
+                }
+            }
+        }
+
+        // if we have no template, we need an event
+        if (empty($accreditation) || !$accreditation->exists()) {
+            if (empty($event) || !$event->exists()) {
+                $evflogger->log("no event specified (3)");
+                return false;
+            }
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "accreditation"));
+
+        if (!$isorganiser) {
+            $evflogger->log("no organiser ($caps) (4)");
+            return false;
+        }
+        $evflogger->log("has capa vaccr");
+        return true;
+    }
+
+    private function hasCapaListRegs($data) {
+        global $evflogger;
+        list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data,"Registration");
+
+        if(empty($event) || !$event->exists()) {
+            $evflogger->log("no event specified (1)");
+            return false;
+        }
+        if (!empty($sideevent) && $sideevent->event_id != $event->getKey()) {
+            $evflogger->log("sideevent does not match event (2)");
+            return false;
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "accreditation", "cashier", "registrar"));
+        $ishod = $caps == "hod";
+
+        if (!$isorganiser && !$ishod) {
+            $evflogger->log("no organiser and no hod ($caps) (3)");
+            return false;
+        }
+
+        if (!isset($data["filter"]["event"])) {
+            $evflogger->log("no event in filter (4)");
+            return false; // invalid filter setting
+        }
+        if ($data["filter"]["event"] != $event->getKey()) {
+            $evflogger->log("filter event does not match model event (5)");
+            return false; // filter does not match
+        }
+
+        if ($isorganiser) {
+            $evflogger->log("is organiser, listing allowed (6)");
+            return true;
+        }
+        $cid = isset($data["filter"]) && isset($data["filter"]["country"]) ? $data["filter"]["country"] : -1;
+        return $this->isValidHod($cid);
+    }
+
+    private function hasCapaViewRegs($data)
+    {
+        // same as ListRegs, except no requirement on filter
+        global $evflogger;
+        list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data, "Registration");
+
+        if (empty($event) || !$event->exists()) {
+            $evflogger->log("no event specified (1)");
+            return false;
+        }
+        if (!empty($sideevent) && $sideevent->event_id != $event->getKey()) {
+            $evflogger->log("sideevent does not match event (2)");
+            return false;
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "accreditation", "cashier", "registrar"));
+        $ishod = $caps == "hod";
+
+        if (!$isorganiser && !$ishod) {
+            $evflogger->log("no organiser and no hod ($caps) (3)");
+            return false;
+        }
+
+        if ($isorganiser) {
+            $evflogger->log("is organiser, listing allowed (6)");
+            return true;
+        }
+        $cid = isset($data["filter"]) && isset($data["filter"]["country"]) ? $data["filter"]["country"] : -1;
+        return $this->isValidHod($cid);
+    }
+
+    private function hasCapaSaveRegs($data)
+    {
+        global $evflogger;
+        list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data, "Registration");
+
+        if (empty($event) || !$event->exists()) {
+            $evflogger->log("no event specified (1)");
+            return false;
+        }
+        if (empty($sideevent) || $sideevent->event_id != $event->getKey()) {
+            $sideevent = null;
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "cashier", "registrar","accreditation"));
+        $ishod = $caps == "hod";
+
+        if (!$isorganiser && !$ishod) {
+            $evflogger->log("no organiser and no hod ($caps) (5)");
+            return false;
+        }
+
+        // for save actions, make sure the country_id setting is correct
+        // we need to check this on the fencer that is going to be saved
+        if (empty($fencer)) {
+            $evflogger->log("invalid fencer for save (6)");
+            return false; // no such fencer
+        }
+
+        if ($isorganiser) {
+            $evflogger->log("is organiser ($caps), save allowed (7)");
+            return true;
+        }
+
+        // check on correct filter for this HoD
+        if (  isset($data['filter']) 
+           && isset($data['filter']['country']) 
+           && intval($data["filter"]["country"]) === intval($fencer->country)) {
+            $evflogger->log("invalid country for fencer (8)");
+            return false;
+        }
+        return $this->isValidHod($fencer->fencer_country);
+    }
+
+    private function hasCapaDelRegs($data) {
+        global $evflogger;
+        list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data, "Registration");
+
+        if (empty($registration)) {
+            $evflogger->log("no such registration (1)");
+            // it is allowed to delete a non-existing item
+            return true;
+        }
+        if (empty($fencer)) {
+            $evflogger->log("fencer does not exist (2)");
+            return false;
+        }
+
+        $event = new \EVFRanking\Models\Event($registration->registration_mainevent, true);
+        if (!$event->exists()) {
+            $evflogger->log("no event specified (3)");
+            return false;
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "registrar"));
+        $ishod = $caps == "hod";
+
+        if (!$isorganiser && !$ishod) {
+            $evflogger->log("no organiser and no hod ($caps) (4)");
+            return false;
+        }
+
+        if ($isorganiser) {
+            $evflogger->log("is organiser, delete allowed (5)");
+            return true;
+        }
+
+        // generic HoDs are always allowed to act on event registration while it is open
+        if (empty($hodcountry)) {
+            $evflogger->log("is hod for all countries (28)");
+            return true;
+        }
+        return $this->isValidHod($fencer->fencer_country);
     }
 }
 

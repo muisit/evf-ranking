@@ -80,7 +80,6 @@ export default class ResultsTab extends PagedTab {
 
     fieldToSorter = (fld) => {
         if(fieldToSorterList[fld])  return fieldToSorterList[fld];
-        console.log("unknown field ",fld);
         return "id";
     }
 
@@ -112,7 +111,6 @@ export default class ResultsTab extends PagedTab {
 
 
     apiCall = (o, p, f, s) => {    
-        console.log("competition is "+this.state.competition.id);
         if(this.state.competition.id) {
             var special = JSON.stringify({ competition_id: this.state.competition.id });
             return results(o, p, f, s, special);
@@ -163,7 +161,6 @@ export default class ResultsTab extends PagedTab {
 
     onImport = (tp, itm) => {
         if(tp==='open') {
-            console.log("activating import dialog");
             this.setState({importObject: {'text':"","object":{ranking:[], competition_id: this.state.competition.id }}, importDialog:true});
         }
         else if(tp === 'clear') {
@@ -234,7 +231,7 @@ export default class ResultsTab extends PagedTab {
         if(!this.state.competition.id) {
             return (<div></div>);
         }
-        console.log("returning pager");
+
         let pagesizes=[5,10,20,50];//{name: 5, code: 5},{name: 10, code: 10}, {name:20, code:20},{name: 50, code:50}];
         if(this.state.pages > 10) {
             return (<div className='p-d-block pager'>
@@ -281,7 +278,6 @@ export default class ResultsTab extends PagedTab {
     }
 
     selectComp = (event) => {
-        console.log("setting competition ",event.data);
         this.setState({items:[], competition: event.data}, () => {
             this.loadItemPage() });
     }

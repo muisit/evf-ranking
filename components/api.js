@@ -9,22 +9,8 @@ export function abort_all_calls(type) {
 }
 
 //Internal API
-function validateResponse(showErrorDialog) {
-    return res => {
-        return res.json().then(json => {
-            console.log('validate response ',json);
-            if (!json || !json.success) {
-                console.log('no success entry found or success is false');
-                const error = new Error(res.statusText);
-                error.response = json;
-                throw error;
-            }
-            return json;
-        })
-    };
-}
 
-function validFetch(cnt, path, pdata, options, headers = {}) {
+function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor) {
     if(!controllers[cnt]) {
         controllers[cnt]=new AbortController();
     }
@@ -46,9 +32,9 @@ function validFetch(cnt, path, pdata, options, headers = {}) {
         body: JSON.stringify(data)
     });
 
-    console.log('calling fetch using '+JSON.stringify(data));
+    //console.log('calling fetch using '+JSON.stringify(data));
     return fetch(evfranking.url, fetchOptions)
-        .then(validateResponse())
+        .then(postprocessor())
         .catch(err => {
             if(err.name === "AbortError") {
                 console.log('disregarding aborted call');
@@ -58,6 +44,42 @@ function validFetch(cnt, path, pdata, options, headers = {}) {
                 throw err;
             }
         });
+
+}
+
+function validateResponse() {
+    return res => {
+        return res.json().then(json => {
+            //console.log('validate response ',json);
+            if (!json || !json.success) {
+                console.log('no success entry found or success is false');
+                const error = new Error(res.statusText);
+                error.response = json;
+                throw error;
+            }
+            return json;
+        })
+    };
+}
+
+function fetchJson(cnt,path, data={}, options = {}, headers = {}) {
+    //console.log('valid fetch using data '+JSON.stringify(data));
+    return simpleFetch(cnt,path,data,options,headers,validateResponse);
+}
+
+function attachmentResponse() {
+    return res => {
+        //console.log("attachment post processor for response",res);
+        return res.blob().then((blob)=> {
+            //console.log("response blob received",blob);
+            var file = window.URL.createObjectURL(blob);
+            window.location.assign(file);
+        });
+    };
+}
+
+function fetchAttachment(cnt,path,data={},options={},headers={}) {
+    return simpleFetch(cnt,path,data,options,headers,attachmentResponse);
 }
 
 export function upload_file(cnt, selectedFile, add_data, options={}, headers={}) {
@@ -87,25 +109,21 @@ export function upload_file(cnt, selectedFile, add_data, options={}, headers={})
         signal: controllers[cnt].signal,
         body: data
     });
-    console.log(fetchOptions);
+    //console.log(fetchOptions);
 
     return fetch(evfranking.url, fetchOptions)
         .then(validateResponse())
         .catch(err => {
             if(err.name === "AbortError") {
-                console.log('disregarding aborted call');
+                //console.log('disregarding aborted call');
             }
             else {
-                console.log("error in fetch: ",err);
+                //console.log("error in fetch: ",err);
                 throw err;
             }
         });
 }
 
-function fetchJson(cnt,path, data={}, options = {}, headers = {}) {
-    console.log('valid fetch using data '+JSON.stringify(data));
-    return validFetch(cnt,path, data, options, headers);
-}
 
 // Fencers
 export function fencers(offset,pagesize,filter,sort) {
@@ -210,6 +228,9 @@ export function registrations(offset,pagesize,filter,sort,special) {
 export function registration(action, fields) {
     return fetchJson('registrations','registration/' + action,fields);
 }
+export function accreditation(action,fields) {
+    return fetchJson("registrations","accreditation/" + action,fields);
+}
 export function users(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
     return fetchJson('registrars','users',obj);
@@ -217,4 +238,14 @@ export function users(offset,pagesize,filter,sort) {
 export function posts(offset,pagesize,filter,sort,special) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
     return fetchJson('events','posts',obj);
+}
+export function templates(offset,pagesize,filter,sort,special) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
+    return fetchJson('templates','templates',obj);
+}
+export function template(action,fields) {
+    return fetchJson('templates','templates/' + action,fields);
+}
+export function templateexample(fields) {
+    return fetchAttachment('templates','templates/example',fields);
 }

@@ -175,7 +175,6 @@
         if (!empty($dt) && is_array($dt)) {
             foreach ($dt as $c) {
                 if($asObject) {
-                    error_log("creating a new competition object based on result");
                     $retval[] = new Competition($c);
                 }
                 else {
@@ -196,7 +195,6 @@
         if (!empty($dt) && is_array($dt)) {
             foreach ($dt as $c) {
                 if($asObject) {
-                    error_log("creating a new side event object based on result");
                     $retval[] = new SideEvent($c);
                 }
                 else {
@@ -217,7 +215,6 @@
         if (!empty($dt) && is_array($dt)) {
             foreach ($dt as $c) {
                 if ($asObject) {
-                    error_log("creating a new event role object based on result");
                     $retval[] = new EventRole($c);
                 } else {
                     $retval[] = $model->export($c);
@@ -231,10 +228,8 @@
         return $model->roleOfUser($this->{$this->pk},$userid);
     }
 
-    public function postSave() {
-        error_log("postsave for event, testing competition_list: ".(isset($this->competition_list)?"set":"not set"));
+    public function postSave($wassaved) {
         if(isset($this->competition_list)) {
-            error_log("competition list is set for saving");
             $oldcomps = $this->competitions(null,true);
 
             $lst = $this->sides(null,true);
@@ -248,7 +243,6 @@
             $cmodel=new Category();
 
             foreach($this->competition_list as $c) {
-                error_log("setting the event ID");
                 $c->competition_event = $this->getKey();
                 $c->save();
 
@@ -287,12 +281,9 @@
             }
         }
 
-        error_log("postsave for event, testing sides_list: ".(isset($this->sides_list)?"set":"not set"));
         if(isset($this->sides_list)) {
-            error_log("sides list is set for saving");
             $old = $this->sides(null,true); // this includes any new competitions added above
             foreach($this->sides_list as $c) {
-                error_log("setting the event ID");
                 $c->event_id = $this->getKey();
                 $c->save();
 
@@ -311,12 +302,9 @@
             }
         }
 
-        error_log("postsave for event, testing roles_list: " . (isset($this->roles_list) ? "set" : "not set"));
         if (isset($this->roles_list)) {
-            error_log("roles list is set for saving");
             $old = $this->roles(null, true); // this includes any new competitions added above
             foreach ($this->roles_list as $c) {
-                error_log("setting the event ID");
                 $c->event_id = $this->getKey();
                 $c->save();
 
@@ -350,7 +338,6 @@
     }
 
     public function eventCaps() {
-        // too bad we need to spoil the models with Wordpress routines, but this is the only one
         $user = wp_get_current_user();
         $id=-1;
         if (!empty($user)) {
@@ -371,7 +358,6 @@
             // if the current user has special rights on the event, we return those rights
             $role = $this->roleOfUser($id);
             if ($role !== null) {
-                error_log("user has an event-role: ".$role->role_type);
                 $retval = $role->role_type;
             }
         }
@@ -384,7 +370,6 @@
             $model=new Registrar();
             $registrar = $model->findByUser($id);
             if($registrar != null) {
-                error_log("user is a HoD");
                 $retval="hod";
             }
         }

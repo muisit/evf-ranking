@@ -99,10 +99,10 @@
     }
 
     public function load() {
-        global $evflogger;
-        $evflogger->log("load for ".get_class($this)."->".$this->{$this->pk});
+        //global $evflogger;
+        //$evflogger->log("load for ".get_class($this)."->".$this->{$this->pk});
         if($this->_state == "loaded" || $this->_state == "new") { 
-            $evflogger->log("already loaded or new");
+            //$evflogger->log("already loaded or new");
             return;
         }
 
@@ -113,7 +113,7 @@
         $sql = $wpdb->prepare($sql,array($pkval));
         $results = $wpdb->get_results($sql);
 
-        $evflogger->log("load returns ".json_encode($results));
+        //$evflogger->log("load returns ".json_encode($results));
         if(empty($results) || sizeof($results) != 1) {
             $this->{$this->pk} = -1;
             $this->_state = "new";
@@ -131,7 +131,6 @@
         $retval=array();
         $this->load();
         foreach($this->fieldToExport as $fld=>$exp) {
-            //error_log('exporting field '.$fld.' as '.$exp);            
             if(isset($result[$fld])) {
                 $retval[$exp] = $result[$fld];
             }
@@ -139,9 +138,7 @@
         return $retval;
     }
 
-    private function read($values) {
-        global $evflogger;
-        $evflogger->log("reading values for ".get_class($this));
+    public function read($values) {
         $values=(array)$values;
         $this->_state = "reading";
         $values=(array)$values;
@@ -171,25 +168,22 @@
         else {
             global $wpdb;
             if($this->isNew()) {
-                error_log("trying an insert of ".json_encode($fieldstosave));
                 $wpdb->insert($this->table,$fieldstosave);
                 $this->{$this->pk} = $wpdb->insert_id;
-                //error_log("inserted id is ".$this->{$this->pk});
+                $this->_state = "loaded";
             }
             else {
-                error_log("calling update on ".$this->table." for ".json_encode($fieldstosave));
                 $retval=$wpdb->update($this->table, $fieldstosave, array($this->pk => $this->getKey()));
-                //error_log("returned value is ".json_encode($retval));
+                $this->_state = "loaded";
             }
         }
         // save attached objects
-        $this->postSave();
+        $this->postSave(!empty($fieldstosave));
 
-        error_log("returning true");
         return true;
     }
 
-    public function postSave() {
+    public function postSave($wassaved) {
         return true;
     }
 
@@ -249,13 +243,12 @@
           || ($original === null && $value !== null)) {
             return true;
         }
-        return strcmp($value,$original) != 0;
+        return strcmp(strval($value),strval($original)) != 0;
     }
 
     public function delete($id=null) {
         if($id === null) $id = $this->getKey();
         global $wpdb;
-        error_log("calling delete for $this->table and id $this->pk = $id");
         $retval = $wpdb->delete($this->table, array($this->pk => $id));
         return ($retval !== FALSE || intval($retval) < 1);
     }
@@ -315,7 +308,6 @@
         // make sure search terms are not considered parameters
         $query = str_replace("%","%%",$query);
         if(preg_match_all($pattern, $query, $matches)) {
-            error_log(json_encode($matches));
             foreach($matches[0] as $m) {
                 $match=trim($m,'{}');
                 if(isset($values[$match])) {
@@ -350,19 +342,19 @@
         return $wpdb->get_results($prepared);
     }
 
+    public function filterData($data, $caps) {
+        return $data;
+    }
 
     public function saveFromObject($obj) {
-        //error_log('save from object using data '.json_encode($obj));
         $validator = new Validator($this);
 
         if(!$validator->validate($obj)) {
-            error_log("saveFromObject: not validate");
             $this->errors=$validator->errors;
             return false;
         }
         if(!$this->save()) {
             global $wpdb;
-            error_log('error saving object to database '.$wpdb->last_error);
             $this->errors = array("Internal database error: ".$wpdb->last_error);
             return false;
         }

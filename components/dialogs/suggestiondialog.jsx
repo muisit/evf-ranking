@@ -70,7 +70,6 @@ export default class SuggestionDialog extends React.Component {
             this.setState({displayFencerDialog: false});
         }
         else if(tp == 'save') {
-            console.log("saving fencer ",itm);
             this.selectSuggestion(itm);
         }
     }
@@ -91,7 +90,6 @@ export default class SuggestionDialog extends React.Component {
     }
 
     selectSuggestion = (itm) => {
-        console.log('item selected, updating values', itm);
         var item=Object.assign({},this.props.value);
         item.lastname = itm.name;
         item.firstname = itm.firstname;

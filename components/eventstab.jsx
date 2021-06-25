@@ -2,6 +2,7 @@ import { events, competitions } from "./api.js";
 import { DataTable } from 'primereact/components/datatable/DataTable';
 import { Column } from 'primereact/components/column/Column';
 import EventDialog from './dialogs/eventdialog';
+import { format_date, parse_date } from './functions';
 
 import React from 'react';
 import PagedTab from './pagedtab';
@@ -31,6 +32,20 @@ export default class EventsTab extends PagedTab {
 
     apiCall = (o,p,f,s) => {
         return events(o,p,f,s);
+    }
+
+    onAdd = (event) => {
+        var dt=parse_date();
+        var year=dt.year();
+
+        this.setState({ item: { 
+            id: -1, 
+            year: year, 
+            base_fee: 50.0, 
+            competition_fee: 30.0, 
+            duration: 2,
+            opens: format_date(dt)
+        }, displayDialog: true });
     }
 
     onEdit = (event)=> {

@@ -32,7 +32,6 @@ export default class ResultDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        console.log('saving ',this.props.value);
         result('save',this.props.value)
             .then((json) => {
                 this.loading(false);
@@ -58,12 +57,11 @@ export default class ResultDialog extends React.Component {
     }    
 
     onChangeEl = (event) => {
-        console.log("onChangeEl for result");
         var item=this.props.value;
         var item = this.props.value;
         var name = event.target ? event.target.name : event.originalEvent.target.name;
         var value = event.target ? event.target.value : event.value;
-        console.log("changing "+name + ' to ' + value);
+
         switch(name) {
         case 'points':
         case 'place':
@@ -74,7 +72,6 @@ export default class ResultDialog extends React.Component {
         case 'total_points':        
         case 'factor':item[name] = value;break;
         }
-        console.log("result after change is ",item);
         if (this.props.onChange) this.props.onChange(item);
     }
 

@@ -7,39 +7,39 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
-import { format_date } from '../functions';
+import { format_date, parse_date } from '../functions';
 
 function Competition(props) {
-    var opens=props.cmp.opens.length ? new Date(props.cmp.opens) : null;
-    var weapon_check=props.cmp.weapon_check.length ? new Date(props.cmp.weapon_check) : null;
+    var opens=props.cmp.opens.length ? parse_date(props.cmp.opens) : null;
+    var weapon_check=props.cmp.weapon_check.length ? parse_date(props.cmp.weapon_check) : null;
     var ourstart=props.start;
     var ourend=props.end;
 
-    if(opens != null && ourstart.getTime() > opens.getTime()) {
+    if(opens != null && ourstart.isAfter(opens)) {
         ourstart=opens;
     }
-    if(weapon_check != null && ourstart.getTime() > weapon_check.getTime()) {
+    if(weapon_check != null && ourstart.isAfter(weapon_check)) {
         ourstart=weapon_check;
     }
     if(opens == null || weapon_check == null) {
         // allow for a 3 day head start on the original start
-        ourstart = new Date(props.start);
-        ourstart.setDate(ourstart.getDate()-3);
+        ourstart = parse_date(props.start);
+        ourstart.add(-3,'d');
     }
     opens = opens === null ? '' : opens;
     weapon_check = weapon_check === null ? '' : weapon_check;
     var vdate1= opens == '' ? ourstart : opens;
     var vdate2 = weapon_check == '' ? ourstart : weapon_check;
-    var nw=new Date();
-    var range = ourstart.getFullYear() + ':' + (nw.getFullYear()+15);
-    var numofmonths= (ourstart.getMonth() == ourend.getMonth()) ? 1 : 2;
+    var nw=parse_date();
+    var range = ourstart.year() + ':' + (nw.year()+15);
+    var numofmonths= (ourstart.month() == ourend.month()) ? 1 : 2;
 
     return (
         <div className='competition'>
       <Dropdown className='catdrop' autoWidth={false} name={'ccat-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.category} options={props.ddcats} placeholder="Category" />
       <Dropdown className='wpndrop' autoWidth={false} name={'cwpn-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.weapon} options={props.ddwpns} placeholder="Weapon" />
-      <Calendar name={'copens-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart} maxDate={ourend} dateFormat="yy-mm-dd" value={opens} viewDate={vdate1} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
-      <Calendar name={'ccheck-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart} maxDate={ourend} dateFormat="yy-mm-dd" value={weapon_check} viewDate={vdate2} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
+      <Calendar name={'copens-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={opens.toDate()} viewDate={vdate1.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
+      <Calendar name={'ccheck-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={weapon_check.toDate()} viewDate={vdate2.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
       <span className="p-input-icon-left add-button">
         <i className="pi pi-trash"onClick={() => props.onRemoveCompetition(props.cmp)}></i>
       </span>
@@ -137,7 +137,7 @@ export default class EventDialog extends React.Component {
             name = els[0];
             id=els[1];
         }
-        console.log('adjusting value ' + name + "/" + id + "/" + value);
+
         switch (name) {
         case 'name':
         case 'type':
@@ -151,23 +151,14 @@ export default class EventDialog extends React.Component {
             item[name] = value;
             break;
         case 'opens':
-            try {
-            console.log('setting opens to '+value);
-            var dt=new Date(value);
-            dt.setHours(12); // compensate for timezones
-            console.log('dt is ',dt);
+            var dt=parse_date(value);
+            dt.hour(12); // compensate for timezones
             item.opens = format_date(dt);
-            //console.log('value is now '+ item.opens);
-            //if(parseInt(item.year) < 2010) {
-            //    item.year = dt.getFullYear();
-            //}
-            } catch(e) {console.log('caught ',e);}
             break;
         case 'ccat':
         case 'cwpn':
         case 'copens':
         case 'ccheck':
-            console.log('adjusting competition value');
             var comps=this.props.value.competitions;
             for(var i in comps) {
                 var cmp=comps[i];
@@ -186,7 +177,6 @@ export default class EventDialog extends React.Component {
                         cmp.weapon_check=format_date(value);
                         break;
                     }
-                    console.log('competition is now ',cmp);
                     comps[i]=cmp;
                     break;
                 }
@@ -214,17 +204,13 @@ export default class EventDialog extends React.Component {
                 var key="w_" + comp.weapon + "_c_" + comp.category;
                 allcombos[key]=true;
             }
-            console.log("pushed competitions is "+JSON.stringify(allcombos));
+
             for(var i in this.state.weapons) {
                 for(var j in this.state.categories) {
                     var key="w_" + this.state.weapons[i].id + "_c_" + this.state.categories[j].id;
-                    console.log("testing key " + key);
                     if(!allcombos[key]) {
                         pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'category':this.state.categories[j].id,'weapon':this.state.weapons[i].id,'opens':this.props.value.opens,'weapon_check':this.props.value.opens})
                         cindex+=1;
-                    }
-                    else {
-                        console.log("key for "+key+" already set");
                     }
                 }
             }
@@ -235,27 +221,21 @@ export default class EventDialog extends React.Component {
     }
 
     removeCompetition = (cmp) => {
-        console.log("remove competition called with ",cmp);
         var item=this.props.value;
         var pushed=item.competitions;
-        console.log('pushed contains '+pushed.length + " items");
         for(var i in pushed) {
             var c=pushed[i];
-            console.log('comparing '+c.id + " vs " + cmp.id);
             if(c.id == cmp.id) {
-                console.log('found competition, splicing');
                 pushed.splice(i,1);
-                console.log('pushed contains '+pushed.length + " items");
                 break;
             }
         }
-        console.log('adjusting item');
         item.competitions=pushed;
         if(this.props.onChange) this.props.onChange(item);
     }
 
     render() {
-        var date_opens=new Date(this.props.value.opens);
+        var date_opens=parse_date(this.props.value.opens);
         var footer=(<div>
             <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
             <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
@@ -276,9 +256,15 @@ export default class EventDialog extends React.Component {
         this.state.categories.map(cat => {
             ddcats.push({'name': cat.name + ' (' + cat.type + ')','id':cat.id});
         });
-        var start=new Date(this.props.value.opens);
-        var end=new Date(start);       
-        end.setDate(end.getDate() + (parseInt(this.props.value.duration) || 21));
+        var start=parse_date(this.props.value.opens);
+        var end=parse_date(start);
+
+        var year = parseInt(this.props.value.year);
+        console.log(year,start);
+        if(isNaN(year)) year = start.year();
+        var duration = parseInt(this.props.value.duration);
+        if (isNaN(duration)) duration = 2;
+        end.add(duration, 'd');
 
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
@@ -299,14 +285,14 @@ export default class EventDialog extends React.Component {
       <div>
         <label>Starts</label>
         <div className='input'>
-            <Calendar name="opens" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={date_opens}></Calendar>
+            <Calendar name="opens" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={date_opens.toDate()}></Calendar>
         </div>
       </div>
       <div>
         <label>Year</label>
         <div className='input'>
             <InputNumber className='inputint' name='year' onChange={this.onChangeEl} min={2000} max={2100}  mode="decimal" useGrouping={false} 
-             value={parseInt(this.props.value.year)}
+             value={year}
              showButtons buttonLayout="horizontal" step={1} decrementButtonClassName="p-button-success" incrementButtonClassName="p-button-success" 
              incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></InputNumber>
         </div>
@@ -315,7 +301,7 @@ export default class EventDialog extends React.Component {
         <label>Duration</label>
         <div className='input'>
             <InputNumber className='inputint' name='duration' onChange={this.onChangeEl} min={1} max={21}  mode="decimal" useGrouping={false} 
-             value={parseInt(this.props.value.duration)}
+             value={duration}
              showButtons buttonLayout="horizontal" step={1} decrementButtonClassName="p-button-success" incrementButtonClassName="p-button-success" 
              incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></InputNumber>
         </div>

@@ -35,13 +35,15 @@
         "role_id" => "id",
         "role_name" => "name",
         "role_type"=>"type",
-        "role_type_name"=>"type_name"
+        "role_type_name"=>"type_name",
+        "org_declaration" => "org"
     );
     public $rules = array(
         "role_id"=>"skip",
         "role_name" => "trim|required",
         "role_type"=> "model=RoleType",
-        "role_type_name" => "skip"
+        "role_type_name" => "skip",
+        "org_declaration" => "skip"
     );
 
 
@@ -62,14 +64,22 @@
     }
 
     private function addFilter($qb, $filter,$special) {
-        if(!empty(trim($filter))) {
-            $filter=str_replace("%","%%",$filter);
+        if(is_string($filter)) $filter=array("name"=>$filter);
+        if(is_object($filter)) $filter=(array)$filter;
+        if(isset($filter["name"]) && !empty(trim($filter["name"]))) {
+            $filter=str_replace("%","%%",trim($filter["name"]));
             $qb->where("role_name","like","%$filter%");
         }
     }
 
+    public static function ListAll() {
+        $model=new Role();
+        $roles=$model->selectAll(0,100000,array(),"");
+        return $roles;
+    }
+
     public function selectAll($offset,$pagesize,$filter,$sort, $special=null) {
-        $qb = $this->select('TD_Role.*, rt.role_type_name')->join("TD_Role_Type","rt","TD_Role.role_type=rt.role_type_id")
+        $qb = $this->select('TD_Role.*, rt.role_type_name, rt.org_declaration')->join("TD_Role_Type","rt","TD_Role.role_type=rt.role_type_id")
           ->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);
         return $qb->get();
@@ -78,7 +88,6 @@
     public function count($filter,$special=null) {
         $qb = $this->numrows();
         $this->addFilter($qb,$filter,$special);
-        error_log("returning role count");
         return $qb->count();
     }
 
@@ -96,5 +105,29 @@
         }
         return false;
     }
- }
+
+    public function selectAccreditations($event) {
+        $templateIdByType = AccreditationTemplate::TemplateIdsByRole($event);
+        $key="r".$this->getKey();
+        $acceptableTemplates = isset($templateIdByType[$key]) ? $templateIdByType[$key] : array();
+
+        $id = intval($this->getKey());
+        if($id < 0) $id = 0;
+        $accr = new Accreditation();
+
+        $res = $accr->select('*')
+            ->where_exists(function($qb) use ($id) {
+                $qb->select("*")->from("TD_Registration")
+                  ->where("registration_fencer=TD_Accreditation.fencer_id")
+                  ->where("registration_mainevent=TD_Accreditation.event_id")
+                  ->where("registration_role",$id);
+            })
+            ->where_in("template_id",$acceptableTemplates)
+            ->where("event_id",$event->getKey())
+            ->get();
+        $retval = array();
+        foreach ($res as $r) $retval[] = new Accreditation($r);
+        return $retval;
+    }    
+}
  

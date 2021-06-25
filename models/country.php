@@ -100,5 +100,29 @@
         }
         return false;
     }
+
+    public function selectAccreditations($event) {
+        // only select accreditations with an athlete or federative role template
+        //$ses = SideEvent::SelectCompetitions($event);
+        //$sids = array();
+        //foreach ($ses as $sid) $sids[] = $sid->id;
+
+        $templateIdByType = AccreditationTemplate::TemplateIdsByRoleType($event);
+        $rtype = RoleType::FindByType("Country");
+        $athleteTemplates = isset($templateIdByType["r0"]) ? $templateIdByType["r0"] : array();
+        $federativeTemplates = isset($templateIdByType["r".$rtype->getKey()]) ? $templateIdByType["r".$rtype->getKey()] : array();
+        $acceptableTemplates=array_merge($athleteTemplates, $federativeTemplates);
+
+        $accr=new Accreditation();
+        $res = $accr->select('*')
+            ->join("TD_Fencer","f","f.fencer_id=TD_Accreditation.fencer_id","inner")
+            ->where('f.fencer_country', $this->getKey())
+            ->where_in("TD_Accreditation.template_id",$acceptableTemplates)
+            ->where("event_id",$event->getKey())
+            ->get();
+        $retval = array();
+        foreach ($res as $r) $retval[] = new Accreditation($r);
+        return $retval;
+    }
  }
  

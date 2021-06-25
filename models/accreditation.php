@@ -31,17 +31,16 @@ namespace EVFRanking\Models;
 class Accreditation extends Base {
     public $table = "TD_Accreditation";
     public $pk="id";
-    public $fields=array("id","fencer_id","event_id","data","hash","template_id","file_id","generated", "is_dirty");
+    public $fields=array("id","fencer_id","event_id","data","hash","file_hash","template_id","file_id","generated", "is_dirty","fe_id");
     public $fieldToExport=array(
         "id"=>"id",
         "fencer_id" => "fencer_id",
         "event_id" => "event_id",
         "data" => "data",
-        "hash" => "hash",
         "template_id" => "template_id",
-        "file_id" => "file_id",
-        "generated" => "generated",
-        "is_dirty"=>"is_dirty"
+        // hash, file_hash, file_id, generated and is_dirty do not need to be exported
+        // fe_id is not exported to prevent retrieving it automatically and marking all
+        // accreditations as registered
     );
     public $rules=array(
         "id" => "skip",
@@ -49,10 +48,12 @@ class Accreditation extends Base {
         "event_id" => "required|model=Event",
         "data" => "trim",
         "hash" => "trim|lte=512",
+        "file_hash" => "trim|lte=512",
         "template_id" => "required|model=AccreditationTemplate",
         "file_id" => "trim|lte=255",
         "generated" => "datetime",
-        "is_dirty" => "datetime"
+        "is_dirty" => "datetime",
+        "fe_id" => "trim|lte=10"
     );
 
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
@@ -67,14 +68,113 @@ class Accreditation extends Base {
         return $qb->count();
     }
 
-    public function makeDirty($fid,$eventid) {
-        error_log("class of eventid is ".get_class($eventid));
+//    public function save() {
+//        $wasnew=$this->isNew();
+//        if(parent::save()) {
+//            if($wasnew) {
+//                Audit::Create($this,"created");
+//            }
+//            else {
+//                Audit::Create($this,"updated");
+//            }
+//            return true;
+//        }
+//        return false;
+//    }
+
+    public function delete($id=null) {
+        if ($id === null) {
+            $id = $this->getKey();
+            $accr=$this;
+        }
+        else {
+            $accr=new Accreditation($id,true); // reload from database
+        }
+        if(parent::delete($id)) {
+            $path=$accr->getPath();
+            if(file_exists($path)) {
+                @unlink($path);
+            }
+            Audit::Clear($this);
+        }
+    }
+
+    public function createID($tries=0) {
+        $id1 = random_int(101, 999);
+        $id2 = random_int(101, 999);
+
+        $id = sprintf("%03d-%03d",$id1,$id2);
+        $this->fe_id=$id;
+
+        // see if there is an open accreditation with this ID. In that case, we generate a new
+        $a = $this->findByID($id);
+        if(!empty($a) && $a->exists() && $tries<10) {
+            return $this->createID($tries+1);
+        }
+        if(!empty($a) && $a->exists() && $tries>=10) {
+            // this should not happen, but we are catching the theoretical case
+            $id="I".$this->getKey();
+        }
+
+        return $id;
+    }
+
+    private function accreditationIsValid($a,$feid) {
+        // check the front-end ID to make sure
+        if($a->fe_id != $feid) {
+            error_log("stored fe_id does not match passed value");
+            return false;
+        }
+
+        $event=new Event($a->event_id,true);
+        if(!$event->exists()) {
+            error_log("event does not exist, invalid accreditation");
+            return false;
+        }
+
+        $caps = $event->eventCaps();                    
+        $enddate = strtotime($event->event_open) + (intval($event->event_duration)+1) * (24*60*60);
+        // we cannot accredit anything until registrations opens
+        $starttime=strtotime($event->event_registration_open);
+        if(in_array($caps,array("system","organisation","accreditation")) && time() < $enddate && time() > $starttime) {
+            return true;
+        }
+        return false;
+    }
+
+    public function findByID($aid) {
+        // should by %03d-%03d
+        $accr=null;
+        $matches=array();
+        if(preg_match("/(\d\d\d)-(\d\d)(\d)/",$aid,$matches)) {
+            $accreditation=$this->select('*')->where("fe_id",$aid)->first();
+            if(!empty($accreditation)) {
+                $accr = new Accreditation($accreditation);
+            }
+        }
+        else if(preg_match("/I(\d+)/",$aid,$matches)) {
+            // error case: ID prefixed with an I
+            $accr=new Accreditation($matches[1],true);
+        }
+        if(!empty($accr)) {
+            if ($this->accreditationIsValid($accr, $aid)) {
+                return $accr;
+            }
+        }
+        return null;
+    }
+
+    public function isDirty() {
+        return !empty($this->is_dirty);
+    }
+
+    public function makeDirty($fid,$eventid=null) {
         if(is_object($eventid) && get_class($eventid) == "EVFRanking\\Models\\Registration") {
             $eventid = $eventid->registration_mainevent;
         }        
 
-        $cnt=$this->numrows()->where("fencer_id",$fid)->count();
-        if($cnt == 0) {
+        $cnt=$this->numrows()->where("fencer_id",$fid)->where("event_id",$eventid)->count();
+        if($cnt == 0 && !empty($eventid)) {
             // we create an empty accreditation to signal the queue that this set needs to be reevaluated
             $dt=new Accreditation();
             $dt->fencer_id=$fid;
@@ -92,7 +192,11 @@ class Accreditation extends Base {
             $dt->save();
         }
         else {
-            $this->query()->set("is_dirty",strftime('%F %T'))->where('fencer_id',$fid)->where("event_id",$eventid)->update();
+            $qb=$this->query()->set("is_dirty",strftime('%F %T'))->where('fencer_id',$fid);
+            if(!empty($eventid)) {
+                $qb->where("event_id",$eventid);
+            }
+            $qb->update();
         }
     }
 
@@ -111,28 +215,42 @@ class Accreditation extends Base {
         // situations where a registration is entered and we generate a new badge half way
         // there should not be a situation where one row is <10 minutes ago and another is >10 minutes,
         // unless it is exactly around this border (so both < 9.9 minutes)
-        $notafter = strftime('%F %T', time() - 10 * 60);
-        $res = $this->select('TD_Fencer.fencer_id, a.event_id, a.id')
+        $notafter = strftime('%F %T', time() - EVFRANKING_RENEW_DIRTY_ACCREDITATONS * 60);
+        $res = $this->select('TD_Fencer.fencer_id, a.event_id')
             ->from('TD_Fencer')
             ->join("TD_Accreditation","a","a.fencer_id=TD_Fencer.fencer_id")
-            ->where("not a.is_dirty is NULL")
+            ->where("a.is_dirty","<>",null)
             ->where("a.is_dirty","<",$notafter)
-            ->groupBy(array("TD_Fencer.fencer_id", "a.event_id"))
+            ->groupBy(array("TD_Fencer.fencer_id", "a.event_id")) // make sure we get one entry per fencer/event
             ->orderBy(array("TD_Fencer.fencer_id", "a.event_id"))
             ->get();
 
-        // we usually do not expect 2 events to run 
+        // we usually do not expect 2 events to run at the same time, causing additional queue entries
         if(!empty($res)) {
             // for each fencer, create a new AccreditationDirty job
             // we do not change the is_dirty timestamp. This will cause new jobs to be entered
             // as long as we do not process the queue, but as we'll check and reset the flag
             // before processing, the superfluous queue entries will die quickly
             foreach($res as $row) {
-                error_log("creating accreditationdirty for ".json_encode($row));
                 $job = new \EVFRanking\Jobs\AccreditationDirty();
-                error_log("creating queue job");
-                $job->create($row->fencer_id, $row->event_id, $row->id);
+                $job->create($row->fencer_id, $row->event_id);
             }
+        }
+    }
+
+    private function checkDirtyAccreditationsForFencer($fid,$eid,$queueid) {
+        $res = $this->select('TD_Fencer.fencer_id, a.event_id, a.id')
+            ->from('TD_Fencer')
+            ->join("TD_Accreditation","a","a.fencer_id=TD_Fencer.fencer_id")
+            ->where("a.is_dirty","<>",null)
+            ->where("TD_Fencer.fencer_id",$fid)
+            ->where("a.event_id",$eid)
+            ->get();
+
+        if (!empty($res)) {
+            $job = new \EVFRanking\Jobs\AccreditationDirty();
+            $job->queue->queue = $queueid;
+            $job->create($fid, $eid);
         }
     }
 
@@ -154,7 +272,7 @@ class Accreditation extends Base {
     }
 
     public function similar($dataobj) {
-        $val = $this->makeString($dataobj);
+        $val = $this->makeHash($dataobj);
         return $this->hash == $val;
     }
 
@@ -180,6 +298,448 @@ class Accreditation extends Base {
         else {
             return strval($dataobj);
         }
+    }
+
+    public function getPath() {
+        $upload_dir = wp_upload_dir();
+        return $upload_dir['basedir'] ."/pdfs/event".$this->event_id."/accreditation_".$this->file_id.".pdf";
+    }
+
+    public function regenerate($eid) {
+        $retval = array();
+        $event = new \EVFRanking\Models\Event($eid, true);
+        if ($event->exists()) {
+            // make all existing accreditations for this event dirty
+            // This is a catch all to make sure we get all accreditations
+            $this->query()->set("is_dirty", strftime('%F %T'))->where("event_id", $event->getKey())->update();
+
+            // loop over all different fencers that are registered and make accreditations dirty.
+            // Only select fencers that have no accreditations, so we can make new ones.
+            $fids=$this->query()->from("TD_Registration")
+                ->select("distinct registration_fencer")
+                ->where("registration_mainevent",$event->getKey())
+                ->where("not exists(select * from TD_Accreditation a where a.fencer_id=TD_Registration.registration_fencer)")
+                ->get();
+
+            foreach($fids as $fid) {
+                $id = $fid->registration_fencer;
+                $this->makeDirty($id,$event->getKey());
+            }
+
+            // The dirty-accreditation check will remove accreditations for fencers that have no registration
+        }
+        return $retval;
+    }
+
+    public function generate($eid,$type,$typeid) {
+        $event = new \EVFRanking\Models\Event($eid, true);
+        if ($event->exists()) {
+            // create a summary document for the given selection
+            $job = new \EVFRanking\Jobs\CreateSummary();
+            $job->create($eid,$type,$typeid);
+        }
+    }
+
+    public function generateForFencer($eid,$fid) {
+        $event = new Event($eid, true);
+        $fencer = new Fencer($fid,true);
+        if ($event->exists() && $fencer->exists()) {
+            $this->makeDirty($fencer->getKey(), $event->getKey());
+            // create jobs to recreate the accreditations if needed
+            $myqueueid=uniqid();
+            $this->checkDirtyAccreditationsForFencer($fencer->getKey(),$event->getKey(),$myqueueid);
+
+            $queue = new Queue();
+            $queue->queue = $myqueueid;
+
+            while($queue->tick(60)) {
+                // continue
+                error_log("continuing synchronous queue");
+            }
+        }
+        return array();
+    }
+
+    public function checkSummaryDocuments($eid) {
+        // check hashes of all summary documents of this event and remove any that our out of sync
+        $retval = array();
+        $event = new \EVFRanking\Models\Event($eid, true);
+        if ($event->exists()) {
+            $allsummaries = \EVFRanking\Util\PDFSummary::AllSummaries($eid);
+            foreach($allsummaries as $path) {
+                if(!\EVFRanking\Util\PDFSummary::CheckPath($eid,$path)) {
+                    @unlink($path);
+                }
+            }
+        }
+        return $retval;
+    }
+
+    private function humanFilesize($bytes, $decimals = 1) {
+        $sz = 'BKMGTP';
+        $factor = floor((strlen($bytes) - 1) / 3);
+        return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$sz[$factor];
+    }
+
+    public function overview($eid) {
+        $retval=array();
+        $event=new \EVFRanking\Models\Event($eid,true);
+        if($event->exists()) {
+            // create an overview of total registrations, total accreditations, dirty accreditations and
+            // generated accreditations per:
+            // - event
+            // - country
+            // - role
+            // - accreditation template
+
+            // We first create a list of all side events that have competitions, so we can easily weed
+            // out the (non)athletes
+            $ses=SideEvent::SelectCompetitions($event);
+            $sids=array();
+            foreach($ses as $sid) $sids[]=$sid->id;
+            
+            // The mark the templates for athletes, federative roles and other roles
+            $rtype = RoleType::FindByType("Country");
+            $roles = Role::ListAll();
+            $roleById=array();
+            $roleByType=array();
+            foreach($roles as $r) {
+                $roleById["r".$r->role_id] = new Role($r);
+                if(!isset($roleByType["r".$r->role_type])) $roleByType["r" . $r->role_type] = array();
+                $roleByType["r".$r->role_type][] = $r->role_id;
+            }
+
+            $templateByType = AccreditationTemplate::TemplateIdsByRoleType($event,$roleById);
+
+            $retval["events"]=$this->overviewForEvents($event,$sids, $templateByType, $roleByType,$rtype);
+            $retval["countries"]=$this->overviewForCountries($event,$sids,$templateByType,$roleByType, $rtype);
+            $retval["roles"]=$this->overviewForRoles($event,$sids,$templateByType,$roleByType, $rtype);
+            $retval["templates"]=$this->overviewForTemplates($event,$sids,$templateByType,$roleByType, $rtype);
+        }
+        return $retval;
+    }
+
+    private function overviewForEvents($event,$sids,$templateByType,$roleByType, $rtype) {
+        // for side-events, we only display the athletes and participants
+        // we do that by selecting on the accreditation templates
+        $k1 = "r0"; // athlete role
+        $acceptabletemplates = $templateByType[$k1];
+        $acceptableroles = array("0");
+
+        $results = $this->query()->from("TD_Event_Side")->select(array(
+            "TD_Event_Side.id", 
+            "TD_Event_Side.title", 
+            "r.total as registrations", 
+            "a.total as accreditations",
+            "d.total as dirty",
+            "g.total as generated"
+        ))
+          ->join(function($qb) use ($event, $acceptableroles) {
+            $qb->from("TD_Registration")
+                ->select("registration_event, count(*) as total")
+                ->where("registration_mainevent",$event->getKey())
+                ->where_in("registration_role", $acceptableroles)
+                ->groupBy("registration_event");
+          },"r","TD_Event_Side.id=r.registration_event")
+          ->join(function($qb) use ($event, $acceptabletemplates) {
+            $qb->from("TD_Registration")
+                ->join("TD_Accreditation","ar","ar.fencer_id=TD_Registration.registration_fencer","inner")
+                ->select("TD_Registration.registration_event, count(*) as total")
+                ->where("TD_Registration.registration_mainevent",$event->getKey())
+                ->where_in("ar.template_id", $acceptabletemplates)
+                ->groupBy("TD_Registration.registration_event");
+          },"a","TD_Event_Side.id=a.registration_event")
+          ->join(function($qb) use ($event, $acceptabletemplates) {
+            $qb->from("TD_Registration")
+                ->join("TD_Accreditation","ar","ar.fencer_id=TD_Registration.registration_fencer","inner")
+                ->select("TD_Registration.registration_event, count(*) as total")
+                ->where("TD_Registration.registration_mainevent",$event->getKey())
+                ->where_in("ar.template_id", $acceptabletemplates)
+                ->where("ar.is_dirty","<>",null)
+                ->groupBy("TD_Registration.registration_event");
+          },"d","TD_Event_Side.id=d.registration_event")
+          ->join(function($qb) use ($event, $acceptabletemplates) {
+            $qb->from("TD_Registration")
+                ->join("TD_Accreditation","ar","ar.fencer_id=TD_Registration.registration_fencer","inner")
+                ->select("TD_Registration.registration_event, count(*) as total")
+                ->where("TD_Registration.registration_mainevent",$event->getKey())
+                ->where_in("ar.template_id", $acceptabletemplates)
+                ->where("ar.is_dirty","=", null)
+                ->groupBy("TD_Registration.registration_event");
+          },"g","TD_Event_Side.id=g.registration_event")
+          ->where("TD_Event_Side.competition_id","<>",null)
+          ->where("TD_Event_Side.event_id",$event->getKey())
+          ->get();
+
+        $retval=array();
+        foreach($results as $se) {
+            $path= \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Event", $se->id);
+            $available=($path!==null);
+            $docsize=0;
+            if($available) $docsize=$this->humanFilesize(filesize($path));
+            $retval[]=array(
+                "event" => $se->id,
+                "title" => $se->title,
+                "registrations" => intval($se->registrations),
+                "accreditations" => intval($se->accreditations),
+                "dirty" => intval($se->dirty),
+                "generated" => intval($se->generated),
+                "available" =>$available,
+                "doc_size"=> $docsize
+            );
+        }
+        return $retval;
+    }
+
+    private function overviewForCountries($event,$sids,$templateByType,$roleByType, $rtype) {
+        // for countries, we only display the athletes and federative roles
+        // we do that by selecting on the accreditation templates
+        $k1="r0"; // athlete role
+        $k2="r".$rtype->getKey(); // federative role
+        $acceptabletemplates=array_merge($templateByType[$k1],$templateByType[$k2]);
+        if(empty($acceptabletemplates)) {
+            $acceptabletemplates=arraY(-1);
+
+        }
+        $acceptableroles = array_merge(array("0"), $roleByType[$k2]);
+
+        $results = $this->query()->from("TD_Country")->select(array(
+            "TD_Country.country_id", 
+            "TD_Country.country_name",
+            "TD_Country.country_abbr",
+            "r.total as registrations", 
+            "a.total as accreditations",
+            "d.total as dirty",
+            "g.total as generated"
+        ))
+          ->join(function($qb) use ($event,$acceptableroles,$sids) {
+            $qb->from("TD_Registration")
+                ->join("TD_Fencer","fr","fr.fencer_id=TD_Registration.registration_fencer","inner")
+                ->select("fr.fencer_country, count(*) as total")
+                ->where("TD_Registration.registration_mainevent",$event->getKey())
+                ->where_in("TD_Registration.registration_role",$acceptableroles)
+                ->where(function($qb) use($sids) {
+                    $qb->where_in("TD_Registration.registration_event",$sids)
+                       ->or_where("TD_Registration.registration_event","=",null);
+                })
+                ->groupBy("fr.fencer_country");
+          },"r", "TD_Country.country_id=r.fencer_country")
+          ->join(function($qb) use ($event,$acceptabletemplates) {
+            $qb->from("TD_Accreditation")
+                ->join("TD_Fencer","fr","fr.fencer_id=TD_Accreditation.fencer_id","inner")
+                ->select("fr.fencer_country, count(*) as total")
+                ->where("TD_Accreditation.event_id",$event->getKey())
+                ->where_in("TD_Accreditation.template_id",$acceptabletemplates)
+                ->groupBy("fr.fencer_country");
+          },"a", "TD_Country.country_id=a.fencer_country")
+          ->join(function($qb) use ($event, $acceptabletemplates) {
+            $qb->from("TD_Accreditation")
+                ->join("TD_Fencer","fr","fr.fencer_id=TD_Accreditation.fencer_id","inner")
+                ->select("fr.fencer_country, count(*) as total")
+                ->where("TD_Accreditation.event_id",$event->getKey())
+                ->where("TD_Accreditation.is_dirty", "<>", null)
+                ->where_in("TD_Accreditation.template_id", $acceptabletemplates)
+                ->groupBy("fr.fencer_country");
+          },"d", "TD_Country.country_id=d.fencer_country")
+          ->join(function($qb) use ($event, $acceptabletemplates) {
+            $qb->from("TD_Accreditation")
+                ->join("TD_Fencer","fr","fr.fencer_id=TD_Accreditation.fencer_id","inner")
+                ->select("fr.fencer_country, count(*) as total")
+                ->where("TD_Accreditation.event_id",$event->getKey())
+                ->where("TD_Accreditation.is_dirty", "=", null)
+                ->where_in("TD_Accreditation.template_id", $acceptabletemplates)
+                ->groupBy("fr.fencer_country");
+          },"g", "TD_Country.country_id=g.fencer_country")->get();
+
+
+        $retval=array();
+        foreach($results as $se) {
+            $path = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Country", $se->country_id);
+            $available = ($path !== null);
+            $docsize = 0;
+            if ($available) $docsize = $this->humanFilesize(filesize($path));
+            $retval[]=array(
+                "country" => $se->country_id,
+                "name" => $se->country_name,
+                "abbr" => $se->country_abbr,
+                "registrations" => intval($se->registrations),
+                "accreditations" => intval($se->accreditations),
+                "dirty" => intval($se->dirty),
+                "generated" => intval($se->generated),
+                "available" => $available,
+                "doc_size" => $docsize
+            );
+        }
+        return $retval;
+    }
+    private function overviewForRoles($event,$sids,$templateByType, $roleByType) {
+        // create a total for each registered role for this event.
+        // For each registration, we need to find accreditations of fencers with that role
+        $results = $this->query()
+            ->from("TD_Registration")
+            ->select(array(
+                "TD_Registration.registration_role",
+                "r.cnt as registrations",
+                "a.cnt as accreditations",
+                "d.cnt as dirty",
+                "g.cnt as generated"
+            ))
+            ->join(function($qb) use ($event,$sids) {
+                $qb->select("registration_role, count(*) as cnt")
+                   ->from("TD_Registration")
+                   ->where(function ($qb) use ($sids) {
+                        $qb->where_in("registration_event", $sids)
+                           ->or_where("registration_event", "=", null);
+                    })
+                   ->where("registration_mainevent",$event->getKey())
+                   ->groupBy("registration_role");
+            },"r","r.registration_role=TD_Registration.registration_role")
+            ->join(function($qb) use ($event,$sids) {
+                $qb->from(function($qb) use($event,$sids) {
+                    $qb->select("r1.registration_role, r1.registration_fencer, 1 as cnt2")
+                    ->from("TD_Accreditation")
+                    ->join("TD_Registration","r1","r1.registration_fencer=TD_Accreditation.fencer_id and r1.registration_mainevent=TD_Accreditation.event_id")
+                    ->where("TD_Accreditation.event_id",$event->getKey())
+                    ->where(function($qb) use($sids) {
+                        $qb->where_in("r1.registration_event", $sids)
+                            ->or_where("r1.registration_event","=",null);
+                    })
+                    ->groupBy("r1.registration_role, r1.registration_fencer");
+                },"s1")
+                ->select("s1.registration_role, sum(s1.cnt2) as cnt")
+                ->groupBy("s1.registration_role");
+            },"a", "TD_Registration.registration_role=a.registration_role")
+            ->join(function($qb) use ($event,$sids) {
+                $qb->from(function($qb) use($event,$sids) {
+                    $qb->select("r2.registration_role, r2.registration_fencer, 1 as cnt2")
+                    ->from("TD_Accreditation")
+                    ->join("TD_Registration","r2","r2.registration_fencer=TD_Accreditation.fencer_id and r2.registration_mainevent=TD_Accreditation.event_id")
+                    ->where(function($qb) use($sids) {
+                        $qb->where_in("r2.registration_event", $sids)
+                            ->or_where("r2.registration_event","=",null);
+                    })
+                    ->where("TD_Accreditation.event_id",$event->getKey())
+                    ->where("TD_Accreditation.is_dirty", "<>", null)
+                    ->groupBy("r2.registration_role, r2.registration_fencer");
+                },"s2")
+                ->select("s2.registration_role, sum(s2.cnt2) as cnt")
+                ->groupBy("s2.registration_role");
+            },"d", "TD_Registration.registration_role=d.registration_role")
+            ->join(function($qb) use ($event,$sids) {
+                $qb->from(function($qb) use($event,$sids) {
+                    $qb->select("r3.registration_role, r3.registration_fencer, 1 as cnt2")
+                    ->from("TD_Accreditation")
+                    ->join("TD_Registration","r3","r3.registration_fencer=TD_Accreditation.fencer_id and r3.registration_mainevent=TD_Accreditation.event_id")
+                    ->where("TD_Accreditation.event_id",$event->getKey())
+                    ->where(function($qb) use($sids) {
+                        $qb->where_in("r3.registration_event", $sids)
+                            ->or_where("r3.registration_event","=",null);
+                    })
+                    ->where("TD_Accreditation.is_dirty", "=", null)
+                    ->groupBy("r3.registration_role, r3.registration_fencer");
+                },"s3")
+                ->select("s3.registration_role, sum(s3.cnt2) as cnt")
+                ->groupBy("s3.registration_role");
+            },"g", "TD_Registration.registration_role=g.registration_role")
+            ->groupBy("TD_Registration.registration_role")
+            ->get();
+
+        $retval=array();
+        foreach($results as $se) {
+            $role=$se->registration_role;
+
+            $key="r$role";
+            $path = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Role", $role);
+            $available = ($path !== null);
+            $docsize = 0;
+            if ($available) $docsize = $this->humanFilesize(filesize($path));
+
+            $retval[$key]=array(
+                "role" => $role,
+                "registrations" => intval($se->registrations),
+                "accreditations" => intval($se->accreditations),
+                "dirty" => intval($se->dirty),
+                "generated" => intval($se->generated),
+                "available" => $available,
+                "doc_size" => $docsize
+            );
+        }
+        return array_values($retval);
+    }
+    private function overviewForTemplates($event,$sids,$templateByType, $roleByType) {
+        $results = $this->query()->from("TD_Accreditation_Template")->select(array(
+            "TD_Accreditation_Template.id",
+            "TD_Accreditation_Template.name", 
+            "a.total as accreditations",
+            "d.total as dirty",
+            "g.total as generated"
+        ))
+          ->join(function($qb) use ($event) {
+            $qb->from("TD_Accreditation")
+                ->select("template_id, count(*) as total")
+                ->where("event_id",$event->getKey())
+                ->groupBy("template_id");
+          },"a","TD_Accreditation_Template.id=a.template_id")
+          ->join(function($qb) use ($event) {
+            $qb->from("TD_Accreditation")
+                ->select("template_id, count(*) as total")
+                ->where("event_id",$event->getKey())
+                ->where("TD_Accreditation.is_dirty", "<>", null)
+                ->groupBy("template_id");
+          },"d","TD_Accreditation_Template.id=d.template_id")
+          ->join(function($qb) use ($event) {
+            $qb->from("TD_Accreditation")
+                ->select("template_id, count(*) as total")
+                ->where("event_id",$event->getKey())
+                ->where("TD_Accreditation.is_dirty", "=", null)
+                ->groupBy("template_id");
+          },"g","TD_Accreditation_Template.id=g.template_id")->get();
+
+        $retval=array();
+        foreach($results as $se) {
+            $path = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Template", $se->id);
+            $available = ($path !== null);
+            $docsize = 0;
+            if ($available) $docsize = $this->humanFilesize(filesize($path));
+            $retval[]=array(
+                "template" => $se->id,
+                "name" => $se->name,
+                "registrations" => intval($se->accreditations),
+                "accreditations" => intval($se->accreditations),
+                "dirty" => intval($se->dirty),
+                "generated" => intval($se->generated),
+                "available" => $available,
+                "doc_size" => $docsize
+            );
+        }
+        return $retval;
+    }
+
+    public function findAccreditations($eid,$fid) {
+        $event=new Event($eid,true);
+        $fencer=new Fencer($fid,true);
+        $retval=array("list"=>array());
+        if($event->exists() && $fencer->exists()) {
+            $accreditations = $this->select("TD_Accreditation.*, t.name")
+                ->join("TD_Accreditation_Template","t","t.id=TD_Accreditation.template_id")
+                ->where("fencer_id",$fencer->getKey())->where("TD_Accreditation.event_id",$event->getKey())->get();
+            if(!empty($accreditations)) {
+                foreach($accreditations as $a) {
+                    $accr=new Accreditation($a);
+                    $path=$accr->getPath();
+                    $data=array("id"=>$accr->getKey(),"dirty"=>$accr->isDirty(),"has_file"=>false, "title"=>$a->name);
+                    if(file_exists($path)) {
+                        $data["has_file"]=true;
+                    }
+                    $retval["list"][]=$data;
+                }
+            }
+        }
+        return $retval;
+    }
+
+    public function cleanForFencer($fid,$eid) {
+        $this->query()->where("fencer_id",$fid)->where("event_id",$eid)->delete();
     }
 }
  

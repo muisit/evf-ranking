@@ -1,10 +1,10 @@
 import React from 'react';
-import { registration, fencer, upload_file } from "../api.js";
+import { registration, fencer, upload_file, accreditation } from "../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Checkbox } from 'primereact/checkbox';
-import { format_date_fe_short, is_valid, date_to_category, parse_net_error, is_hod, is_organiser, is_sysop } from "../functions";
+import { random_hash, format_date_fe_short, is_valid, date_to_category, parse_net_error, is_hod, is_organisation, is_sysop, is_organiser, is_accreditor } from "../functions";
 
 // the fencer-select-dialog displays all events a fencer can be a part of.
 // We now only select roles for the overall event, or Athlete/Participant roles for
@@ -18,7 +18,7 @@ export default class FencerSelectDialog extends React.Component {
         // if the fencer is paying individual in any of the registrations,
         // set this marker to true
         var paysIndividual='G';
-        if (is_organiser() && (!this.props.country || !is_valid(this.props.country.id))) paysIndividual = 'O';
+        if (is_organisation() && (!this.props.country || !is_valid(this.props.country.id))) paysIndividual = 'O';
         if (is_sysop() && (!this.props.country || !is_valid(this.props.country.id))) paysIndividual='E';
         if(this.props.value && this.props.value.registrations) {
             this.props.value.registrations.map((itm) => {
@@ -30,7 +30,7 @@ export default class FencerSelectDialog extends React.Component {
 
         this.state = {
             paysIndividual: paysIndividual,
-            imageHash: Date.now()
+            imageHash: random_hash()
         }
     }
 
@@ -65,7 +65,6 @@ export default class FencerSelectDialog extends React.Component {
     }
 
     findRegistration = (sideeventid, roleid) => {
-        console.log("finding registration for "+sideeventid);
         for(var r in this.props.value.registrations) {
             var reg = this.props.value.registrations[r];
             if(is_valid(reg.sideevent) && reg.sideevent == sideeventid) {
@@ -105,7 +104,6 @@ export default class FencerSelectDialog extends React.Component {
     }
 
     removeRegistration = (itm) => {
-        console.log("removing registration ",itm);
         var regs = this.props.value.registrations.filter((reg) => {
             if(is_valid(reg.sideevent) && reg.sideevent == itm.sideevent) {
                 return false;
@@ -115,7 +113,6 @@ export default class FencerSelectDialog extends React.Component {
             }
             return true;
         });
-        console.log("setting registrations to ",regs);
         this.props.value.registrations = regs;
         this.save(this.props.value);
     }
@@ -164,7 +161,7 @@ export default class FencerSelectDialog extends React.Component {
             // system administrators can select any payment type at the top.
             // Just copy that
         }
-        else if (is_organiser()) {
+        else if (is_organisation()) {
             // organisers can invite people and pay for their costs
             // payment is set to 'O' in that case.
             // However, only do this for non-athlete roles.
@@ -215,7 +212,6 @@ export default class FencerSelectDialog extends React.Component {
 
                 // insert-or-replace the new registration
                 itm.pending="saved";
-                console.log("insert-or-replace saved item ",itm);
                 this.insertRegistration(itm); // insert and save new list
 
                 var self = this;
@@ -272,9 +268,8 @@ export default class FencerSelectDialog extends React.Component {
             if (json.data.model) {
                 itm = Object.assign({}, itm, json.data.model);
             }
-            console.log("saving item ",itm);
             this.save(itm);
-            this.setState({imageHash: Date.now()});
+            this.setState({imageHash: random_hash()});
         })
         .catch((err) => parse_net_error(err));
     }
@@ -282,6 +277,19 @@ export default class FencerSelectDialog extends React.Component {
     onCloseDialog = (event) => {
         // registration selection is done as the checkboxes are marked
         this.close();
+    }
+
+    onGenerate = (event) => {
+        if (is_sysop() || is_organiser() || is_accreditor()) {
+            // regenerate all accreditations for this fencer
+            if(this.props.reloadAccreditations) this.props.reloadAccreditations();
+            accreditation("generateone",{event: this.props.event.id,fencer: this.props.value.id})
+                .then((json) => {
+                    if(json) {
+                        if(this.props.reloadAccreditations) this.props.reloadAccreditations(this.props.event.id, this.props.value.id);
+                    }
+                });
+        }
     }
 
     onCancelDialog = (event) => {
@@ -308,7 +316,6 @@ export default class FencerSelectDialog extends React.Component {
     }
 
     onChangeEl = (event) => {
-        console.log("onchangeel ",event);
         if(!event.target) return;
         var els = event.target.name.split('-');
         var name=event.target.name;
@@ -324,7 +331,6 @@ export default class FencerSelectDialog extends React.Component {
         var selectThisOne=false;
         switch(name) {
         case 'paysIndividual':
-            console.log("setting paysIndividual");
             this.setState({paysIndividual: value});
             break;
         case 'select':
@@ -337,15 +343,12 @@ export default class FencerSelectDialog extends React.Component {
                 // for an event. You can only participate (role=0)
                 selectThisOne=true; // selecting a role selects the event
             }
-            console.log("selecting or setting role for id " + id);
             var selectedItem=this.findRegistration(id); // this is the side-event registration
             //var selectedEvent=this.findEvent(id); // used for the default role
 
             if(selectThisOne) {
-                console.log("selecting event");
                 if(selectedItem === null) {
                     // create a new registration for this item
-                    console.log("creating new event");
                     selectedItem = {
                         event: this.props.event.id,
                         sideevent: id,
@@ -356,14 +359,12 @@ export default class FencerSelectDialog extends React.Component {
                     }
                 }                
                 if(name == "role") {
-                    console.log("setting role of this event");
                     selectedItem.role = value;
                 }
                 selectedItem.pending = "save";                
                 this.saveRegistration(selectedItem); // send to backend
             }
             else {
-                console.log("not adding event, this is an uncheck");
                 selectedItem.pending = "delete";
                 this.deleteRegistration(selectedItem); // send to backend
             }
@@ -401,12 +402,25 @@ export default class FencerSelectDialog extends React.Component {
         return is_valid(selectedrole) && !roleById["r" + selectedrole];
     }
 
+    downloadAccreditation = (accr) => {
+        if (is_sysop() || is_organiser() || is_accreditor()) {
+            var href = evfranking.url + "&download=accreditation&id="+accr.id;
+            href += "&mainevent=" + this.props.event.id + "&nonce=" + evfranking.nonce;
+            window.open(href);
+        }
+    }
+
     render() {
         if(!this.props.value) {
             return (null);
         }
 
+        var genbutton=(null);
+        if (is_sysop() || is_organiser() || is_accreditor()) {
+            genbutton = (<Button label="Generate" icon="pi pi-check" className="p-button-raised" onClick={this.onGenerate} />);
+        }
         var footer=(<div>
+        {genbutton}
         <Button label="Close" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
 
@@ -414,7 +428,6 @@ export default class FencerSelectDialog extends React.Component {
         var overallroles = [];
         var foundEmpty=false;
         this.props.value.registrations.map((ev) => {
-            console.log("looking at registration ",ev);
             if(ev.pending!="delete" && ev.pending!="deleted") {
                 if(!is_valid(ev.sideevent)) {
                     overallroles.push(ev);
@@ -438,9 +451,20 @@ export default class FencerSelectDialog extends React.Component {
 
         // filter out valid roles for the capabilities
         var roles = this.props.roles.filter((itm) => {
-            if (is_hod() && parseInt(itm.type) == 1) return true;
-            if (is_organiser() && parseInt(itm.type) == 2) return true;
-            if (is_sysop()) return true;
+            if (is_hod() && itm.org == 'Country') return true;
+            if (is_organisation() && (itm.org == 'Org' || itm.org == 'Country')) return true;
+            if (is_sysop()) return true; // allow all roles for system administrators
+            return false;
+        });
+        roles.sort((a, b) => {
+            if (a.org == 'Country' && b.org != 'Country') return -1;
+            if (b.org == 'Country' && a.org != 'Country') return 1;
+            if (a.org == 'Org' && b.org != 'Org') return -1;
+            if (b.org == 'Org' && a.org != 'Org') return 1;
+
+            if (a.name < b.name) return -1;
+            if (a.name > b.name) return 1;
+            return 0;
         });
 
         var roleById = {};
@@ -459,7 +483,7 @@ export default class FencerSelectDialog extends React.Component {
         var mycatname = date_to_category(this.props.value.birthday, this.props.event.opens);
 
         var payments = (null);
-        if(is_organiser()) {
+        if(is_organisation()) {
             var payment = [
                 { name: 'Individual', code: 'I' },
                 { name: 'As group', code: 'G' },
@@ -469,7 +493,7 @@ export default class FencerSelectDialog extends React.Component {
                 // system administrators can also assign to the EVF
                 payment.push({ name: 'By EVF', code: 'E' });
             }
-            payments = (<div>
+            payments = (<div className='clearfix'>
                 <label>Payment</label>
                 <div className='input'>
                     <Dropdown appendTo={document.body} name='paysIndividual' optionLabel="name" optionValue="code" value={this.state.paysIndividual} options={payment} placeholder="Payment" onChange={this.onChangeEl} />
@@ -479,7 +503,7 @@ export default class FencerSelectDialog extends React.Component {
         else if (this.props.event.payment == "all") {
             // payments can be selected by the user, but only choose between I or G
             var payment = [{ name: 'Individual', code: 'I' }, { name: 'As group', code: 'G' }];
-            payments = (<div>
+            payments = (<div className='clearfix'>
                 <label>Payment</label>
                 <div className='input'>
                     <Dropdown appendTo={document.body} name='paysIndividual' optionLabel="name" optionValue="code" value={this.state.paysIndividual} options={payment} placeholder="Payment" onChange={this.onChangeEl} />
@@ -495,15 +519,15 @@ export default class FencerSelectDialog extends React.Component {
     {payments}
     {this.renderEvents(selectedevents)}
     {this.renderRoles(overallroles, roles, roleById, allRolesById)}
+    {this.renderAccreditation()}
     {this.renderPicture()}
 </Dialog>
 );
     }
 
     renderRoles(overallroles, roleoptions, roleById, allRolesById) {
-        console.log("rendering support roles for registrations ",overallroles);
         return (
-        <div>
+        <div className='clearfix'>
             <label>Support Roles</label>
             <div className='input'>
                 <table>
@@ -565,7 +589,7 @@ export default class FencerSelectDialog extends React.Component {
             return true;
         });
 
-        return (<div>
+        return (<div className='clearfix'>
         <label>Events</label>
         <div className='input'>
             <table className='fencer-select-events'>
@@ -631,7 +655,6 @@ export default class FencerSelectDialog extends React.Component {
     }
 
     renderPicture () {
-        console.log("rendering picture for ",this.props.value);
         // display the accreditation photo
         // anyone that can view this dialog can upload a better image
         var canapprove=["accreditor","organiser"].includes(evfranking.eventcap) && this.props.value.picture!='N';
@@ -652,7 +675,7 @@ export default class FencerSelectDialog extends React.Component {
         if(!['Y','N','R','A'].includes(picstate)) {
             picstate='N';
         }
-        return (<div>
+        return (<div className='clearfix'>
             <label className='header'>Accreditation Photo</label>
             <div>
             {['Y','A','R'].includes(this.props.value.picture) && (
@@ -670,6 +693,40 @@ export default class FencerSelectDialog extends React.Component {
             )}
             </div>
         </div>);
+    }
+
+    renderAccreditation() {
+        if(is_sysop() || is_organiser() || is_accreditor()) {
+            return (<div className='clearfix'>
+            <label>Badges</label>
+            <div>
+                <table className='compact'>
+                  <tbody>
+                {this.props.accreditations.map((a,idx)=> (
+                    <tr key={idx}>
+                        <td>{a.title}</td>
+                        <td>&nbsp;&nbsp;
+                            {a.has_file && (
+                                <span className='pi pi-icon pi-file-pdf' onClick={()=>this.downloadAccreditation(a)}></span>
+                            )}
+                            {!a.has_file && a.is_dirty && (
+                                <span className='pi pi-icon pi-clock'></span>
+                            )}
+                            {!a.has_file && !a.is_dirty && (
+                                <span className='pi pi-icon pi-times-circle'></span>
+                            )}                            
+                        </td>
+                    </tr>
+                ))}
+                  </tbody>
+                </table>
+            </div>
+        </div>
+            );
+        }
+        else {
+            return (null);
+        }
     }
 }
 

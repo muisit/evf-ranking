@@ -17,6 +17,12 @@ function current_user_can($capa) {
     return !empty($cando);
 }
 
+function do_action($hookname, $arg) {
+    if($hookname == "extlibraries_hookup" && $arg == "tcpdf") {
+        require_once('../../ext-libraries/libraries/tcpdf/tcpdf.php');
+    }
+}
+
 class MockDBClass {
     public $last_error="no error";
     public $insert_id=-1;
@@ -190,10 +196,11 @@ $DB = new TestDatabase();
 
 
 class BaseTest {
-    public $title="Base";
+    public $name="Base";
     public $success=0;
     public $fails=0;
     public $count=0;
+    public $disabled=false;
 
     public function init_admin($id=null) {
         global $DB;
@@ -375,15 +382,12 @@ class BaseTest {
     }
 
     public function loadPolicy() {
-        require_once('../policy.php');
-        $obj = new \EVFRanking\Policy();
+        $obj = new \EVFRanking\Lib\Policy();
         return $obj;
     }
 
     public function loadModel($cname) {
-        $name=strtolower($cname);
-        require_once('../models/base.php');
-        require_once('../models/${name}.php');
+        $cname="\\EVFRanking\\Models\\$cname";
         $model=new $cname();
         return $model;
     }

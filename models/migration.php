@@ -91,9 +91,7 @@
     }
 
     private function synchroniseMigrations() {
-        error_log("syncing migrations");
         $cnt = $this->count();
-        error_log("count is $cnt");
         if ($cnt < 1) {
             $migration = new Migration(array("name" => "001: Adjust Event Table", "status" => 0));
             $migration->save();
@@ -136,6 +134,10 @@
         }
         if($cnt < 12) {
             $migration = new Migration(array("name"=> '011: Queues',"status"=>0));
+            $migration->save();
+        }
+        if($cnt < 13) {
+            $migration = new Migration(array("name"=>"012: Accreditation","status"=>0));
             $migration->save();
         }
     }
@@ -252,12 +254,17 @@
             break;
         case '011: Queues':
             $wpdb->query("CREATE TABLE `TD_Queue` (`id` int(11) NOT NULL AUTO_INCREMENT,`state` varchar(20) NOT NULL,`payload` text NOT NULL,`attempts` int(11) NOT NULL,`started_at` datetime NULL,`finished_at` datetime NULL,`created_at` datetime NOT NULL,`available_at` datetime  NULL,`queue` varchar(20) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
-            $wpdb->query("CREATE TABLE `TD_Accreditation` (`id` int(11) NOT NULL AUTO_INCREMENT ,`fencer_id` int(11) NOT NULL,`event_id` int(11) NOT NULL,`data` text COLLATE utf8_bin NOT NULL,`hash` varchar(512) COLLATE utf8_bin DEFAULT NULL,`template_id` int(11) NOT NULL,`file_id` varchar(255) COLLATE utf8_bin NULL,`generated` datetime NULL, `is_dirty` DATETIME NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin");
-            $wpdb->query("CREATE TABLE `TD_Accreditation_Template` (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(200) COLLATE utf8_bin NOT NULL,`content` text COLLATE utf8_bin NOT NULL,PRIMARY KEY(`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin");
+            $wpdb->query("CREATE TABLE `TD_Accreditation` (`id` int(11) NOT NULL AUTO_INCREMENT ,`fencer_id` int(11) NOT NULL,`event_id` int(11) NOT NULL,`data` text COLLATE utf8_bin NOT NULL,`hash` varchar(512) COLLATE utf8_bin DEFAULT NULL,`file_hash` varchar(512) COLLATE utf8_bin DEFAULT NULL,`template_id` int(11) NOT NULL,`file_id` varchar(255) COLLATE utf8_bin NULL,`generated` datetime NULL, `is_dirty` DATETIME NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin");
+            $wpdb->query("CREATE TABLE `TD_Accreditation_Template` (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(200) COLLATE utf8_bin NOT NULL,`content` text COLLATE utf8_bin NOT NULL,`event_id` int(11) NULL,PRIMARY KEY(`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin");
             $wpdb->query("alter table TD_Registration add column registration_mainevent int null");
             $wpdb->query("ALTER TABLE `TD_Registration` CHANGE `registration_event` `registration_event` INT(11) NULL; ");
             $wpdb->query("ALTER TABLE `TD_Registration` ADD `registration_payment` CHAR(1) NULL AFTER `registration_mainevent`; ");
             $wpdb->query("ALTER TABLE `TD_Registration` DROP `registration_individual`;");
+            break;
+        case '012: Accreditation':
+            $wpdb->query("ALTER TABLE `TD_Accreditation` add column `fe_id` VARCHAR(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL; ");
+//            $wpdb->query("CREATE TABLE `TD_Audit` (`id` int(11) NOT NULL AUTO_INCREMENT,`created` datetime NOT NULL,`creator` int(11) NOT NULL,`log` text NOT NULL,`model` varchar(100) DEFAULT NULL,`modelid` int(11) DEFAULT NULL,`data` text DEFAULT NULL, PRIMARY KEY (`id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+            $wpdb->query("ALTER TABLE `TD_Registration` ADD column `registration_state` CHAR(1) NULL;");
             break;
         default:
             break;

@@ -25,7 +25,8 @@
  */
 
 
-namespace EVFRanking\Lib;
+namespace EVFRanking\Lib {
+
 
 class Activator extends BaseLib {
      const DBVERSION="1.0.0";
@@ -41,6 +42,12 @@ class Activator extends BaseLib {
         }
     }
 
+    public function uninstall() {
+        $this->deactivate();
+        delete_option("evfranking_upgrade");
+        delete_option(\EVFRanking\Models\AccreditationTemplate::OPTIONNAME);
+    }
+
     public function activate() {
         if ( ! wp_next_scheduled( 'evfranking_cron_hook' ) ) {
             $date = strftime('%Y-%m-%d',time());
@@ -48,23 +55,41 @@ class Activator extends BaseLib {
             wp_schedule_event( $ts, 'daily', 'evfranking_cron_hook' );
         }
         if ( ! wp_next_scheduled( 'evfranking_cron_hook_10m' ) ) {
-            wp_schedule_event( time(), '1_second', 'evfranking_cron_hook_10m' );
+            wp_schedule_event( time(), EVFRANKING_CRON_WAIT_HOOK, 'evfranking_cron_hook_10m' );
+        }
+
+        // execute the upgrade tasks as well, to allow users to run these explicitely
+        // by inactivating and reactivating the plugin
+        $this->upgrade();
+    }
+
+    public function upgraded($obj,$options) {
+        if (isset($options["action"]) && isset($options["type"])
+           && $options['action'] == 'update' 
+           && $options['type'] == 'plugin' ) {
+            foreach($options['plugins'] as $each_plugin) {
+                if ($each_plugin==EVFRANKING_PLUGIN_PATH) {
+                    add_option("evfranking_upgrade", strftime("%F %T"));
+                }
+            }
+        }
+    }
+
+    public function loaded() {
+        $upgrade_time = get_option("evfranking_upgrade");
+        if(!empty($upgrade_time)) {
+            $tm = strtotime($upgrade_time);
+            if((time() - $tm) < 20) {
+                $this->upgrade();
+            }
+            delete_option("evfranking_upgrade");
         }
     }
 
     public function upgrade() {
-        $installed_ver = get_option("evfranking_db_version");
-
-        if (empty($installed_ver) || version_compare($installed_ver, "1.0.0") < 0) {
-            // no version, but we do not create new tables...
-        }
-
-        if(empty($installed_ver)) {
-            add_option("evfranking_db_version", Activator::DBVERSION);
-        }
-        else {
-            update_option("evfranking_db_version", Activator::DBVERSION);
-        }
+        // request installation of the TCPDF library
+        do_action( 'extlibraries_install', 'tcpdf','evf-ranking','6.4.1');
+        do_action( 'extlibraries_install', 'fpdf','evf-ranking','2.3.6');
     }
 
     // daily call
@@ -76,10 +101,15 @@ class Activator extends BaseLib {
 
         // then rebuild the rankings
         $model->calculateRankings();
+
+        // clear out Queue entries that are too old
+        $model = new \EVFRanking\Models\Queue();
+        $model->cleanup();
     }
 
     // every 10 minutes
     public function cron_10() {
+        
         $model = new \EVFRanking\Models\Accreditation();
         $model->checkDirtyAccreditations();
 
@@ -88,6 +118,7 @@ class Activator extends BaseLib {
         $delta=10*60; // total time we spend
         $lastjob=0; // time for the last job
         $queue = new \EVFRanking\Models\Queue();
+        $queue->queue="default"; // run only the default queue
         while(time() < ($start + $delta - $lastjob)) {
             $qstart=time();
             // pass the estimation of the time we have left
@@ -105,3 +136,5 @@ class Activator extends BaseLib {
         }
     }
 }
+
+} // namespace

@@ -76,7 +76,8 @@ class Validator {
     }
 
     public function validateField($field,$value) {
-        $rules = isset($this->model->rules[$field]) ? $this->model->rules[$field] : 'fail';
+        //error_log("validating $field with value $value");
+        $rules = isset($this->model->rules[$field]) ? $this->model->rules[$field] : 'skip';
         $label = $field;
         $msg=null;
         if(is_array($rules)) {
@@ -279,7 +280,6 @@ class Validator {
                     $p1 = floatval($params[0]);
                     if($msg === null) $msg="{label} should be more than or equal to {p1}";
                     $retval = floatval($value) >= $p1;
-                    error_log("gte check on $value and $p1 says ".json_encode($retval));
                 }
                 else if($this->is_date($value)) {
                     $p1 = date_parse($params[0]);
@@ -293,7 +293,13 @@ class Validator {
             }
             break;
         case 'trim':
-            $value = trim("$value");
+            if(is_object($value) || is_array($value)) {
+                $value=json_encode($value);
+            }
+            else {
+                $value=strval($value);
+            }
+            $value = trim($value);
             break;
         case 'upper':
             $value = strtoupper($value);
@@ -321,19 +327,18 @@ class Validator {
             }
             break;
         case 'enum':
-            error_log("validating enum on ".json_encode($params)." and $value");
             $retval = in_array($value, $params);
             if($msg === null) $msg = "{label} should be one of ".json_encode($params);
             break;
         case 'model':
-            error_log("validate for model value $value");
             try {
                 $id=intval($value);
                 $name = "\\EVFRanking\\Models\\".$params[0];
+                $isnotrequired=isset($params[1]) && $params[1]=="null";
                 $attrmodel = new $name($id);
                 if(!$attrmodel->exists()) {
                     $value=null;
-                    $retval=false;
+                    $retval=$isnotrequired || false;
                 }
                 if($msg === null) $msg = "Please select a valid value for {label}";
             }

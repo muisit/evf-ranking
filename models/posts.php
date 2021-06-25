@@ -75,7 +75,6 @@
     }
 
     public function selectAll($offset, $pagesize, $filter, $sort, $special = null) {
-        error_log("selecting all posts");
         $qb = $this->select('*')->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb, $filter, $special);
         return $qb->get();

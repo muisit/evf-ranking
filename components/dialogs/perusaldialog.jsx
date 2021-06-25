@@ -56,7 +56,6 @@ export default class PerusalDialog extends React.Component {
     }
 
     checkState = () => {
-        console.log("checking state for "+this.state.event_id+", " + this.state.weapon_id + ", "+ this.state.category_id);
         if (this.state.weapon_id > 0 && this.state.category_id > 0) {
             this.loadItemPage();
         }

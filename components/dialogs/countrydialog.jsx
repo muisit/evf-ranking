@@ -34,7 +34,6 @@ export default class CountryDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        console.log('saving ',this.props.value);
         country('save',this.props.value)
             .then((json) => {
                 this.loading(false);

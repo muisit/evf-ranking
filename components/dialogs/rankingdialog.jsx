@@ -32,7 +32,6 @@ export default class RankingDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        console.log('saving ',this.props.value);
         singleevent('save',this.props.value)
             .then((json) => {
                 this.loading(false);
@@ -62,7 +61,6 @@ export default class RankingDialog extends React.Component {
         var item = this.props.value;
         var name = event.target ? event.target.name : event.originalEvent.target.name;
         var value = event.target ? event.target.value : event.value;
-        console.log("changing "+name + ' to ' + value);
         switch(name) {
         case 'in_ranking': 
         case 'factor':item[name] = value;break;

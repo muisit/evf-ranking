@@ -123,7 +123,6 @@ HEREDOC;
 
         // if we are not logged in yet, redirect to the login page
         if(!is_user_logged_in()) {
-            error_log("redirecting to login");
             global $wp;
             $registrationpage = home_url($wp->request);
             $location = wp_login_url($registrationpage);
@@ -131,14 +130,38 @@ HEREDOC;
             exit;
         }
         else {
-            error_log("creating Post");
             // logged in, so we can show the React front end
             // this creates the post content and adds the relevant scripts
-            $post = $this->virtualPage($event);
+            $post = $this->virtualPage("register",$event);
             return $post;
         }
         return null;
     }
+
+    public function registerAccreditRedirect($accrid) {
+        if (Display::$policy === null) {
+            Display::$policy = new Policy();
+        }
+
+        // if we are not logged in yet, redirect to the login page
+        if(!is_user_logged_in()) {
+            global $wp;
+            $registrationpage = home_url($wp->request);
+            $location = wp_login_url($registrationpage);
+            wp_safe_redirect($location);
+            exit;
+        }
+        else {
+            $model=new \EVFRanking\Models\Accreditation();
+            $accreditation = $model->findByID($accrid);
+            // logged in, so we can show the React front end
+            // this creates the post content and adds the relevant scripts
+            $post = $this->virtualPage("accreditation",$accreditation);
+            return $post;
+        }
+        return null;
+    }
+
 
     // action called from the Event template to generate a button inside the listed event
     public function eventButton($event) {
@@ -151,8 +174,7 @@ HEREDOC;
             $caps = Display::$policy->eventCaps($event);
 
             $location = home_url("/register/$id");
-            error_log("caps is $caps");
-            if(in_array($caps, array("organiser","cashier","accreditation"))) {
+            if(in_array($caps, array("system","organiser","cashier","accreditation"))) {
                 echo "<a href='$location'><div class='evfranking-manage'></div><a/>";
             }
             else if (in_array($caps, array("open","registrar","hod"))) {
@@ -161,29 +183,58 @@ HEREDOC;
         }
     }
 
-    public function virtualPage($event)
-    {
-        error_log(json_encode($event));
-        $id = intval($event->getKey());
-        global $wp;
+    public function virtualPage($pagetype, $model) {
+        $id = !empty($model) ? intval($model->getKey()) : random_int(0,PHP_INT_MAX);
+
         // create a fake post instance
-        $post = new \WP_Post((object)array(
+        $options = array(
             "ID"=>$id,
             "post_type" => "page",
             "filter" => "raw",
-            "post_name" => "Registration",
             "comment_status" => "closed",
-            "post_title" => "Registrations for ".$event->event_name." at ".$event->event_location." on ".strftime("%e %B %Y",strtotime($event->event_open)),
-            "post_content" => "<div id='evfregistration-frontend-root'></div>",
             "post_date" => strftime("%Y-%m-%d %H:%M:%S")
-        ));
+        );
+        if($pagetype == "register" && !empty($model)) {
+            $options["post_name"]="Registration";
+            $options["post_title"]="Registrations for ". $model->event_name." at ". $model->event_location." on ".strftime("%e %B %Y",strtotime($model->event_open));
+            $options["post_content"]="<div id='evfregistration-frontend-root'></div>";
 
-        Display::$jsparams["eventid"] = intval($id);
-        Display::$jsparams["eventcap"] = Display::$policy->eventCaps($event);
-        Display::$jsparams["country"] = Display::$policy->hodCountry();
+            Display::$jsparams["eventid"] = intval($id);
+            Display::$jsparams["eventcap"] = Display::$policy->eventCaps($model);
+            Display::$jsparams["country"] = Display::$policy->hodCountry();
+            $script = plugins_url('/dist/registrationsfe.js', $this->get_plugin_base());
+            $this->enqueue_code($script);
+        }
+        else if($pagetype == "accreditation") {
+            $accreditation= $model;
+            if(!empty($accreditation)) {
+                $event=new \EVFRanking\Models\Event($accreditation->event_id);
+                Display::$jsparams["eventcap"] = Display::$policy->eventCaps($event);
+            }
+            else {
+                Display::$jsparams["eventcap"] = "accreditation";
+            }
+            $options["post_name"]="Accreditation Check";
+            $options["post_title"]="Accreditation Check";
+            $options["post_content"]="<div id='evfaccreditation-frontend-root'></div>";
 
-        $script = plugins_url('/dist/registrationsfe.js', $this->get_plugin_base());
-        $this->enqueue_code($script);
+            if(!empty($accreditation) && $accreditation->exists()) {
+                $edata=$accreditation->export();
+                if(isset($edata["data"])) unset($edata["data"]);
+                $edata["fe_id"]=$accreditation->fe_id; // exception: export the fe-id back to the front-end
+                Display::$jsparams["accreditation"] = $edata;
+                $fencer=new \EVFRanking\Models\Fencer($accreditation->fencer_id,true);
+                Display::$jsparams["fencer"] = $fencer->export();
+            }
+            else {
+                error_log("accreditation does not exist ... ".json_encode($accreditation));
+                Display::$jsparams["accreditation"] = array("id"=>-1);
+            }
+            
+            $script = plugins_url('/dist/accreditationfe.js', $this->get_plugin_base());
+            $this->enqueue_code($script);
+        }
+        $post = new \WP_Post((object)$options);
         wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0');
         
         // reset wp_query properties to simulate a found page

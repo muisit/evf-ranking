@@ -28,8 +28,9 @@
  namespace EVFRanking\Models;
 
 class YieldException extends \Exception {}
+class FailException extends \Exception {}
 
- class Queue extends Base {
+class Queue extends Base {
     public $table = "TD_Queue";
     public $pk="id";
     public $fields=array("id","state","payload","attempts","started_at","finished_at","created_at","available_at","queue");
@@ -140,8 +141,15 @@ class YieldException extends \Exception {}
     }
 
     public function run($timelimit) {
-        $is_available = empty($this->available_at) || (strtotime($this->available_at) < time());
+        $is_available = empty($this->available_at) || (strtotime($this->available_at) <= time());
         if($this->state == "new" && $is_available) {
+            $self=$this;
+            set_exception_handler(function($ex) use($self) {
+                $self->state="error";
+                $self->setData("error", $ex->getMessage());
+                $self->setData("backtrace", debug_backtrace());
+                $self->save();
+            });
             try {
                 $this->state="running";
                 $this->started_at = strftime('%Y-%m-%d %H:%M:%S');
@@ -172,18 +180,28 @@ class YieldException extends \Exception {}
                 $this->save();
                 return true;
             }
+            catch(FailException $e) {
+                // explicit fail, should have a regular log message
+                $this->state="error";
+                $this->save();
+            }
             catch(\Exception $e) {
                 $this->state="error";
                 $this->setData("error",$e->getMessage());
                 $this->setData("backtrace",debug_backtrace());
                 $this->save();
             }
+            set_exception_handler(null);
         }
         return false;
     }
 
     public function yield() {
         throw new YieldException();
+    }
+
+    public function fail() {
+        throw new FailException();
     }
 
     public function timeLeft() {
@@ -234,9 +252,10 @@ class YieldException extends \Exception {}
 
     public function tick($timelimit) {
         $res=$this->select('*')
-            ->where('available_at','<',strftime('%F %T'))
+            ->where('available_at','<=',strftime('%F %T'))
             ->where('started_at',null)
             ->where("state","new")
+            ->where("queue",$this->queue)
             ->orderBy("available_at") // sorts NULL values first
             ->orderBy("attempts desc") // sort least attempted first
             ->first();
@@ -246,6 +265,13 @@ class YieldException extends \Exception {}
             return true;
         }
         return false;
+    }
+
+    public function cleanup() {
+        // delete all finished jobs that are older than 2 days
+        $this->query()->where("state","finished")->where("started_at","<",strftime("%F %T",time()-48*60*60))->delete();
+        // delete all error jobs that are older than a month
+        $this->query()->where("state", "error")->where("started_at", "<", strftime("%F %T", time() - 31*24 * 60 * 60))->delete();
     }
 }
  

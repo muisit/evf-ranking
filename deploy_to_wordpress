@@ -160,10 +160,19 @@ do
         cp -v $i $DEPLOYDIR/jobs
     fi
 done
+for i in `find ./ -type f -path ./util/\*`
+do
+    if [[ "x$DRY" = "x1" ]]
+    then
+        echo "cp -v $i $DEPLOYDIR/util"
+    else
+        cp -v $i $DEPLOYDIR/util
+    fi
+done
 
 if [[ "x$DRY" = "x1" ]]
 then
-    echo "cp -r dist/fonts dist/images dist/app.js $DEPLOYDIR/dist"
+    echo "cp -r dist/fonts dist/images dist/app.js dist/ranking.js dist/results.js dist/registrations.js dist/registrationsfe.js $DEPLOYDIR/dist"
     echo "cp css/evfranking.css $DEPLOYDIR/css"
 else
     cp -r dist/fonts dist/images dist/app.js dist/ranking.js dist/results.js dist/registrations.js dist/registrationsfe.js $DEPLOYDIR/dist

@@ -7,33 +7,31 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
-import { format_date } from '../functions';
-import { Accordion, AccordionTab } from 'primereact/accordion';
+import { format_date, parse_date, parse_float, parse_int, is_valid } from '../functions';
 
 function hasComp(evt) {
-    var retval=parseInt(evt.competition_id);
-    return !isNaN(retval) && retval > 0;
+    return is_valid(evt.competition_id);
 }
 
 function SideEvent(props) {
-    var starts=props.event.starts.length ? new Date(props.event.starts) : null;
-    var ourstart=props.start;
-    var ourend=props.end;
+    var starts=props.event.starts.length ? parse_date(props.event.starts) : null;
+    var ourstart=parse_date(props.start);
+    var ourend=parse_date(props.end);
 
-    if(starts != null && ourstart.getTime() > starts.getTime()) {
-        ourstart=new Date(starts);
-        ourstart.setDate(ourstart.getDate()-3);
+    if(starts != null && starts.isBefore(ourstart)) {
+        ourstart=parse_date(starts);
+        ourstart.add(-3,'d');
     }
     if(starts == null) {
         // allow for a 3 day head start on the original start
-        ourstart = new Date(props.start);
-        ourstart.setDate(ourstart.getDate()-3);
+        ourstart = parse_date(props.start);
+        ourstart.add(-3,'d');
     }
 
     var vdate1= starts == '' ? ourstart : starts;
-    var nw=new Date();
-    var range = ourstart.getFullYear() + ':' + (nw.getFullYear()+15);
-    var numofmonths= (ourstart.getMonth() == ourend.getMonth()) ? 1 : 2;
+    var nw=parse_date();
+    var range = ourstart.year() + ':' + (nw.year()+15);
+    var numofmonths= (ourstart.month() == ourend.month()) ? 1 : 2;
 
     var hascomp=hasComp(props.event);
 
@@ -58,7 +56,7 @@ function SideEvent(props) {
           {!hascomp && (<div class='formelement'>
             <label>Start</label>
             <div className='input'>
-              <Calendar name={'estarts-' + props.event.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart} maxDate={ourend} dateFormat="yy-mm-dd" value={starts} viewDate={vdate1} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
+              <Calendar name={'estarts-' + props.event.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={starts.toDate()} viewDate={vdate1.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
             </div>
           </div>)}
           <div class='formelement'>
@@ -172,7 +170,7 @@ export default class EventRegistrationDialog extends React.Component {
             name = els[0];
             id=els[1];
         }
-        console.log('adjusting value ' + name + "/" + id + "/" + value);
+
         switch (name) {
         case 'base_fee':
         case 'competition_fee':
@@ -204,7 +202,6 @@ export default class EventRegistrationDialog extends React.Component {
         case 'ecosts':
         case 'etitle':
         case 'edescr':
-            console.log('adjusting sideevent value');
             var sides=this.props.value.sides;
             for(var i in sides) {
                 var evt=sides[i];
@@ -269,21 +266,15 @@ export default class EventRegistrationDialog extends React.Component {
     }
 
     removeEvent = (evt) => {
-        console.log("remove side event called with ",evt);
         var item=this.props.value;
         var pushed=item.sides;
-        console.log('pushed contains '+pushed.length + " items");
         for(var i in pushed) {
             var c=pushed[i];
-            console.log('comparing '+c.id + " vs " + evt.id);
             if(c.id == evt.id) {
-                console.log('found side event, splicing');
                 pushed.splice(i,1);
-                console.log('pushed contains '+pushed.length + " items");
                 break;
             }
         }
-        console.log('adjusting item');
         item.sides=pushed;
         if(this.props.onChange) this.props.onChange(item);
     }
@@ -321,9 +312,10 @@ export default class EventRegistrationDialog extends React.Component {
             <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
             <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
     </div>);
-        var start=new Date(this.props.value.opens);
-        var end=new Date(start);       
-        end.setDate(end.getDate() + (parseInt(this.props.value.duration) || 21));
+        var start=parse_date(this.props.value.opens);
+        var end=parse_date(start);       
+        var duration = parse_int(this.props.value.duration,2);
+        end.add(duration,'d');
 
         var sidesSansComp = [];
         if(this.props.value.sides) {
@@ -343,14 +335,11 @@ export default class EventRegistrationDialog extends React.Component {
           { id: "individual", name: "Individual payments only" },
         ];
 
-        var reg_open=null;
-        if(this.props.value.reg_open && this.props.value.reg_open.length) {
-          reg_open = new Date(this.props.value.reg_open);
-        }
-        var reg_close = null;
-        if (this.props.value.reg_close && this.props.value.reg_close.length) {
-          reg_close = new Date(this.props.value.reg_close);
-        }
+        var reg_open = parse_date(this.props.value.reg_open);
+        var reg_close = parse_date(this.props.value.reg_close);
+
+        var basefee = parse_float(this.props.value.base_fee,30);
+        var compfee = parse_float(this.props.value.competition_fee,40);
 
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
@@ -369,13 +358,13 @@ export default class EventRegistrationDialog extends React.Component {
       <div>
         <label>Reg. Opens</label>
         <div className='input'>
-            <Calendar name="reg_open" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_open}></Calendar>
+            <Calendar name="reg_open" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_open.toDate()}></Calendar>
         </div>
       </div>
       <div>
         <label>Reg. Closes</label>
         <div className='input'>
-            <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_close}></Calendar>
+            <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_close.toDate()}></Calendar>
         </div>
       </div>
     <div>
@@ -395,7 +384,7 @@ export default class EventRegistrationDialog extends React.Component {
       <div className='input'>
         <InputNumber className='inputint' name='base_fee' onChange={this.onChangeEl} 
           mode="decimal" minFractionDigits={2} maxFractionDigits={2} min={0} useGrouping={false}  prefix={this.props.value.symbol+' '}
-          value={parseFloat(this.props.value.base_fee)}></InputNumber>
+          value={basefee}></InputNumber>
         </div>
     </div>
     <div>
@@ -403,7 +392,7 @@ export default class EventRegistrationDialog extends React.Component {
       <div className='input'>
         <InputNumber className='inputint' name='competition_fee' onChange={this.onChangeEl} 
           mode="decimal" minFractionDigits={2} maxFractionDigits={2} min={0} useGrouping={false}  prefix={this.props.value.symbol+' '}
-          value={parseFloat(this.props.value.competition_fee)}></InputNumber>
+          value={compfee}></InputNumber>
         </div>
     </div>
       <div>

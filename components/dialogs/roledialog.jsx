@@ -67,7 +67,6 @@ export default class RoleDialog extends React.Component {
 
     onChangeEl = (event) => {
         if(!event.target || !event.target.value) return;
-        console.log(event.target);
         var item=this.props.value;
         switch(event.target.name) {
         case 'type':

@@ -232,17 +232,18 @@ class PDFCreator {
             foreach($layers[$key] as $el) {
                 $evflogger->log("layer $key, element ".$el["type"]);
                 switch($el["type"]) {
-                case "photo":  $this->addPhoto($pdf,$el, $content,$data); break;
-                case "text":   $this->addText($pdf,$el,$content, $data); break;
-                case "name":   $this->addName($pdf,$el, $content, $data); break;
-                case "accid":  $this->addID($pdf,$el, $content, $data); break;
-                case "country":$this->addCountry($pdf,$el, $content,$data); break;
-                case "org":    $this->addOrg($pdf,$el,$content, $data); break;
-                case "roles":  $this->addRoles($pdf,$el,$content, $data); break;
-                case "dates":  $this->addDates($pdf,$el,$content, $data); break;
-                case "box":    $this->addBox($pdf,$el,$content, $data); break;
-                case "img":    $this->addImage($pdf,$el,$content, $data, $pictures); break;
-                case 'qr':     $this->addQRCode($pdf,$el,$content,$data); break;
+                case "photo":   $this->addPhoto($pdf,$el, $content,$data); break;
+                case "text":    $this->addText($pdf,$el,$content, $data); break;
+                case "name":    $this->addName($pdf,$el, $content, $data); break;
+                case "accid":   $this->addID($pdf,$el, $content, $data); break;
+                case "country": $this->addCountry($pdf,$el, $content,$data); break;
+                case "cntflag": $this->addCountryFlag($pdf,$el, $content,$data); break;
+                case "org":     $this->addOrg($pdf,$el,$content, $data); break;
+                case "roles":   $this->addRoles($pdf,$el,$content, $data); break;
+                case "dates":   $this->addDates($pdf,$el,$content, $data); break;
+                case "box":     $this->addBox($pdf,$el,$content, $data); break;
+                case "img":     $this->addImage($pdf,$el,$content, $data, $pictures); break;
+                case 'qr':      $this->addQRCode($pdf,$el,$content,$data); break;
                 }
             }
         }
@@ -342,6 +343,34 @@ class PDFCreator {
         if (strlen(trim($txt))) {
             $this->putTextAt($pdf, $txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "colour" => $colour));
         }
+    }
+
+    private function addCountryFlag($pdf, $element,$content, $data) {
+        $offset = $this->getOffset($element);
+        $size = $this->getSize($element);
+        $fpath = isset($data["country_flag"]) ? $data["country_flag"] : "";
+        if(empty($fpath)) return;
+
+        $fpath = trailingslashit(ABSPATH) . $fpath;
+        if(!file_exists($fpath)) return;
+
+        // correct width/height downwards according to ratio
+        if(isset($element["ratio"])) {
+            $ratio=floatval($element["ratio"]);
+            if($ratio > 0.0) {
+                $rwidth = $size[1] * $ratio;
+                $rheight = $size[0] / $ratio;
+
+                if($rwidth < $size[0]) {
+                    $size[0] = $rwidth;
+                }
+                else if($rheight<$size[1]) {
+                    $size[1]=$rheight;
+                }
+            }
+        }
+
+        $this->putImageAt($pdf,$fpath, array("offset"=>$offset,"size"=>$size));
     }
 
     private function addOrg($pdf, $element,$content, $data) {

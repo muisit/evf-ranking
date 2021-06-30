@@ -30,18 +30,20 @@
  class Country extends Base {
     public $table = "TD_Country";
     public $pk="country_id";
-    public $fields=array("country_id","country_abbr","country_name","country_registered");
+    public $fields=array("country_id","country_abbr","country_name","country_registered", "country_flag_path");
     public $fieldToExport=array(
         "country_id" => "id",
         "country_abbr" => "abbr",
         "country_name" => "name",
         "country_registered" => "registered",
+        "country_flag_path" => "flag"
     );
     public $rules = array(
         "country_id"=>"skip",
         "country_abbr" => "trim|upper|eq=3|required",
         "country_name" => "trim|gte=3|required",
-        "country_registered" => "bool|required"
+        "country_registered" => "bool|required",
+        "country_flag_path" => "trim"
     );
 
     private function sortToOrder($sort) {
@@ -80,6 +82,26 @@
  
         if(empty($result) || !is_array($result)) return 0;
         return intval($result[0]->cnt);
+    }
+
+    public function save() {
+        // check the country_flag_path. If it contains a URL, remove the base url directory
+        $baseurl = str_replace("http://","",get_site_url(null, '', 'http'));
+        $pos = strpos($this->country_flag_path, $baseurl);
+        if($pos !== FALSE) {
+            error_log("url found, removing base ".$baseurl);
+            $offset = $pos + strlen($baseurl) + 1; // remove slash
+            $this->country_flag_path = substr($this->country_flag_path,$offset);
+            error_log("new flag path is ".$this->country_flag_path);
+        }
+
+        // see if the file exists
+        $fname = trailingslashit(ABSPATH).$this->country_flag_path;
+        error_log("testing $fname");
+        if(!file_exists($fname)) {
+            $this->country_flag_path='';
+        }
+        return parent::save();
     }
 
     public function delete($id=null) {

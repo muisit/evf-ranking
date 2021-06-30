@@ -351,6 +351,10 @@ export default class FECashierTab extends FEBase {
                             <th>Fee</th>
                             <th>Events</th>
                             <th>Payment</th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
                             </tr>
                         </thead>
                         {fencers.map((fencer,idx) => (
@@ -363,7 +367,8 @@ export default class FECashierTab extends FEBase {
                                         <span key={idx} className='event-costs-for'>
                                             {idx>0 && ", "}
                                             {e[0].title}
-                                        </span>))}</td>
+                                        </span>))}
+                                    </td>
                                     <td>
                                         {fencer.paysIndividual == 'I' && "Individual"}
                                         {fencer.paysIndividual == 'G' && "Group"}
@@ -418,7 +423,7 @@ export default class FECashierTab extends FEBase {
                                     <td>{se.title}</td>
                                     <td>{this.props.item.symbol} {cost.toFixed(2)}</td>
                                     <td>
-                                        {(!is_hod() || fencer.paysIndividual=='G') && (
+                                        {(!is_hod() || reg.payment=='G') && (
                                         <Checkbox name={"paid-"  + fencer.id + '-'+reg.id} onChange={this.onChangeEl} checked={checked} />
                                         )}
                                     </td>
@@ -466,7 +471,7 @@ export default class FECashierTab extends FEBase {
                             <td className='label'>Group costs:</td>
                             <td>{this.props.item.symbol} {format_currency(group_costs)}</td>
                         </tr>
-                        {open_group > 0.0 && (<tr>
+                        {!is_organisation() && open_group > 0.0 && (<tr>
                             <td className='label'>Transferrable group costs:</td>
                             <td>{this.props.item.symbol} {format_currency(open_group)}</td>
                         </tr>)}

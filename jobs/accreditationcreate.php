@@ -75,7 +75,7 @@ class AccreditationCreate extends BaseJob {
             $creator->create($fencer, $event, $template, $country, $accreditation, $path);
 
             if(file_exists($path)) {
-                \EVFRanking\Models\Audit::Create($accreditation, "(re)generated PDF");
+                //\EVFRanking\Models\Audit::Create($accreditation, "(re)generated PDF");
                 $accreditation->generated = strftime("%F %T");
                 $accreditation->file_hash = hash_file('sha256',$path,false);
                 $accreditation->save();

@@ -121,7 +121,6 @@ class PDFSummary {
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
         
         $templates=array();
-        $i=0;
         // to keep track of the next possible option, we assign 9 different positions:
         // A4 1, 2, 3 and 4
         // A4 landscape 5, 6
@@ -173,7 +172,7 @@ class PDFSummary {
                     $followingposition=3;
                 }
                 else if($currentposition === 3) {
-                    $thisposition==3;
+                    $thisposition=3;
                     $followingposition=null;
                 }
                 break;
@@ -231,6 +230,7 @@ class PDFSummary {
             }
 
             if($currentposition === null) {
+                error_log("adding a new page");
                 $pdf->AddPage($size['orientation'],$size);
             }
 
@@ -250,8 +250,8 @@ class PDFSummary {
             case 9: $w=105; $h=148.5; break;
             }
 
+            error_log("importing page at position $thisposition, $x, $y -> $w, $h");
             $pdf->useImportedPage($templateId,$x, $y, $w,$h,false);
-            $i++;
 
             $currentposition = $followingposition;
         }

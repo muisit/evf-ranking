@@ -394,14 +394,14 @@ class API extends BaseLib {
             case "types":
             case "users":
             case "posts":
-            case "audit":
+            //case "audit":
                 switch($path[0]) {
                     case 'weapons': $model = new \EVFRanking\Models\Weapon(); break;
                     case 'categories': $model = new \EVFRanking\Models\Category(); break;
                     case 'types': $model = new \EVFRanking\Models\EventType(); break; 
                     case 'users': $model = new \EVFRanking\Models\User(); break;
                     case 'posts': $model = new \EVFRanking\Models\Posts(); break;
-                    case 'audit': $model = new \EVFRanking\Models\Audit(); break;
+                    //case 'audit': $model = new \EVFRanking\Models\Audit(); break;
                 }
                 $this->checkPolicy($path[0],"list", array("filter" => $filter, "model" => $modeldata));
                 $retval=array_merge($retval, $this->listAll($model,0,null,'','i',$special));
@@ -523,7 +523,7 @@ class API extends BaseLib {
             $caps = $event->eventCaps();
         }
         $data = $model->filterData($data, $caps);
-        
+
         // make sure to retrieve the current state from the database as value for all
         // fields before validation (before we overwrite the values with whatever is posted)
         // This allows us to pass only a few values through the API, but still refer to

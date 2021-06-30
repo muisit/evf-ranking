@@ -219,7 +219,7 @@
                 $amodel=new Accreditation();
                 $amodel->makeDirty($model->registration_fencer,$model);
                 // clear the whole audit log for this registration
-                Audit::Clear($model);
+                //Audit::Clear($model);
                 return true;
             }
         }

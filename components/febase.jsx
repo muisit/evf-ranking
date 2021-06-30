@@ -44,20 +44,24 @@ export default class FEBase extends React.Component {
     _componentDidMount = () => {
         if(this.props.item.id > 0) {
             sideevents(this.props.item.id).then((cmp1) => { 
-                var sortedevents = cmp1.data.list.slice();
-                // Requirement 3.1.2: sort events first, then by title
-                sortedevents.sort(function (e1, e2) {
-                    // we sort competitions first, so if one item has a competition_id and the other not, return a value
-                    if (e1.competition_id > 0 && !e2.competition_id) return -1; // e1 before e2
-                    if (e2.competition_id > 0 && !e1.competition_id) return 1; // e2 before e1
+                if(cmp1 && cmp1.data && cmp1.data.list) {
+                    var sortedevents = cmp1.data.list.slice();
+                    // Requirement 3.1.2: sort events first, then by title
+                    sortedevents.sort(function (e1, e2) {
+                        // we sort competitions first, so if one item has a competition_id and the other not, return a value
+                        if (e1.competition_id > 0 && !e2.competition_id) return -1; // e1 before e2
+                        if (e2.competition_id > 0 && !e1.competition_id) return 1; // e2 before e1
 
-                    // else compare only on title
-                    return (e1.title < e2.title) ? -1 : 1;
-                });
-                this.setState({sideevents: sortedevents}); 
+                        // else compare only on title
+                        return (e1.title < e2.title) ? -1 : 1;
+                    });
+                    this.setState({sideevents: sortedevents}); 
+                }
             });
             competitions(this.props.item.id).then((cmp) => {
-                this.setState({competitions: cmp.data.list});
+                if(cmp && cmp.data && cmp.data.list) {
+                    this.setState({competitions: cmp.data.list});
+                }
             });
             this.getRegistrations();
         }

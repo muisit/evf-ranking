@@ -114,6 +114,7 @@ then
     echo "mkdir -p $DEPLOYDIR/lib"
     echo "mkdir -p $DEPLOYDIR/jobs"
     echo "mkdir -p $DEPLOYDIR/css"
+    echo "mkdir -p $DEPLOYDIR/util"
 else
     rm -rf $DEPLOYDIR
     mkdir -p $DEPLOYDIR/models
@@ -121,6 +122,7 @@ else
     mkdir -p $DEPLOYDIR/jobs
     mkdir -p $DEPLOYDIR/dist
     mkdir -p $DEPLOYDIR/css
+    mkdir -p $DEPLOYDIR/util
 fi
 
 for i in *.php LICENSE readme.txt

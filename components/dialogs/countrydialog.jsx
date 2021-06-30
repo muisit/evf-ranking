@@ -64,6 +64,7 @@ export default class CountryDialog extends React.Component {
         switch(event.target.name) {
         case 'name':
         case 'abbr':
+        case 'flag':
         case 'registered': item[event.target.name] = event.target.value; break;
         }
         if (this.props.onChange) this.props.onChange(item);
@@ -124,6 +125,12 @@ export default class CountryDialog extends React.Component {
         <label>Registered?</label>
         <div className='input'>
             <Dropdown appendTo={document.body} name='registered' optionLabel="name" optionValue="code" value={this.props.value.registered} options={registers} placeholder="Reg" onChange={this.onChangeEl}/>
+        </div>
+      </div>
+      <div>
+        <label>Flag</label>
+        <div className='input'>
+          <InputText name='flag' className="p-inputtext-sm" value={this.props.value.flag} placeholder="Path" onChange={this.onChangeEl} />
         </div>
       </div>
 </Dialog>

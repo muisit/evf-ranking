@@ -140,6 +140,10 @@
             $migration = new Migration(array("name"=>"012: Accreditation","status"=>0));
             $migration->save();
         }
+        if($cnt < 14) {
+            $migration = new Migration(array("name"=> "013: Country flag extension","status"=>0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -266,6 +270,8 @@
 //            $wpdb->query("CREATE TABLE `TD_Audit` (`id` int(11) NOT NULL AUTO_INCREMENT,`created` datetime NOT NULL,`creator` int(11) NOT NULL,`log` text NOT NULL,`model` varchar(100) DEFAULT NULL,`modelid` int(11) DEFAULT NULL,`data` text DEFAULT NULL, PRIMARY KEY (`id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
             $wpdb->query("ALTER TABLE `TD_Registration` ADD column `registration_state` CHAR(1) NULL;");
             break;
+        case '013: Country flag extension':
+            $wpdb->query("ALTER TABLE `TD_Country` CHANGE `country_flag_path` `country_flag_path` VARCHAR(1024) CHARACTER SET utf8 COLLATE utf8_general_ci NULL; ");
         default:
             break;
         }

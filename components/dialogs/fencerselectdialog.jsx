@@ -145,9 +145,9 @@ export default class FencerSelectDialog extends React.Component {
 
     clearState = (itm) => {
         // find the current item
-        var reg = this.findRegistration(itm.sideevent);
+        var reg = this.findRegistration(itm.sideevent);        
         // only clear state if the item is still on the end-of-backend-call state
-        if(reg && reg.pending == "saved") {
+        if(reg && (reg.pending == "saved" || reg.pending=="deleted")) {
             reg.pending="";
             this.insertRegistration(reg);
         }
@@ -182,7 +182,7 @@ export default class FencerSelectDialog extends React.Component {
                 payment = 'I';
             }
             // else we can select, but it should be G or I
-            if (payment != 'G' || payment != 'I') {
+            if (payment != 'G' && payment != 'I') {
                 payment = 'G'
             }
         }
@@ -428,17 +428,16 @@ export default class FencerSelectDialog extends React.Component {
         var overallroles = [];
         var foundEmpty=false;
         this.props.value.registrations.map((ev) => {
-            if(ev.pending!="delete" && ev.pending!="deleted") {
-                if(!is_valid(ev.sideevent)) {
-                    overallroles.push(ev);
-                    if(!is_valid(ev.role)) {
-                        foundEmpty=true;
-                    }
+            foundEmpty = false; // foundEmpty should indicate the state of the last element
+            if(!is_valid(ev.sideevent)) {
+                overallroles.push(ev);
+                if(!is_valid(ev.role) || (ev.pending=="delete" || ev.pending=="deleted")) {
+                    foundEmpty=true;
                 }
-                else {
-                    var key = "k" + ev.sideevent;
-                    selectedevents[key] = ev;
-                }
+            }
+            else {
+                var key = "k" + ev.sideevent;
+                selectedevents[key] = ev;
             }
         });
         if(!foundEmpty) {
@@ -500,7 +499,7 @@ export default class FencerSelectDialog extends React.Component {
                 </div>
             </div>);
         }
-        else if (this.props.event.payment == "all") {
+        else if (this.props.event.payments == "all") {
             // payments can be selected by the user, but only choose between I or G
             var payment = [{ name: 'Individual', code: 'I' }, { name: 'As group', code: 'G' }];
             payments = (<div className='clearfix'>
@@ -511,7 +510,7 @@ export default class FencerSelectDialog extends React.Component {
             </div>);
         }
 
-        return (<Dialog header="Register Fencer" position="center" visible={this.props.display} className="fencer-select-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+        return (<Dialog baseZIndex={100000} header="Register Fencer" position="center" visible={this.props.display} className="fencer-select-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
     <h5>{ this.props.value.name }, {this.props.value.firstname }</h5>
     {this.props.country.id > 0 && (<h5>
         Birthyear: { this.props.value.birthyear } Gender: {this.props.value.gender == 'M' ? 'Man': 'Woman'} Category: {mycatname}
@@ -543,6 +542,10 @@ export default class FencerSelectDialog extends React.Component {
                     var is_success = reg.pending == "saved" || reg.pending == "deleted";
                     var is_saving = reg.pending == "save" || reg.pending == "delete";
 
+                    var value=reg.role;
+                    if(reg.pending == "deleted" || reg.pending=="delete") {
+                        value=0;
+                    }
                     return (
                     <tr key={'rl-'+idx}>
                         <td>
@@ -550,7 +553,7 @@ export default class FencerSelectDialog extends React.Component {
                             <span>{name}</span>
                         )}
                         {!isstatic && (
-                            <Dropdown name={'fullrole-' + reg.role} appendTo={document.body} optionLabel="name" optionValue="id" value={reg.role} options={roleoptions} onChange={this.onChangeEl} />
+                            <Dropdown name={'fullrole-' + reg.role} appendTo={document.body} optionLabel="name" optionValue="id" value={value} options={roleoptions} onChange={this.onChangeEl} />
                         )}
                         </td>
                         <td className="state-icons">

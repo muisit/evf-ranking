@@ -95,7 +95,7 @@ class Accreditation extends Base {
             if(file_exists($path)) {
                 @unlink($path);
             }
-            Audit::Clear($this);
+//            Audit::Clear($this);
         }
     }
 
@@ -674,6 +674,7 @@ class Accreditation extends Base {
             "d.total as dirty",
             "g.total as generated"
         ))
+          ->where("TD_Accreditation_Template.event_id",$event->getKey())
           ->join(function($qb) use ($event) {
             $qb->from("TD_Accreditation")
                 ->select("template_id, count(*) as total")

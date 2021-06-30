@@ -145,6 +145,7 @@ class Queue extends Base {
         if($this->state == "new" && $is_available) {
             $self=$this;
             set_exception_handler(function($ex) use($self) {
+                error_log("exception caught ".$ex->getMessage());
                 $self->state="error";
                 $self->setData("error", $ex->getMessage());
                 $self->setData("backtrace", debug_backtrace());
@@ -178,17 +179,20 @@ class Queue extends Base {
                 $yields[]= strftime('%Y-%m-%d %H:%M:%S');
                 $this->setData("yields",$yields);
                 $this->save();
+                error_log("yield exception for queue entry");
                 return true;
             }
             catch(FailException $e) {
                 // explicit fail, should have a regular log message
                 $this->state="error";
+                error_log("caught fail-queue exception ".$e->getMessage());
                 $this->save();
             }
             catch(\Exception $e) {
                 $this->state="error";
                 $this->setData("error",$e->getMessage());
                 $this->setData("backtrace",debug_backtrace());
+                error_log("caught generic queue exception " . $e->getMessage());
                 $this->save();
             }
             set_exception_handler(null);

@@ -332,6 +332,7 @@ class AccreditationDirty extends BaseJob {
     {
         $accr = array(
             "country" => $this->country->country_abbr,
+            "country_flag" => $this->country->country_flag_path,
             "organisation" => "",
             "roles" => array(),
             "dates" => array(),

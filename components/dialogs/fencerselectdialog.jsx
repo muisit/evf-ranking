@@ -4,7 +4,9 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Checkbox } from 'primereact/checkbox';
-import { random_hash, format_date_fe_short, is_valid, date_to_category, parse_net_error, is_hod, is_organisation, is_sysop, is_organiser, is_accreditor } from "../functions";
+import { parse_team_for_number, random_hash, format_date_fe_short, is_valid, date_to_category, parse_net_error, 
+        is_hod, is_organisation, is_sysop, is_organiser, is_accreditor,
+        create_roleById } from "../functions";
 
 // the fencer-select-dialog displays all events a fencer can be a part of.
 // We now only select roles for the overall event, or Athlete/Participant roles for
@@ -166,7 +168,7 @@ export default class FencerSelectDialog extends React.Component {
             // payment is set to 'O' in that case.
             // However, only do this for non-athlete roles.
             // Competition selection is ruled out in this dialog anyway
-            if(is_valid(reg.role) && parseInt(reg.role) > 0) {
+            if(is_valid(reg.role)) {
                 payment='O';
             }
             if(!['G','I','O'].includes(payment)) {
@@ -188,7 +190,7 @@ export default class FencerSelectDialog extends React.Component {
         }
 
         var se = parseInt(reg.sideevent);
-        if(se <= 0) {
+        if(!is_valid(se)) {
             se=null;
         }
         registration('save', { 
@@ -197,6 +199,7 @@ export default class FencerSelectDialog extends React.Component {
             event: this.props.event.id, 
             sideevent: se,
             role: reg.role,
+            team: reg.team,
             payment: payment
         })
             .then((json) => {
@@ -333,8 +336,10 @@ export default class FencerSelectDialog extends React.Component {
         case 'paysIndividual':
             this.setState({paysIndividual: value});
             break;
+        case 'teamselect':
         case 'select':
-            selectThisOne=event.checked;
+            if(name === 'select') selectThisOne=event.checked;
+            else selectThisOne = (value != "0"); 
             // selecting a role selects the event as well
             // so we fall through
         case 'role':
@@ -360,6 +365,9 @@ export default class FencerSelectDialog extends React.Component {
                 }                
                 if(name == "role") {
                     selectedItem.role = value;
+                }
+                if(name == "teamselect") {
+                    selectedItem.team = value;
                 }
                 selectedItem.pending = "save";                
                 this.saveRegistration(selectedItem); // send to backend
@@ -466,15 +474,8 @@ export default class FencerSelectDialog extends React.Component {
             return 0;
         });
 
-        var roleById = {};
-        roles.map((role) => {
-            roleById["r" + role.id] = role;
-        });
-
-        var allRolesById = {};
-        this.props.roles.map((role) => {
-            allRolesById["r" + role.id] = role;
-        });
+        var roleById = create_roleById(roles);
+        var allRolesById = create_roleById(this.props.roles);
 
         // add a None role
         roles.splice(0, 0, { id: -1, name: "None" });
@@ -510,13 +511,34 @@ export default class FencerSelectDialog extends React.Component {
             </div>);
         }
 
+        // create a list of valid team names based on all available teams
+        // This list is specific for each competition sideevent of category team
+        var validteams={};
+        this.props.events.map((ev) => {
+            if(ev.category && ev.category.type == 'T') {
+                var key = "k" + ev.id;
+                var validoptions=[{value:"0", text:'No'}];
+                var highestnum=0;
+                if(this.props.teams && this.props.teams[key] && Object.keys(this.props.teams[key]).length > 0) {
+                    Object.keys(this.props.teams[key]).map((teamkey) => {
+                        validoptions.push({value: teamkey, text: teamkey});
+                        highestnum = parse_team_for_number(teamkey);
+                    });
+                }
+                highestnum+=1;
+                var leadname=ev.category.name;
+                validoptions.push({value: leadname + " " + highestnum, text: 'New team'});
+                validteams[key]=validoptions;
+            }
+        });
+
         return (<Dialog baseZIndex={100000} header="Register Fencer" position="center" visible={this.props.display} className="fencer-select-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
     <h5>{ this.props.value.name }, {this.props.value.firstname }</h5>
     {this.props.country.id > 0 && (<h5>
         Birthyear: { this.props.value.birthyear } Gender: {this.props.value.gender == 'M' ? 'Man': 'Woman'} Category: {mycatname}
     </h5>)}
     {payments}
-    {this.renderEvents(selectedevents)}
+    {this.renderEvents(selectedevents, validteams)}
     {this.renderRoles(overallroles, roles, roleById, allRolesById)}
     {this.renderAccreditation()}
     {this.renderPicture()}
@@ -577,7 +599,7 @@ export default class FencerSelectDialog extends React.Component {
         );
     }
 
-    renderEvents (selectedevents) {
+    renderEvents (selectedevents, validteams) {
         // these network states should still consider the event as selected
         var goodstates=["save","saved","error2",""];
 
@@ -600,6 +622,7 @@ export default class FencerSelectDialog extends React.Component {
                 var selected_event = selectedevents["k"+ev.id];
                 
                 var is_registered=false;
+                var of_team = "0";
                 if(  selected_event 
                   && selected_event.event 
                   && (  !selected_event.pending 
@@ -607,8 +630,10 @@ export default class FencerSelectDialog extends React.Component {
                      )
                 ) {
                     is_registered=true;
+                    of_team = selected_event.team ? selected_event.team : "0";
                 }
 
+                var ourteams = validteams["k"+ev.id] || [];
                 var is_error = selected_event && (selected_event.pending == "error1" || selected_event.pending == "error2");
                 var is_success = selected_event && (selected_event.pending == "saved" || selected_event.pending == "deleted");
                 var is_saving = selected_event && (selected_event.pending == "save" || selected_event.pending == "delete");
@@ -619,9 +644,10 @@ export default class FencerSelectDialog extends React.Component {
                     <td className='sideevent-title'>
                         {ev.title}
                     </td>
-                    <td>{format_date_fe_short(ev.starts)}</td>
+                    <td>{format_date_fe_short(ev.starts)} - {of_team}</td>
                     <td>
-                        <Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered}/>
+                        {!ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered}/>)}
+                        {ev.is_team_event && (<Dropdown name={"teamselect-" + ev.id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
                     </td>
                     <td className="state-icons">
                         {is_error && (

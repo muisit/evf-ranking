@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             1.2.5
+ * Version:             1.2.6
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag
@@ -215,9 +215,8 @@ if (defined('ABSPATH')) {
         return $posts;
     },2,99);
 
-    // use admin_init instead of init, because we only need to add a rewrite for a possible flush,
-    // which can only be done from inside the admin area
-    add_action('admin_init', function () {
+    // add the rewrite rules on every init
+    add_action('init', function () {
         // add rewrite rules in case someone decides to flush the cache
         evfranking_rewrite_add_rewrites();
     });

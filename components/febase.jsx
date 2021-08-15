@@ -127,6 +127,7 @@ export default class FEBase extends React.Component {
                     var obj = this.adjustFencerData(itm.fencer_data);
                     allfencers[key] = obj;
                 }
+
                 delete itm.fencer_data;
                 allfencers[key].registrations.push(itm);
             });

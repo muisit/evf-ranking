@@ -3,7 +3,7 @@ import FEBase from './febase';
 import { Button } from 'primereact/button';
 import { Tooltip } from 'primereact/tooltip';
 import { registration } from './api';
-import {parse_net_error} from "./functions";
+import {parse_net_error, create_abbr, create_cmpById, create_roleById, create_wpnById, create_catById } from "./functions";
 
 export default class FEOverviewTab extends FEBase {
     constructor(props, context) {
@@ -36,55 +36,17 @@ export default class FEOverviewTab extends FEBase {
           || !this.state.summary 
           || !this.state.sideevents.length) return (null);
 
-        var wpnById={};
-        this.props.weapons.map((w) => {
-            var key="w"+w.id;
-            wpnById[key]=w;
-        });
 
-        var catById={};
-        this.props.categories.map((c) => {
-            var key="c"+c.id;
-            catById[key]=c;
-        });
-
-        var roleById={};
-        this.props.roles.map((r) => {
-            var key="r"+r.id;
-            roleById[key]=r;
-        });
-
-        var cmpById={};
-        this.state.competitions.map((c) => {
-            var key="c"+c.id;
-            var wkey="w"+c.weapon;
-            if(wpnById[wkey]) c.weapon_obj = wpnById[wkey];
-
-            var ckey = "c"+c.category;
-            if(catById[ckey]) c.category_obj = catById[ckey];
-
-            cmpById[key]=c;
-        });
+        var wpnById=create_wpnById(this.props.weapons);
+        var catById=create_catById(this.props.categories);
+        var roleById=create_roleById(this.props.roles);
+        var cmpById=create_cmpById(this.state.competitions, wpnById,catById);
 
         var eventById={};
         var eventAbbrs=[];
         this.state.sideevents.map((se) => {
             var key="s"+se.id;
-            var ckey="c" + se.competition_id;
-            if(cmpById[ckey]) {
-                var cmp = cmpById[ckey];
-                var wpn = cmp.weapon_obj ? cmp.weapon_obj : {abbr:'??'};
-                var cat = cmp.category_obj ? cmp.category_obj : {abbr: '??'};
-                se.abbr = wpn.abbr + cat.abbr;
-            }
-            else {
-                var words=se.title.split(' ');
-                se.abbr="";
-                for(var i in words) {
-                    var word=words[i];
-                    se.abbr+=word[0];
-                }
-            }
+            se.abbr = create_abbr(se, cmpById);
             eventById[key]=se;
             eventAbbrs.push(se.abbr);
         });
@@ -149,12 +111,15 @@ export default class FEOverviewTab extends FEBase {
 
         return (<div>
             {this.renderCountry(cntoverview, eventAbbrs)}
+            {/* requirement 7.1.4: show number of participants for roles for organiser roles */}
             {this.renderOrganisation(orgoverview, "Organisers")}
+            {/* requirement 7.1.5: show number of participants for roles for official roles */}
             {this.renderOrganisation(offoverview, "Officials")}
         </div>);
     }
 
     renderCountry(cnts, abbrs) {
+        var totalsPerEvent={};
         return (<div className='row'>
             <div className='col-12'>
                 <h5>Registrations per Country</h5>
@@ -172,12 +137,33 @@ export default class FEOverviewTab extends FEBase {
                     return (
                         <tr key={'c'+idx}>
                             <td className='textleft'>{c.country.name}</td>
-                            {abbrs.map((a,idx2) => (
-                            <td key={'c'+idx+'_t'+idx2} className='textright'>{c[a] && (c[a] > 0) && c[a]}</td>
-                            ))}
+                            {abbrs.map((a,idx2) => {
+                                // requirement 7.1.2: a total is shown for each side event
+                                var abbr=abbrs[idx2];
+                                if(!totalsPerEvent[abbr]) totalsPerEvent[abbr]=0;
+                                if(c[a] && c[a]>0) totalsPerEvent[abbr]+=c[a];
+                                if(c[a] && c[a][0] && c[a].length==2) totalsPerEvent[abbr]+=c[a][1];
+                                return (
+                            <td key={'c'+idx+'_t'+idx2} className='textright'>
+                                {/* requirement 7.1.1: show number of participants per country per side event */}
+                                {c[a] && (c[a] > 0) && c[a]}
+                                {/* requirement 7.1.3: show total number of teams and number of individuals */}
+                                {c[a] && c[a][0] && c[a].length==2 && (<span>{c[a][1]} ({c[a][0]})</span>)}
+                            </td>
+                            )})}
                         </tr>
                     )
-                })}
+                })}                
+            </tbody>            
+            <tbody>
+                <tr>
+                    <td>Total</td>
+                    {abbrs.map((a,idx) => {
+                        // requirement 7.1.2: show line of totals
+                        return (
+                        <td key={idx} className='textright'>{totalsPerEvent[a]}</td>
+                    )})}
+                </tr>
             </tbody>
         </table>
         </div></div>);

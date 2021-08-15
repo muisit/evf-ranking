@@ -1,41 +1,39 @@
-import { is_hod  } from '../functions';
+import { create_abbr, is_valid, create_wpnById, create_catById, create_cmpById, create_roleById  } from '../functions';
 
 export function ParticipantList(props) {
     if (!props.fencers) {
         return (<div></div>);
     }
 
+    var catById = create_catById(props.categories);
+    var wpnById=create_wpnById(props.weapons);
+    var cmpById = create_cmpById(props.competitions, wpnById, catById);
+
     // Roles are assigned over the whole event now, and not on a specific sideevent. This
     // means we show roles only if this is not a list of a specific event and we actually 
     // have a roles list
     var showRoles = props.roles && !props.event;
-    var roleById = {};
-    if(props.roles) {
-        props.roles.map((rl) => {
-            roleById["r" + rl.id] = rl;
-        });
-    }
+    // requirement 1.4.3: for specific team events, show the team name instead of the fencer category
+    var showTeam = false;
+
+    var roleById = create_roleById(props.roles);
     roleById["r0"] = { name: "Participant" };
-    if(props.event && parseInt(props.event.competition_id) > 0) {
+    if(props.event && is_valid(props.event.competition_id)) {
         roleById["r0"] = { name: "Athlete" };
+
+        var comp = cmpById["c"+props.event.competition_id];
+        if(comp && comp.category && comp.category.type == 'T') {
+            showTeam=true;
+        }
     }
 
     var eventById={};
     if(props.events) {
         props.events.map((evt) => {
-            eventById["e"+evt.id]=evt;
+            var cmp=cmpById["c"+evt.competition_id];
+            if(cmp) evt.competition=cmp;
+            eventById["e"+evt.id]=evt;            
         });
-    }
-
-    var cmpById = {};
-    for (var i in props.competitions) {
-        var c = props.competitions[i];
-        cmpById["k" + c.id] = c;
-    }
-    var catById = {};
-    for (var i in props.categories) {
-        var c = props.categories[i];
-        catById["k" + c.id] = c;
     }
 
     var fencers=Object.keys(props.fencers).map((key) => {
@@ -45,6 +43,7 @@ export function ParticipantList(props) {
         fencer.has_role = [];
         fencer.reg_cat=-1;
         fencer.incorrect_cat = false;
+        fencer.has_team=false;
 
         fencer.registrations.map((reg) => {
             // Requirement 1.1.5: display event roles, or, for role 0 (participant), display
@@ -55,7 +54,7 @@ export function ParticipantList(props) {
                 // this is a fencer participating in a specific event (competition or other side-event)
                 fencer.sideevent = reg;
                 fencer.is_registered = true;
-                comp = cmpById["k" + props.event.competition_id];
+                comp = cmpById["c" + props.event.competition_id];
 
                 // determine the roleof the fencer for this specific event.
                 fencer.role.push(role);
@@ -64,13 +63,13 @@ export function ParticipantList(props) {
             else if (!props.event) {
                 // if we are not filtering out fencers, summarise all registrations
                 var regFor = eventById["e" + reg.sideevent];
-                if (roleById["r" + reg.role] && regFor && parseInt(regFor.competition_id) > 0) {
+                if (roleById["r" + reg.role] && regFor && is_valid(regFor.competition_id)) {
                     // role for a specific competition
                     fencer.role.push(role);
 
                     // generic participant/athlete: push the event title
                     if(role == 0) {
-                        fencer.has_role.push(regFor.title);
+                        fencer.has_role.push(create_abbr(regFor, cmpById));
                     }
                     else {
                         // specific event role, push the actual role name + event title
@@ -80,7 +79,7 @@ export function ParticipantList(props) {
                         rname += " (" + regFor.title + ")";
                         fencer.has_role.push(rname);
                     }
-                    comp = cmpById["k" + regFor.competition_id];
+                    comp = cmpById["c" + regFor.competition_id];
                 }
                 else {
                     var role = parseInt(reg.role);
@@ -97,13 +96,21 @@ export function ParticipantList(props) {
             }
 
             // Requirement 1.1.6: events with a mismatch in category are marked
-            if (comp && catById["k" + comp.category]) {
-                fencer.reg_cat = catById["k" + comp.category].value;
+            if (comp && comp.category && comp.category.value) {
+                fencer.reg_cat = comp.category.value;
 
                 // mark the incorrect-category error only for competition events
-                if (fencer.role.includes(0) && parseInt(fencer.reg_cat) != parseInt(fencer.category_num) && parseInt(fencer.reg_cat) > 0) {
+                if (fencer.role.includes(0) && is_valid(fencer.reg_cat) && parseInt(fencer.reg_cat) != parseInt(fencer.category_num)) {
                     fencer.incorrect_cat = true;
                 }
+            }
+
+            // Requirement 1.4.1: sort by team name
+            if(comp && comp.category && comp.category.type == 'T') {
+                // this is a team event
+                // only store the last team this fencer participates in. For the overall overview, this is useless
+                // in case a fencer is part of more than 1 team, but for the individual events this works out fine
+                fencer.has_team = reg.team; 
             }
         });
 
@@ -114,11 +121,17 @@ export function ParticipantList(props) {
 
     // sort based on role (athletes or non-athletes) and name
     fencers.sort(function (a1, a2) {
+            // requirement 1.4.1: sort by athletes, team, role, name
             if(props.event) {
                 if (a1.has_role.includes("Athlete") && !a2.has_role.includes('Athlete')) return -1;
                 if (a2.has_role.includes("Athlete") && !a1.has_role.includes("Athlete")) return 1;
                 return a1.fullname > a2.fullname;
             }
+
+            if(a1.has_team && !a2.has_team) return -1;
+            if(!a1.has_team && a2.has_team) return 1;
+            if(a1.has_team && a2.has_team && a1.has_team != a2.has_team) return a1.has_team > a2.has_team;
+            // else same team, or no team
 
             if(a1.has_role.length > 0 && a2.has_role.length == 0) return -1;
             if (a2.has_role.length > 0 && a1.has_role.length == 0) return 1;
@@ -137,12 +150,13 @@ export function ParticipantList(props) {
                 <tr>
                     <th>Name</th>
                     <th>First name</th>
-                    {!is_hod() && (
+                    {props.showCountry && (
                         <th>Country</th>
                     )}
                     <th>Gender</th>
                     <th>Birthyear</th>
-                    <th>Category</th>
+                    {!showTeam && (<th>Category</th>)}
+                    {showTeam && (<th>Team</th>)}
                     {showRoles && (<th>Role</th>)}
                     <th></th>
                     <th></th>
@@ -153,12 +167,13 @@ export function ParticipantList(props) {
                         <tr key={idx} className={fencer.incorrect_cat ? "incorrect-cat": ""}>
                             <td>{fencer.name}</td>
                             <td>{fencer.firstname}</td>
-                            {!is_hod() && (
+                            {props.showCountry && (
                                 <td>{fencer.country_name}</td>
                             )}
                             <td>{fencer.fullgender}</td>
                             <td>{fencer.birthyear}</td>
-                            <td>{fencer.category}</td>
+                            {!showTeam && (<td>{fencer.category}</td>)}
+                            {showTeam && (<td>{fencer.has_team}</td>)}
                             {showRoles && (<td>{fencer.has_role.map((rl,idx) => (<span key={idx}>{idx>0 && (", ")}{rl}</span>))}</td>)}
                             {props.camera && (<td>
                                 {fencer.picture == 'Y' && (<span className='pi pi-camera blue'></span>)}

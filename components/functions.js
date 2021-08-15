@@ -109,6 +109,7 @@ export function jsonOutput(json) {
 }
 
 export function is_valid(id) {
+    if(isNaN(id)) return false;
     id=parseInt(id);
     return !isNaN(id) && id>0;
 }
@@ -158,4 +159,76 @@ export function is_organiser() {
 
 export function is_sysop() {
     return evfranking.eventcap == "system";
+}
+
+export function make_team_key(team, se, cnt) {
+    return  "k" + cnt + "_"+ se + "_" + team;
+}
+
+export function parse_team_for_number(name) {
+    var result = name.match(/\d+/);
+    if(!result || result.length == 0) return 0;
+    return parseInt(result[0]);
+}
+
+export function create_abbr(se, cmpById) {
+    var abbr='??';
+    var ckey="c" + se.competition_id;
+    if(cmpById[ckey]) {
+        var cmp = cmpById[ckey];
+        var wpn = cmp.weapon ? cmp.weapon : {abbr:'??'};
+        var cat = cmp.category ? cmp.category : {abbr: '??'};
+        abbr = wpn.abbr + cat.abbr;
+    }
+    else {
+        var words=se.title.split(' ');
+        abbr="";
+        for(var i in words) {
+            var word=words[i];
+            abbr+=word[0];
+        }
+    }
+    return abbr;
+}
+
+export function create_roleById(roles) {
+    var roleById={};
+    roles.map((r) => {
+        var key="r"+r.id;
+        roleById[key]=r;
+    });
+    return roleById;
+}
+
+export function create_wpnById(weapons) {
+    var wpnById={};
+    weapons.map((w) => {
+        var key="w"+w.id;
+        wpnById[key]=w;
+    });
+    return wpnById;
+}
+
+export function create_catById(categories) {
+    var catById={};
+    categories.map((c) => {
+        var key="c"+c.id;
+        catById[key]=c;
+    });
+    return catById;
+}
+
+export function create_cmpById(competitions, wpnById, catById) {
+    var cmpById={};
+    competitions.map((c) => {
+        var key="c"+c.id;
+        var wkey="w"+c.weapon;
+        if(wpnById[wkey]) c.weapon = wpnById[wkey];
+
+        var ckey = "c"+c.category;
+        if(catById[ckey]) c.category = catById[ckey];
+
+        cmpById[key]=c;
+    });
+    return cmpById;
 }

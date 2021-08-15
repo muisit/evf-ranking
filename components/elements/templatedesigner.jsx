@@ -144,9 +144,9 @@ export default class TemplateDesigner extends React.Component {
     defaultCountryFlag = () => {
         var element = {
             type: "cntflag",
-            style: { left: 0, top: 0, width: 300, height: 200, zIndex: 1 },
+            style: { left: 0, top: 0, width: 400, height: 300, zIndex: 1 },
             hasRatio: true,
-            ratio: 1.5
+            ratio: 4/3
         };
         return element;
     }

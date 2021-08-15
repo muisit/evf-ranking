@@ -31,7 +31,7 @@
     public $table = "TD_Registration";
     public $pk="registration_id";
     public $fields=array("registration_id","registration_fencer","registration_role","registration_event","registration_costs","registration_date",
-        "registration_paid","registration_payment", "registration_paid_hod", "registration_mainevent", "registration_state");
+        "registration_paid","registration_payment", "registration_paid_hod", "registration_mainevent", "registration_state","registration_team");
     public $fieldToExport=array(
         "registration_id" => "id",
         "registration_fencer" => "fencer",
@@ -43,7 +43,8 @@
         "registration_paid" => "paid",
         "registration_paid_hod" => "paid_hod",
         "registration_payment" => "payment",
-        "registration_state" => "state"
+        "registration_state" => "state",
+        "registration_team" => "team"
 
     );
     public $rules = array(
@@ -57,7 +58,8 @@
         "registration_paid" => "bool|default=N",
         "registration_paid_hod" => "bool|default=N",
         "registration_payment" => "enum=I,G,O,F,E",
-        "registration_state" => "enum=R,P,C"
+        "registration_state" => "enum=R,P,C",
+        "registration_team" => "trim|lt=100"
     );
 
     public function export($result=null) {
@@ -232,7 +234,16 @@
         if($event->exists()) {
             $sides = $event->sides(null,true);
             $sidesById=array();
-            foreach($sides as $s) $sidesById["s".$s->getKey()]=$s;
+            $teamevents=array();
+            foreach($sides as $s) {
+                $sidesById["s".$s->getKey()]=$s;
+                $cid=$s->competition_id;
+                $comp=new Competition($s->competition_id,true);
+                $cat=new Category($comp->competition_category, true);
+                if($cat->category_type == 'T') {
+                    $teamevents["s".$s->getKey()] = true;
+                }
+            }
 
             $rtype = RoleType::ListAll();
             $roletypeById=array();
@@ -243,10 +254,10 @@
             foreach ($roles as $r) $roleById["r" . $r->role_id] = new Role($r);
 
             // create an overview of participants per country per sideevent
-            $res=$this->select('registration_event, registration_role, fencer_country, count(*) as cnt')
+            $res=$this->select('registration_event, registration_role, fencer_country, registration_team, count(*) as cnt')
                 ->join("TD_Fencer","f","f.fencer_id=TD_Registration.registration_fencer")
                 ->where("registration_mainevent",$event->getKey())
-                ->groupBy("registration_event, registration_role, fencer_country")
+                ->groupBy("registration_event, registration_role, fencer_country,registration_team")
                 ->get();
             foreach($res as $row) {
                 $c = $row->fencer_country;
@@ -259,8 +270,19 @@
                 $rl=$row->registration_role;
 
                 if(intval($rl) == 0 && isset($sidesById[$skey])) {
-                    // athlete or participant
-                    $retval[$ckey][$skey]=(isset($retval[$ckey][$skey]) ? $retval[$ckey][$skey] : 0) + $tot;
+                    if(isset($teamevents[$skey])) {
+                        if(!empty($row->registration_team)) {
+                            $prevcount=isset($retval[$ckey][$skey]) ? $retval[$ckey][$skey] : array(0,0);
+                            $prevcount[0]+=$tot; // total participants
+                            $prevcount[1]+=1; // each row is a team
+                            $retval[$ckey][$skey]=$prevcount;
+                        }
+                        // else empty team name for a team event, but not an event-wide role... error?
+                    }
+                    else {
+                        // individual athlete or participant
+                        $retval[$ckey][$skey]=(isset($retval[$ckey][$skey]) ? $retval[$ckey][$skey] : 0) + $tot;
+                    }
                 }
                 else {
                     $skey='sorg'; // organiser role

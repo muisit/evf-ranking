@@ -244,9 +244,16 @@ class AccreditationDirty extends BaseJob {
                     // if the side event has a competition, accredit the person. Do not
                     // accredit for other side events
                     if ($sideevent->competition->exists()) {
+                        // requirement 6.1.1: For team events, display the team name as well 
                         $role= new \EVFRanking\Models\Role();
                         $role->role_id=0;
-                        $role->role_name = "Athlete " . $sideevent->competition->abbreviation();
+                        $role->role_name = $sideevent->competition->abbreviation();
+
+                        $cat = new \EVFranking\Models\Category($sideevent->competition->competition_category, true);  
+                        if($cat->exists() && $cat->category_type == 'T' && strlen($r->registration_team)) {
+                            $role->role_name.= " (" .$r->registration_team. ")";
+                        }
+
                         $dates[$date]["roles"][]=$role;
                     }
                 } else {

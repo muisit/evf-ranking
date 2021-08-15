@@ -144,6 +144,10 @@
             $migration = new Migration(array("name"=> "013: Country flag extension","status"=>0));
             $migration->save();
         }
+        if($cnt < 15) {
+            $migration = new Migration(array("name"=>"014: Team events","status"=>0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -272,6 +276,10 @@
             break;
         case '013: Country flag extension':
             $wpdb->query("ALTER TABLE `TD_Country` CHANGE `country_flag_path` `country_flag_path` VARCHAR(1024) CHARACTER SET utf8 COLLATE utf8_general_ci NULL; ");
+            break;
+        case '014: Team events':
+            $wpdb->query("ALTER TABLE `TD_Registration` ADD column `registration_team` VARCHAR(100) NULL;");
+            break;
         default:
             break;
         }

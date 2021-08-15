@@ -52,7 +52,7 @@ class ExportManager extends BaseLib {
             $data = $this->event->registrations();
         }
 
-        $this->headers = array("name", "firstname", "country", "year-of-birth", "role", "organisation", "organisation_abbr", "type", "date", "days");
+        $this->headers = array("name", "firstname", "country", "year-of-birth", "role", "organisation", "organisation_abbr", "type", "date", "days","team");
         if ($this->filetype == "participants") {
             if(empty($this->sideevent) || $this->sideevent->isNew()) {
                 // a list of all attendees
@@ -61,6 +61,13 @@ class ExportManager extends BaseLib {
             else if (intval($this->sideevent->competition_id) > 0) {
                 // list of athletes
                 $this->headers = array("name", "firstname", "country", "year-of-birth", "cat", "gender");
+
+                // for Team events, display the team entry as well
+                $comp=new \EVFRanking\Models\Competition($this->sideevent->competition_id,true);
+                $cat = new \EVFRanking\Models\Category($comp->competition_category,true);
+                if($cat->exists() && $cat->category_type == 'T') {
+                    $this->headers[]="team";
+                }
             } 
             else {
                 // side-event with no competition, only print out participant list
@@ -350,6 +357,14 @@ class ExportManager extends BaseLib {
                         // no cost, always paid
                         $retval[]="yes";
                     }
+                }
+                break;
+            case "team":
+                if(isset($row["registration_team"]) && strlen($row["registration_team"])) {
+                    $retval[]=$row["registration_team"];
+                }
+                else {
+                    $retval[]="";
                 }
                 break;
             }

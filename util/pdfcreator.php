@@ -683,6 +683,9 @@ class PDFCreator {
         global $evflogger;
         $evflogger->log("putting image at $path");
 
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if(!in_array($ext,array("png","jpg","jpeg","gif"))) return;
+
         list($width,$height) =getimagesize($path);
         $x=0;
         $y=0;

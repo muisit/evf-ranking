@@ -57,8 +57,8 @@
     }
 
     public function abbreviation() {
-        $cat = new Category($this->competition_category);
-        $wpn = new Weapon($this->competition_weapon);
+        $cat = new Category($this->competition_category,true);
+        $wpn = new Weapon($this->competition_weapon,true);
         return $wpn->weapon_abbr . $cat->category_abbr;
     }
 }

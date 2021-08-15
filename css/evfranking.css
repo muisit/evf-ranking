@@ -143,6 +143,7 @@ div.table-action i a { padding: 0; }
 #evfregistration-root .sideevent:after { content:"";display:table;clear:both; }
 #evfregistration-root .formelement { clear: both; }
 #evfregistration-root .p-dialog-content .sideevent label { height: 1.5rem; line-height: 1.5rem; }
+.sideevent-description td { font-style: italic; padding-left: 5px;}
 
 #evfregistration-frontend-root table { line-height: 1.5rem; }
 .entry-content #evfregistration-frontend-root ul li { margin-left: 0.5em; }

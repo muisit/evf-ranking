@@ -116,7 +116,7 @@ export default class FencerDialog extends React.Component {
                 <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
         }
-        let genders = [{ name: 'Male', code: 'M' }, { name: 'Female', code: 'F' }];
+        let genders = [{ name: 'M', code: 'M' }, { name: 'W', code: 'F' }];
 
         var country = (
           <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
@@ -132,7 +132,6 @@ export default class FencerDialog extends React.Component {
         }
 
         return (<Dialog header="Edit Fencer" position="center" visible={this.props.display} className="fencer-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} >
-    <h5>Name</h5>
     <div className="p-grid p-fluid">
       <div className="p-col-12 p-md-6">
         <div className="p-inputgroup">
@@ -145,7 +144,6 @@ export default class FencerDialog extends React.Component {
         </div>
       </div>
     </div>
-    <h5>Details</h5>
     <div className="p-grid p-fluid">
       <div className="p-col-12 p-md-4">
         <div className="p-inputgroup">{country}</div>

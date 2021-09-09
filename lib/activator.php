@@ -97,7 +97,8 @@ class Activator extends BaseLib {
         $model = new \EVFRanking\Models\Ranking();
 
         // remove the old tournaments from the ranking automatically
-        $model->unselectOldTournaments();
+        // due to covid, unselection is being done manually for now
+        //$model->unselectOldTournaments();
 
         // then rebuild the rankings
         $model->calculateRankings();

@@ -79,12 +79,12 @@ export default class FEBase extends React.Component {
             fencer.birthyear = fencer.birthday.substring(0, 4);
         }
         else {
-            fencer.category = "No veteran";
+            fencer.category = "None";
             fencer.category_num = -1;
             fencer.birthyear = "unknown";
             fencer.birthday=format_date(parse_date());
         }
-        fencer.fullgender = fencer.gender == 'M' ? "Man" : "Woman";
+        fencer.fullgender = fencer.gender == 'M' ? "M" : "W";
         if(!fencer.registrations) fencer.registrations = [];
         return fencer;
     }

@@ -60,7 +60,7 @@ class ExportManager extends BaseLib {
             }
             else if (intval($this->sideevent->competition_id) > 0) {
                 // list of athletes
-                $this->headers = array("name", "firstname", "country", "year-of-birth", "cat", "gender");
+                $this->headers = array("name", "firstname", "country", "year-of-birth", "cat", "gender","ranking");
 
                 // for Team events, display the team entry as well
                 $comp=new \EVFRanking\Models\Competition($this->sideevent->competition_id,true);
@@ -176,6 +176,9 @@ class ExportManager extends BaseLib {
                 else {
                     $retval[]="";
                 }
+                break;
+            case 'ranking': 
+                $retval[]='999'; 
                 break;
             case 'role':
                 if (!empty($row['role_name'])) {

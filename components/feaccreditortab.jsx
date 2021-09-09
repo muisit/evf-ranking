@@ -236,7 +236,7 @@ export default class FEAccreditorTab extends FEBase {
                     <table className='cashier style-stripes-body'>
                         <thead>
                             <tr>
-                            <th>Event</th>
+                            <th>Competitions and Side Events</th>
                             <th className='textcenter'>Participants</th>
                             </tr>
                         </thead>
@@ -274,7 +274,7 @@ export default class FEAccreditorTab extends FEBase {
         return (
             <div className='row'>
                 <div className='col-12'>
-                <h3>Overview per Event</h3>
+                <h3>Overview per Competition</h3>
                 <p className='smallprint'>These are only athlete registrations and accreditations.</p>
                 {this.renderSummary(this.state.summary.events, "Event","title","event")}
                 </div>

@@ -89,7 +89,8 @@
                 global $wpdb;
                 $name=$wpdb->esc_like($filter["name"]);
                 //$filter=str_replace("%","%%",$filter);
-                $qb->where("(fencer_surname like '%$name%' or fencer_firstname like '%$name%')");
+                //$qb->where("(fencer_surname like '$name%' or fencer_firstname like '$name%')");
+                $qb->where("(fencer_surname like '$name%')");
             }
             if(isset($filter["country"])) {
                 $qb->where("fencer_country",$filter["country"]);
@@ -147,6 +148,7 @@
     }
 
     public function filterData($data, $caps) {
+        error_log("filtering data for ".json_encode($caps));
         // filter out irrelevant data depending on the capability
         $retval=array();
         if(in_array($caps, array("accreditation"))) {
@@ -156,7 +158,7 @@
             );
         }
         // system and registrars can save all fencer data
-        else if(in_array($caps, array("system", "organiser", "registrar"))) {
+        else if(in_array($caps, array("system", "organiser", "registrar","hod"))) {
             $retval=$data;
         }
         return parent::filterData($retval,$caps);

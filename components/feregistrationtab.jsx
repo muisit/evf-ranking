@@ -1,6 +1,7 @@
 import { fencers, accreditation } from "./api.js";
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { InputText } from 'primereact/inputtext';
+import { Button } from 'primereact/button';
 import { parse_date, date_to_category_num, format_date, is_valid, my_category_is_older,
          is_organisation, is_sysop, is_hod, is_accreditor, is_organiser,
          create_cmpById, create_wpnById, create_catById } from './functions';
@@ -23,6 +24,17 @@ export default class FERegistrationTab extends FEBase {
             accreditations: [],
             fencer_events: [], // sideevents with fencer-specific convenience data
         });
+    }
+
+    onCountrySelect = (val) => {
+        // clear all suggestions
+        this.clearSearch();
+        // retrieve the list of registrations for the selected country
+        this.setState({ 'country': val, "country_item": this.countryFromId(val) }, this.getRegistrations);
+    }
+
+    clearSearch = () => {
+        this.setState({fencer:'', suggestions: []});        
     }
 
     autocomplete = (evt) => {
@@ -279,7 +291,10 @@ export default class FERegistrationTab extends FEBase {
             <div className='row topmargin'>
                 <div className='col-4 vertcenter'>Search fencers:</div>
                 <div className='col-8'>
-                    <InputText value={this.state.fencer} onChange={(e) => this.autocomplete(e)} />
+                    <span className="p-input-icon-right">
+                        <i className="pi pi-times-circle" onClick={(e)=>this.clearSearch()}/>
+                        <InputText value={this.state.fencer} onChange={(e) => this.autocomplete(e)} />
+                    </span>
                 </div>
                 <div className='col-12'>
                     {this.state.suggestions.length ==0 && (
@@ -288,8 +303,8 @@ export default class FERegistrationTab extends FEBase {
                     {this.state.suggestions.length > 0 && (
                         <ParticipantList fencers={this.state.suggestions} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
                     )}
-                    <div className="cright" onClick={this.addFencer}>Add New Fencer</div>
-                    <FencerDialog apidata={{event: this.props.item.id, country: this.state.country }} country={this.props.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
+                    <Button label="Add New Fencer" icon="pi pi-check" className="p-button-raised cright" onClick={this.addFencer} />
+                    <FencerDialog apidata={{event: this.props.item.id, country: this.state.country }} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
                     <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} roles={this.props.roles}  event={this.props.item} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}  categories={this.props.categories}/>
                 </div>
                 <div className='col-12'>

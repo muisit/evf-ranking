@@ -522,7 +522,9 @@ class API extends BaseLib {
         if(!empty($event) && $event->exists()) {
             $caps = $event->eventCaps();
         }
+        error_log("filtering data");
         $data = $model->filterData($data, $caps);
+        error_log("filtered data is ".json_encode($data));
 
         // make sure to retrieve the current state from the database as value for all
         // fields before validation (before we overwrite the values with whatever is posted)

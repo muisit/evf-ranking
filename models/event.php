@@ -34,7 +34,7 @@
         "event_duration","event_email", "event_web", "event_location", "event_country","event_type",
         "event_currency_symbol","event_currency_name","event_base_fee", "event_competition_fee",
         "event_bank","event_account_name","event_organisers_address","event_iban","event_swift","event_reference",
-        "event_in_ranking", "event_factor", "event_frontend", "event_payments",
+        "event_in_ranking", "event_factor", "event_frontend", "event_payments","event_feed",
         "type_name","country_name",
     );
     public $fieldToExport=array(
@@ -65,6 +65,7 @@
         "event_frontend" => "frontend",
         "event_type_name" => "type_name",
         "event_payments" => "payments",
+        "event_feed" => "feed",
         "country_name" => "country_name",
     );
     public $rules=array(
@@ -94,6 +95,7 @@
         "event_factor" => array("label" => "Factor","rules"=>"float"),
         "event_frontend" => array("label"=>"Select a valid, published front-end event", "rules"=>"model=Posts"),
         "event_payments" => array("label"=>"Select a valid payment method", "rules"=>"enum=all,group,individual"),
+        "event_feed" => array("label"=>"Live feed","rules"=>"trim"),
         "event_type_name" => "skip",
         "country_name" => "skip",
         "competitions" => "contains=Competition,competition_list",
@@ -335,6 +337,27 @@
         $opens = strtotime($this->event_registration_open);
         $closes = strtotime($this->event_registration_close);
         return $now >= $opens && $now < $closes;
+    }
+
+    public function findOpenEvents() {
+        // allow events one day ahead and 2 days behind
+        $opens=strftime('%F', time()+24*60*60);
+        $wayold=strftime('%F',time()-21*24*60*60);
+        $retval=array();
+
+        $res = $this->select('*')->where("event_open","<",$opens)->where("event_open",">",$wayold)->get();
+        if(!empty($res) && sizeof($res)) {
+            foreach($res as $e) {
+                // check the duration to see if it is still open
+                $base = strtotime($e->event_open);
+                $addthis = 24*60*60*intval($e->event_duration);
+                $closes = strtotime(strftime('%F',$base + $addthis));
+                if($closes > (time() - 48*60*60)) {
+                    $retval[]=new Event($e);
+                }
+            }
+        }
+        return $retval;
     }
 
     public function eventCaps() {

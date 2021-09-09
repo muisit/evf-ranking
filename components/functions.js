@@ -69,7 +69,8 @@ export function date_to_category_num(dt, wrt) {
     }
     var catnum =  parseInt(Math.floor(diff / 10)) - 3;
 
-    if(catnum>5) catnum=5;
+    // category 5 was removed, the highest category is now 4
+    if(catnum>4) catnum=4;
     if(catnum < 1) catnum=0;
     return catnum;
 }
@@ -82,12 +83,13 @@ export function my_category_is_older(mycat, theircat) {
 export function date_to_category(dt,wrt) {
     var cat = date_to_category_num(dt,wrt);
     switch(cat) {
-    case 5: return "Cat 5";
-    case 4: return "Cat 4";
-    case 3: return "Cat 3";
-    case 2: return "Cat 2";
-    case 1: return "Cat 1";
-    default: return "No veteran";
+    // category 5 was removed from the implementation after the congress 2021
+    case 5:// return "Cat 5";
+    case 4: return "4";
+    case 3: return "3";
+    case 2: return "2";
+    case 1: return "1";
+    default: return "None";
     }
 }
 

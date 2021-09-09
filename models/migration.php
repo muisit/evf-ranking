@@ -148,6 +148,10 @@
             $migration = new Migration(array("name"=>"014: Team events","status"=>0));
             $migration->save();
         }
+        if($cnt < 16) {
+            $migration = new Migration(array("name"=>"015: Live feeds","status"=>0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -279,6 +283,9 @@
             break;
         case '014: Team events':
             $wpdb->query("ALTER TABLE `TD_Registration` ADD column `registration_team` VARCHAR(100) NULL;");
+            break;
+        case '015: Live feeds':
+            $wpdb->query("ALTER TABLE `TD_Event` ADD column `event_feed` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL;");
             break;
         default:
             break;

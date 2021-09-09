@@ -127,10 +127,10 @@ export default class EventDialog extends React.Component {
         }
     }
 
-    onChangeEl = (event) => {
-        var item=this.props.value;        
-        var name=event.target ? event.target.name : event.originalEvent.target.name;
-        var value=event.target ? event.target.value : event.value;
+    onChangeEl = (event,attrvalue) => {
+        var item=this.props.value;
+        var name=attrvalue ? event : (event.target ? event.target.name : event.originalEvent.target.name);
+        var value=attrvalue ? attrvalue : (event.target ? event.target.value : event.value);
         var els=name.split('-');
         var id = name;
         if(els.length > 1) {
@@ -148,6 +148,7 @@ export default class EventDialog extends React.Component {
         case 'location':
         case 'country':
         case 'in_ranking':
+        case 'feed':
             item[name] = value;
             break;
         case 'opens':
@@ -300,7 +301,7 @@ export default class EventDialog extends React.Component {
       <div>
         <label>Duration</label>
         <div className='input'>
-            <InputNumber className='inputint' name='duration' onChange={this.onChangeEl} min={1} max={21}  mode="decimal" useGrouping={false} 
+            <InputNumber className='inputint' name='duration' onValueChange={(e)=>this.onChangeEl('duration',e.value)} min={1} max={21}  mode="decimal" useGrouping={false} 
              value={duration}
              showButtons buttonLayout="horizontal" step={1} decrementButtonClassName="p-button-success" incrementButtonClassName="p-button-success" 
              incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></InputNumber>
@@ -330,6 +331,12 @@ export default class EventDialog extends React.Component {
             <Dropdown name='country' optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
         </div>
       </div>
+      <div>
+        <label>Live feed</label>
+        <div className='input'>
+            <InputText name='feed' value={this.props.value.feed} onChange={this.onChangeEl} placeholder='url'/>
+        </div>
+      </div>
 
     </TabPanel>
 
@@ -344,6 +351,12 @@ export default class EventDialog extends React.Component {
         <a onClick={() => this.addCompetition('all')}>Add All</a>
       </span>
       <div className='competition_list'>
+        <div className='competition'>
+          <span className='catdrop'><b>Category</b></span>
+          <span className='wpndrop'><b>Weapon</b></span>
+          <span className='p-calendar-span'><b>Opens</b></span>
+          <span className='p-calendar-span'><b>Check</b></span>
+        </div>
         {this.props.value && this.props.value.competitions && this.props.value.competitions.map((cmp,idx) => (
             <Competition cmp={cmp} ddwpns={ddwpns} ddcats={ddcats} start={start} end={end} key={idx} onChangeEl={this.onChangeEl} onRemoveCompetition={this.removeCompetition}/>))}
       </div>

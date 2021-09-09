@@ -1,6 +1,7 @@
 import React from 'react';
 import FEBase from './febase';
 import {format_currency, is_hod, is_valid, parse_net_error, is_organisation } from './functions';
+import { create_abbr, create_cmpById, create_roleById, create_wpnById, create_catById } from "./functions";
 import { registration } from './api';
 import { Checkbox } from 'primereact/checkbox';
 
@@ -9,13 +10,18 @@ export default class FECashierTab extends FEBase {
         super(props, context);
 
         this.state = Object.assign(this.state, {
-            fencerDetails: -1,
+            fencerDetails: -1
         });
+        this.abortType='cashier';
     }
 
     eventsToObj = () => {
         var obj = {};
+        var wpnById = create_wpnById(this.props.weapons);
+        var catById = create_catById(this.props.categories);
+        var cmpById = create_cmpById(this.state.competitions, wpnById, catById);
         this.state.sideevents.map((itm) => {
+            itm.abbr = create_abbr(itm, cmpById);
             obj["e" + itm.id] = itm;
         });
         return obj;
@@ -224,16 +230,19 @@ export default class FECashierTab extends FEBase {
                     if(is_comp && parseInt(reg.role) == 0) {
                         // Requirement 2.1.6: use the competition fee for competitions
                         costs = parseFloat(this.props.item.competition_fee);
+                        //console.log("competition costs ",costs);
                         // Requirement 2.1.7: use the base fee once per participant
                         if (fencer.is_athlete < 0) {
                             fencer.is_athlete = reg.id; // Requirement 2.1.7: check using base fee once only
                             costs += parseFloat(this.props.item.base_fee);
+                            //console.log("added base fee, costs are ",costs);
                         }
                     }
                     else if(!is_comp) {
                         // side events have their own specific costs for any participant
                         if(se) {
                             costs = parseFloat(se.costs);
+                            //console.log("costs for side event",costs);
                         }
                         // if no side-event, then there are no costs
                         // this occurs for event-wide roles like trainer, coach, team armourer
@@ -246,11 +255,13 @@ export default class FECashierTab extends FEBase {
                             // Requirement 2.1.11: display E and O types for organisation-invitees
                             // filter out any registrations that are not paid by the organisation
                             reg.filter_me = ['E', 'O'].includes(reg.payment);
+                            //console.log("organisers only see organisation payments");
                         }
                         else {
                             // Requirement 2.1.12: display I and G types for country-participants
                             // only display individual and group payments
                             reg.filter_me = ['I', 'G'].includes(reg.payment);
+                            //console.log("HoDs see only individual and group payments");
                         }
                     }
 
@@ -286,6 +297,7 @@ export default class FECashierTab extends FEBase {
                     }
 
                     if(reg.filter_me) {
+                        //console.log("adding total costs to fencer costs");
                         // no sideevent, no costs, so se must be set here
                         fencer.costs_for.push([se, reg,costs]);
                         fencer.total_costs += costs;
@@ -304,6 +316,7 @@ export default class FECashierTab extends FEBase {
                             fencer.has_paid = fencer.has_paid && (reg.paid == 'Y');
                         }
                     }
+                    //else console.log("fencer is filtered out");
 
                     // display an error if there was an error anywhere. Display saving if
                     // any of the items is currently saving. Display success only when there
@@ -327,7 +340,10 @@ export default class FECashierTab extends FEBase {
             // Requirement 2.1.5: filter out non-paying participants (coaches, etc)
             .filter((fencer) => {
                 // only show items that have an associated cost
-                if(parseFloat(fencer.total_costs) <= 0.0) return false;
+                if(parseFloat(fencer.total_costs) <= 0.0) {
+                    //console.log("filtering out fencer because total costs <= 0");
+                    return false;
+                }
                 return true;
             })
             // Requirement 2.1.18: sort athletes first, then by name
@@ -366,7 +382,7 @@ export default class FECashierTab extends FEBase {
                                     <td>{fencer.costs_for.map((e,idx) => (
                                         <span key={idx} className='event-costs-for'>
                                             {idx>0 && ", "}
-                                            {e[0].title}
+                                            {e[0].abbr}
                                         </span>))}
                                     </td>
                                     <td>

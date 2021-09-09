@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             1.2.6
+ * Version:             1.4.2
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag
@@ -131,6 +131,10 @@ function evfranking_results_shortcode($atts) {
     $actor = \EVFRanking\Lib\Display::Instance();
     return $actor->resultsShortCode($atts);
 }
+function evfranking_feed_shortcode($atts) {
+    $actor = \EVFRanking\Lib\Display::Instance();
+    return $actor->feedShortCode($atts);
+}
 
 function evfranking_rewrite_add_rewrites() {
     // should match the event button link in \EVFRanking\Lib\Display
@@ -192,6 +196,7 @@ if (defined('ABSPATH')) {
 
     add_shortcode( 'evf-ranking', 'evfranking_ranking_shortcode' );
     add_shortcode( 'evf-results', 'evfranking_results_shortcode' );
+    add_shortcode( 'evf-feed', 'evfranking_feed_shortcode' );
 
     add_filter( 'cron_schedules', 'evfranking_add_cron_interval' );
 

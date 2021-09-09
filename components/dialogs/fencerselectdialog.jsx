@@ -535,7 +535,7 @@ export default class FencerSelectDialog extends React.Component {
         return (<Dialog baseZIndex={100000} header="Register Fencer" position="center" visible={this.props.display} className="fencer-select-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
     <h5>{ this.props.value.name }, {this.props.value.firstname }</h5>
     {this.props.country.id > 0 && (<h5>
-        Birthyear: { this.props.value.birthyear } Gender: {this.props.value.gender == 'M' ? 'Man': 'Woman'} Category: {mycatname}
+        Year of birth: { this.props.value.birthyear } Gender: {this.props.value.gender == 'M' ? 'M': 'W'} Category: {mycatname}
     </h5>)}
     {payments}
     {this.renderEvents(selectedevents, validteams)}
@@ -641,10 +641,13 @@ export default class FencerSelectDialog extends React.Component {
                 return (
                 <tbody key={idx}>
                 <tr>
+                    <td>{format_date_fe_short(ev.starts)}</td>
                     <td className='sideevent-title'>
-                        {ev.title}
+                        {ev.weapon ? ev.weapon.name : ev.title }
                     </td>
-                    <td>{format_date_fe_short(ev.starts)} - {of_team}</td>
+                    <td className='sideevent-title'>
+                        {ev.category && ev.category.name}
+                    </td>
                     <td>
                         {!ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered}/>)}
                         {ev.is_team_event && (<Dropdown name={"teamselect-" + ev.id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
@@ -661,10 +664,11 @@ export default class FencerSelectDialog extends React.Component {
                         )}
                         {!is_error && !is_success && !is_saving && (<span>&nbsp;</span>)}
                     </td>
+                    <td class='expand-cell'></td>
                 </tr>
                 {ev.description.length > 0 && (
                 <tr className='sideevent-description'>
-                    <td colSpan={4}>
+                    <td colSpan={6}>
                         {ev.description}
                     </td>
                 </tr>

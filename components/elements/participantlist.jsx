@@ -5,9 +5,9 @@ export function ParticipantList(props) {
         return (<div></div>);
     }
 
-    var catById = create_catById(props.categories);
-    var wpnById=create_wpnById(props.weapons);
-    var cmpById = create_cmpById(props.competitions, wpnById, catById);
+    var catById = create_catById(props.categories || []);
+    var wpnById=create_wpnById(props.weapons || []);
+    var cmpById = create_cmpById(props.competitions || [], wpnById, catById);
 
     // Roles are assigned over the whole event now, and not on a specific sideevent. This
     // means we show roles only if this is not a list of a specific event and we actually 
@@ -16,7 +16,7 @@ export function ParticipantList(props) {
     // requirement 1.4.3: for specific team events, show the team name instead of the fencer category
     var showTeam = false;
 
-    var roleById = create_roleById(props.roles);
+    var roleById = create_roleById(props.roles || []);
     roleById["r0"] = { name: "Participant" };
     if(props.event && is_valid(props.event.competition_id)) {
         roleById["r0"] = { name: "Athlete" };
@@ -154,7 +154,7 @@ export function ParticipantList(props) {
                         <th>Country</th>
                     )}
                     <th>Gender</th>
-                    <th>Birthyear</th>
+                    <th>YOB</th>
                     {!showTeam && (<th>Category</th>)}
                     {showTeam && (<th>Team</th>)}
                     {showRoles && (<th>Role</th>)}

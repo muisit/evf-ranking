@@ -90,7 +90,7 @@ export default class RegistrationPage extends React.Component {
             <FERegistrationTab item={this.state.item} countries={this.state.countries} weapons={this.state.weapons} categories={this.state.categories} roles={this.state.roles} />
         </TabPanel>);
         var cashiertab = (<TabPanel id="cashier" header="Cashier">
-            <FECashierTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} />
+            <FECashierTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} weapons={this.state.weapons} categories={this.state.categories}/>
         </TabPanel>);
         var accrtab = (<TabPanel id="badges" header="Badges">
             <FEAccreditorTab item={this.state.item} countries={this.state.countries} roles={this.state.roles} />

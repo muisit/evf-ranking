@@ -105,7 +105,51 @@ HEREDOC;
         wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
         $output="<div id='evfranking-results'></div>";
         return $output;
-    }    
+    }
+
+    public function feedShortCode($attributes) {
+        $attributes = shortcode_atts(array(
+            "id"=>-1,
+            "name"=>""
+        ),$attributes);
+
+        // check to see if there is currently any event open
+        $model=new \EVFRanking\Models\Event();
+        $events = $model->findOpenEvents();
+
+        $found=null;
+        foreach($events as $e) {
+            error_log("checking event ".json_encode($e->export()));
+            // if we have an id, make sure it matches
+            if(isset($attributes["id"]) && intval($attributes["id"]) > 0) {
+                error_log("id set");
+                if(intval($attributes["id"]) == intval($e->getKey())) {
+                    $found=$e;
+                    break;
+                }
+            }
+            // if we have part of a title, make sure it matches
+            else if(isset($attributes["name"]) && strlen($attributes["name"])) {
+                error_log("title set to ".$attributes['name']." and checking with ".$e->event_name);
+                if(strpos(strtolower($e->event_name), strtolower($attributes["name"])) !== FALSE) {
+                    $found=$e;
+                    break;
+                }
+            }
+            else if(strlen($e->event_feed)) {
+                error_log("feed found, taking first");
+                // take the first event with a live feed url
+                $found=$e;
+                break;
+            }
+        }
+        
+        if(!empty($found) && strlen($found->event_feed)) {
+            wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
+            return "<a href='".addslashes($found->event_feed)."' target='_blank'><div class='live-feed'></div></a>";
+        }
+        return "";
+    }
 
     // action called when we move from the Event registration button to the Event registration page
     // Check here if we are already logged in. If not, redirect. If so, display the Event registration
@@ -179,6 +223,12 @@ HEREDOC;
             }
             else if (in_array($caps, array("open","registrar","hod"))) {
                 echo "<a href='$location'><div class='evfranking-register'></div></a>";
+            }
+
+            // if the event has a live feed, just display it
+            if(strlen($event->event_feed)) {
+                wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
+                echo "<a href='".addslashes($event->event_feed)."' target='_blank'><div class='live-feed'></div></a>";
             }
         }
     }

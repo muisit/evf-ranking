@@ -19,6 +19,11 @@
 .cright { float: right; clear: both; }
 .smallprint { font-size: 0.6rem; }
 
+.live-feed {
+    background-image: url('./btn_live.png');
+    width:111px;
+    height: 111px;
+}
 .entry-content table thead th.textcenter { text-align: center; }
 table.style-stripes > tbody tr:nth-child(2n+1) {
     background-color: #dde9f6;
@@ -48,6 +53,7 @@ table.compact { width: auto; }
 .competitions .competition { height: 2.3rem; display: flex;}
 .competitions .competition .catdrop { width: 200px; }
 .competitions .competition .wpndrop { width: 170px; }
+.competitions .competition .p-calendar-span { width: 232px;}
 
 .datatable .search-input-results .evntdrop { width: 350px; }
 .datatable .search-input-results .catdrop { width: 200px; }
@@ -64,8 +70,8 @@ table.compact { width: auto; }
 
 /* specific settings for fencer-dialog */
 .fencer-dialog .p-dialog-content div div .p-inputgroup .p-inputtext { width: 8vw; }
-.fencer-dialog .p-dialog-content div div .p-inputgroup .p-dropdown { width: 8vw; }
-.fencer-select-dialog .p-dialog-content div div.input .p-dropdown { width: 8vw; line-height: 1rem; }
+.fencer-dialog .p-dialog-content div div .p-inputgroup .p-dropdown { width: 10vw; }
+.fencer-select-dialog .p-dialog-content div div.input .p-dropdown { width: 10vw; line-height: 1rem; }
 
 .p-datepicker:not(.p-disabled) table td span.p-disabled { 
     background-color: white; 
@@ -148,12 +154,18 @@ div.table-action i a { padding: 0; }
 #evfregistration-frontend-root table { line-height: 1.5rem; }
 .entry-content #evfregistration-frontend-root ul li { margin-left: 0.5em; }
 
-#evfregistration-frontend-root .fencer-select-dialog .p-dialog-content .state-icons { width: 2rem; }
-#evfregistration-frontend-root .fencer-select-dialog .fencer-select-events td,
-#evfregistration-frontend-root .fencer-select-dialog .fencer-select-events td  .p-checkbox
-{ vertical-align: middle; }
-#evfregistration-frontend-root .fencer-select-dialog .fencer-select-events tbody.athlete { background-color: #9f9; }
-#evfregistration-frontend-root .incorrect-cat { background-color: #f99; }
+.fencer-select-dialog .p-dialog-content .state-icons { width: 2rem; }
+.fencer-select-dialog .fencer-select-events { width: auto; }
+.fencer-select-dialog .fencer-select-events td {
+    width: auto;
+    white-space: nowrap;
+    padding: 2px 5px;
+}
+.fencer-select-dialog .fencer-select-events td.expand-cell { width: 99%; }
+.fencer-select-dialog .fencer-select-events td,
+.fencer-select-dialog .fencer-select-events td  .p-checkbox { vertical-align: middle; }
+.fencer-select-dialog .fencer-select-events tbody.athlete { background-color: #9f9; }
+.incorrect-cat, table.style-stripes > tbody tr.incorrect-cat { background-color: #f99; }
 
 #evfregistration-frontend-root .center { width: 100%; margin: 0px auto; text-align: center; align-items: center; }
 

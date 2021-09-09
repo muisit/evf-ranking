@@ -128,7 +128,7 @@ class Policy extends BaseLib {
 
             # Results and Rankings
             "results" => array(      "any",   "any",      "rank",            "rank",     "rank"     ),
-            "ranking"=>array(        "any",   "any",      "rank",            "rank",     "noone"    ),
+            "ranking"=>array(        "any",   "any",      "rank",            "rank",     "rank"    ),
             "competitions" => array( "any",   "any",      "rank",            "rank",     "noone"    ),
 
             # Registration and Accreditation

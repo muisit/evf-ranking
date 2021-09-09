@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             1.4.3
+ * Version:             1.4.4
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag

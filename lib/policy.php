@@ -229,6 +229,7 @@ class Policy extends BaseLib {
         global $evflogger;
         // if the user has registration capabilities, always allow
         if ($userdata["rankings"] === true || $userdata["registration"] === true) {
+            error_log("user has rankings or registration rights, fsave allowed");
             return true;
         }
 

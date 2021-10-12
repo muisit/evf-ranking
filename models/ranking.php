@@ -192,7 +192,8 @@
                 $cnt = 0;
             }
 
-            if($cnt < 2) {
+            // for the 21/22 season, due to COVID, up to 4 results are counted
+            if($cnt < 4) {
                 $allresults[]=$r->result_id;
                 $cnt+=1;
             }

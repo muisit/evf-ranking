@@ -92,6 +92,8 @@ then
 else
     cat "$PROJECT.php" | sed "s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/" > tmp.$$
     mv tmp.$$ "$PROJECT.php"
+    cat "$PROJECT.php" |  sed "s/\(define.*VERSION[^\"]*\"\)[^\"]*\(\".*\)/\1${MAJ}.${MIN}.${MICR}\2/"  > tmp.$$
+    mv tmp.$$ "$PROJECT.php"
     cat "package.json" | sed "s/\(.*version\"[ \t:]*\"\).*/\1${MAJ}.${MIN}.${MICR}\",/" > tmp.$$
     mv tmp.$$ "package.json"
 fi

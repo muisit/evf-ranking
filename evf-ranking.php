@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             1.4.4
+ * Version:             1.4.9
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag
@@ -38,6 +38,7 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 define('EVFRANKING_PLUGIN_PATH', plugin_dir_path(__FILE__));
+define('EVFRANKING_VERSION',"1.4.9");
 
 if(defined('WP_DEBUG')) {
     // wait time before we automatically refresh a dirty accreditation
@@ -111,7 +112,8 @@ function evfranking_admin_menu() {
         'evfranking_display_admin_page',
         'dashicons-media-spreadsheet',
         100
-	);
+    );
+
 	add_menu_page(
 		__( 'Registration' ),
 		__( 'Registration' ),

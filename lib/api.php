@@ -522,6 +522,11 @@ class API extends BaseLib {
         if(!empty($event) && $event->exists()) {
             $caps = $event->eventCaps();
         }
+        else {
+            if(current_user_can( 'manage_ranking' ) || current_user_can( 'manage_registration' )) {
+                $caps="system";
+            }
+        }
         error_log("filtering data");
         $data = $model->filterData($data, $caps);
         error_log("filtered data is ".json_encode($data));

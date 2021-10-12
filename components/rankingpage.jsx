@@ -13,6 +13,7 @@ export default class RankingPage extends React.Component {
             detail: [],
             category_id: -1,
             weapon_id: -1,
+            orderBy: 'r',
             items: []
         };
     }
@@ -75,8 +76,64 @@ export default class RankingPage extends React.Component {
         this.setState({detail_open: false});
     }
 
+    changeSort = (s) => {
+        if(s=='r') {
+            if(this.state.orderBy=='r') {
+                this.setState({orderBy:'R'});
+            }
+            else {
+                this.setState({orderBy:'r'});
+            }
+        }
+        else if(s=='n') {
+            if(this.state.orderBy=='n') {
+                this.setState({orderBy:'N'});
+            }
+            else {
+                this.setState({orderBy:'n'});
+            }
+        }
+        else if(s=='c') {
+            if(this.state.orderBy=='c') {
+                this.setState({orderBy:'C'});
+            }
+            else {
+                this.setState({orderBy:'c'});
+            }
+        }
+    }
+
     render() {
         if(this.state.weapons && this.state.weapons.length && this.state.categories && this.state.categories.length) {
+            var possortactive=(this.state.orderBy=='r' || this.state.orderBy=='R') ? ' active': '';
+            var namesortactive=(this.state.orderBy=='n' || this.state.orderBy=='N') ? ' active': '';
+            var cntsortactive=(this.state.orderBy=='c' || this.state.orderBy=='C') ? ' active': '';
+            possortactive='pi pi-icon ' + (this.state.orderBy=='R' ? 'pi-sort-alpha-up' : 'pi-sort-alpha-down') + possortactive;
+            namesortactive='pi pi-icon ' + (this.state.orderBy=='N' ? 'pi-sort-alpha-up' : 'pi-sort-alpha-down') + namesortactive;
+            cntsortactive='pi pi-icon ' + (this.state.orderBy=='C' ? 'pi-sort-alpha-up' : 'pi-sort-alpha-down') + cntsortactive;
+
+            var fencers=this.state.items.slice();
+            var orderby=this.state.orderBy;
+            fencers.sort(function(fn1,fn2) {
+                if(orderby=='r' || orderby=='R') {
+                    if(fn1.pos < fn2.pos) return orderby=='r' ? -1 : 1;
+                    if(fn1.pos > fn2.pos) return orderby=='r' ? 1: -1;
+                }
+                else if(orderby=='c' || orderby=='C') {
+                    var c=fn1.country.localeCompare(fn2.country);
+                    if(c!==0) {
+                        return orderby=='c'? c : -1*c;
+                    }
+                }
+                var r=fn1.name.localeCompare(fn2.name);
+                if(r===0) r=fn1.firstname.localeCompare(fn2.firstname);
+                if(r===0) {
+                    if(fn1.id < fn2.id) return (orderby=='r' || orderby=='n') ? -1 : 1;
+                    return (orderby=='r' || orderby=='n') ? 1 : -1;
+                }
+                return (orderby=='r' || orderby=='n') ? r : -1*r;
+            });
+
             return (
                 <div className='container ranking-results front-ranking'>
                     <div className='row'>
@@ -102,16 +159,16 @@ export default class RankingPage extends React.Component {
                         <table className='list'>
                           <thead>
                             <tr>
-                              <th scope='col'>Pos.</th>
-                              <th scope='col'>Name</th>
+                              <th scope='col' onClick={(e)=>this.changeSort('r')} className='pos'>Pos.&nbsp;<i className={possortactive}>&nbsp;</i></th>
+                              <th scope='col' onClick={(e)=>this.changeSort('n')}>Name&nbsp;<i className={namesortactive}></i></th>
                               <th scope='col'>First name</th>
-                              <th scope='col'>Country</th>
+                              <th scope='col' onClick={(e)=>this.changeSort('c')}>Country&nbsp;<i className={cntsortactive}></i></th>
                               <th scope='col'>Points</th>
                               <th scope='col'></th>
                             </tr>
                           </thead>
                           <tbody>
-                          {this.state.items && this.state.items.length>0 && this.state.items.map((fencer,idx) => (
+                          {fencers && fencers.length>0 && fencers.map((fencer,idx) => (
                             <tr key={fencer.id} className={(idx%2)==1 ? "odd":"even"}>
                               <td className='pos'>{fencer.pos}</td>
                               <td>{fencer.name}</td>

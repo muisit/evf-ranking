@@ -72,15 +72,13 @@ HEREDOC;
 
     public function styles($page) {
         if(in_array($page,array("toplevel_page_evfrankings","toplevel_page_evfregistration"))) {
-            wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
-//            wp_enqueue_style( 'blueprint', plugins_url('/node_modules/@blueprintjs/core/lib/css/blueprint.css', __FILE__), array(), '1.0.0' );
-//            wp_enqueue_style( 'blueprint-icons', plugins_url('/node_modules/@blueprintjs/icons/lib/css/blueprint-icons.css', __FILE__), array(), '1.0.0' );
+            wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
         }
     }
 
     private function enqueue_code($script) {
         // insert a small piece of html to load the ranking react script
-        wp_enqueue_script( 'evfranking', $script, array('jquery','wp-element'), '1.0.0' );
+        wp_enqueue_script( 'evfranking', $script, array('jquery','wp-element'), EVFRANKING_VERSION );
         $dat = new API();
         $nonce = wp_create_nonce( $dat->createNonceText() );
         $params= array_merge(Display::$jsparams, array(
@@ -93,7 +91,7 @@ HEREDOC;
     public function rankingShortCode($attributes) {
         $script = plugins_url('/dist/ranking.js', $this->get_plugin_base());
         $this->enqueue_code($script);
-        wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
+        wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
         $output="<div id='evfranking-ranking'></div>";
         return $output;
     }    
@@ -102,7 +100,7 @@ HEREDOC;
         // insert a small piece of html to load the ranking react script
         $script = plugins_url('/dist/results.js', $this->get_plugin_base());
         $this->enqueue_code($script);
-        wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
+        wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
         $output="<div id='evfranking-results'></div>";
         return $output;
     }
@@ -145,7 +143,7 @@ HEREDOC;
         }
         
         if(!empty($found) && strlen($found->event_feed)) {
-            wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
+            wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
             return "<a href='".addslashes($found->event_feed)."' target='_blank'><div class='live-feed'></div></a>";
         }
         return "";
@@ -227,8 +225,8 @@ HEREDOC;
 
             // if the event has a live feed, just display it
             if(strlen($event->event_feed)) {
-                wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0' );
-                echo "<a href='".addslashes($event->event_feed)."' target='_blank'><div class='live-feed'></div></a>";
+                wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
+                echo "<a href='".addslashes($event->event_feed)."' target='_blank'><div class='evfranking-livefeed'></div></a>";
             }
         }
     }
@@ -285,7 +283,7 @@ HEREDOC;
             $this->enqueue_code($script);
         }
         $post = new \WP_Post((object)$options);
-        wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), '1.0.0');
+        wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
         
         // reset wp_query properties to simulate a found page
         global $wp_query;

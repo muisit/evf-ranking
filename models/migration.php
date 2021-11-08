@@ -152,6 +152,10 @@
             $migration = new Migration(array("name"=>"015: Live feeds","status"=>0));
             $migration->save();
         }
+        if($cnt < 17) {
+            $migration = new Migration(array("name"=>'016: Event config',"status"=>0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -286,6 +290,9 @@
             break;
         case '015: Live feeds':
             $wpdb->query("ALTER TABLE `TD_Event` ADD column `event_feed` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL;");
+            break;
+        case '016: Event config':
+            $wpdb->query("ALTER TABLE `TD_Event` ADD column `event_config` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL;");
             break;
         default:
             break;

@@ -21,15 +21,21 @@ export default class FEAccreditorTab extends FEBase {
 
     componentDidMount = () => {
         this._componentDidMount();
-        this.getSummary();        
+        this.getSummary(true);
     }
 
-    getSummary = () => {
+    getSummary = (firsttime) => {
         accreditation("overview", { event: this.props.item.id })
             .then((json) => {
                 this.setState({ summary: json.data });
+                if(firsttime) this.startRegularRefresh();
             })
             .catch((err) => parse_net_error(err));
+    }
+
+    startRegularRefresh = () => {
+        window.setTimeout(()=> this.startRegularRefresh(), 5000);
+        this.getSummary(false);
     }
 
     countryHeader = () => {
@@ -142,7 +148,7 @@ export default class FEAccreditorTab extends FEBase {
         var self=this;
         accreditation("generate", { event: this.props.item.id, type:type, type_id:id })
             .then((json) => {
-                self.getSummary();
+                self.getSummary(false);
             })
             .catch((err) => parse_net_error(err));
     }
@@ -160,12 +166,12 @@ export default class FEAccreditorTab extends FEBase {
         case 'check':
             accreditation(what, { event: this.props.item.id })
             .then((json) => {
-                self.getSummary();
+                self.getSummary(false);
             })
             .catch((err) => parse_net_error(err));
             break;
         case 'refresh':
-            this.getSummary();
+            this.getSummary(false);
         }        
     }
 
@@ -208,7 +214,11 @@ export default class FEAccreditorTab extends FEBase {
             </thead>
             <tbody>
                 <Tooltip target='.pi-icon-generate' />
-                {elements.map((line, idx) => (
+                {elements.map((line, idx) => {
+                    // check for an active PDF job
+                    var key=this.props.item.id + "_" + nameheader + "_" + line[idmember];
+                    var is_generating=this.state.summary.jobs && this.state.summary.jobs[key];
+                    return (
                     <tr key={idx}>
                         <td>{line[namemember]}</td>
                         <td>{line.registrations}</td>
@@ -216,15 +226,18 @@ export default class FEAccreditorTab extends FEBase {
                         <td>{line.dirty}</td>
                         <td>{line.generated}</td>
                         <td>
-                            {parseInt(line.accreditations) > 0 && line.available && (
+                            {is_generating && (
+                                <span className='pi pi-spin pi-spinner'> </span>
+                            )}
+                            {!is_generating && parseInt(line.accreditations) > 0 && line.available && (
                                 <span className='pi pi-file-pdf' onClick={()=>this.downloadDoc(nameheader, line[idmember])}> {line.doc_size}</span>
                             )}
-                            {parseInt(line.accreditations) > 0 && !line.available && (
+                            {!is_generating && parseInt(line.accreditations) > 0 && !line.available && (
                                 <span className='pi pi-cog pi-icon-generate' onClick={() => this.generateDoc(nameheader, line[idmember])} data-pr-tooltip='Generate'></span>
                             )}
                         </td>
                     </tr>
-                ))}
+                )})}
             </tbody>
         </table>)
     }

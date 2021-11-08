@@ -4,6 +4,7 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { TabView,TabPanel } from 'primereact/tabview';
 import { Dropdown } from 'primereact/dropdown';
+import { Checkbox } from 'primereact/checkbox';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
@@ -170,8 +171,17 @@ export default class EventRegistrationDialog extends React.Component {
             name = els[0];
             id=els[1];
         }
+        console.log("event ",name,id,value,event);
 
         switch (name) {
+        case 'allow_registration_lower_age':
+            // checkbox configuration value
+            var isset = event.checked;
+            if(!item.config) {
+              item.config={};
+            }
+            item.config[name]=isset;
+            break;
         case 'base_fee':
         case 'competition_fee':
         case 'bank':
@@ -341,6 +351,9 @@ export default class EventRegistrationDialog extends React.Component {
         var basefee = parse_float(this.props.value.base_fee,30);
         var compfee = parse_float(this.props.value.competition_fee,40);
 
+        var cfg = this.props.value.config;
+        var allow_lower_reg = (cfg && cfg.allow_registration_lower_age) ? true : false;
+
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
 <TabView id="eventdialog" animate={true} defaultSelectedTabId="general">
@@ -367,16 +380,25 @@ export default class EventRegistrationDialog extends React.Component {
             <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_close.toDate()}></Calendar>
         </div>
       </div>
+      <div>
+        <label>Configuration</label>
+        <div className='input'>
+          <Checkbox inputId='cfg1' name={'allow_registration_lower_age'} onChange={this.onChangeEl} checked={allow_lower_reg} /> 
+          <label className='checkbox' htmlFor="cfg1">Allow registration in a lower age category</label>
+        </div>
+      </div>
+      </TabPanel>
+      <TabPanel id='payment' header='Payment'>
+      <div>
+      <label>Payments</label>
+      <div className='input'>
+        <Dropdown name='payments' optionLabel="name" optionValue="id" value={this.props.value.payments} options={payments} placeholder="Payments" onChange={this.onChangeEl} appendTo={document.body} />
+      </div>
+    </div>
     <div>
       <label>Currency</label>
       <div className='input'>
         <Dropdown name='currency' optionLabel="name" optionValue="code" value={this.props.value.currency} options={this.currencies} placeholder="Currency" onChange={this.onChangeEl} appendTo={document.body}/>
-      </div>
-    </div>
-    <div>
-      <label>Payments</label>
-      <div className='input'>
-        <Dropdown name='payments' optionLabel="name" optionValue="id" value={this.props.value.payments} options={payments} placeholder="Payments" onChange={this.onChangeEl} appendTo={document.body} />
       </div>
     </div>
     <div>

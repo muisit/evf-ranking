@@ -63,9 +63,11 @@ table.compact { width: auto; }
 .p-dialog-content { position: relative; }
 .p-dialog-content label { display: block; width: 8vw; height: 3.5rem; line-height: 2.5rem; font-weight: 700; float: left; clear: both;}
 .p-dialog-content label.header { width: 100%; }
-.p-dialog-content div div.input { width: 38vw; float: left; }
+.p-dialog-content label.checkbox { float: none; clear: none; width: auto; display: inline-flex; padding-left: 10px; padding-top: 9px;}
+.p-dialog-content div div.input { width: 38vw; float: left; display: flex;align-items: center; }
 .p-dialog-content div div.input .p-inputtext { width: 35vw; }
 .p-dialog-content div div.input .p-dropdown { width: 35vw; }
+.p-dialog-content div div.input .p-checkbox { vertical-align: middle; }
 .p-dialog-content div div.input .inputint input { width: 5vw; }
 
 /* specific settings for fencer-dialog */
@@ -244,6 +246,7 @@ table tr.notcounting { background-color: #ff9999; color: #003366; }
 }
 
 .inputform label { display: block; width: 100px; height: 40px; line-height: 40px; font-weight: 700; float: left; clear: both;}
+.inputform label.checkbox { float: right; clear: none; width: auto; }
 .inputform.wide label {width: 20%; }
 .inputform div { line-height: 40px; }
 .inputform div div.input { width: 149px; float: left; }

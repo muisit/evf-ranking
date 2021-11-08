@@ -149,6 +149,7 @@ export default class FERegistrationTab extends FEBase {
         var cmpById = create_cmpById(this.state.competitions, wpnById, catById);
         var mycat = null;
         var events=[];
+        var allow_registration_lower_age = this.props.item.config && this.props.item.config.allow_registration_lower_age;
 
         // filter out valid roles for the capabilities
         var roles = this.props.roles.filter((itm) => {
@@ -171,8 +172,8 @@ export default class FERegistrationTab extends FEBase {
         if (fencer && this.state.sideevents && this.props.item) {
             mycat = date_to_category_num(fencer.birthday, this.props.item.opens);
 
-            var weaponevents={};
-            var allweaponevents={};
+            var weaponevents={}; // stores the events qualified for this fencer based on weapon
+            var allweaponevents={}; // stores all events based on weapon
 
             events = this.state.sideevents.map((event) => {
                 var ev = Object.assign({}, event);
@@ -196,11 +197,13 @@ export default class FERegistrationTab extends FEBase {
                             weaponevents["T"+ev.weapon.abbr]=ev; // allow individual and team events in the same tournament
                         }
                         else if (ev.category.value == mycat && ev.weapon.gender == fencer.gender) {
+                            // this event matches gender and category, so is selectable
                             ev.is_athlete_event = true;
                             ev.default_role="0"; // default role for athlete events is athlete
                             weaponevents[ev.weapon.abbr]=ev;
                         }
-                        if(my_category_is_older(mycat,ev.category.value) && ev.weapon.gender == fencer.gender) {
+                        if(allow_registration_lower_age && my_category_is_older(mycat,ev.category.value) && ev.weapon.gender == fencer.gender) {
+                            // create a list of all events that match gender and are for a younger category
                             if(!allweaponevents[ev.weapon.abbr]) allweaponevents[ev.weapon.abbr]=[];
                             allweaponevents[ev.weapon.abbr].push(ev);
                         }
@@ -214,33 +217,36 @@ export default class FERegistrationTab extends FEBase {
             });
 
             // see if we need to open up events of a younger category
-            var openevents={};
-            for(var i in allweaponevents) {
-                // look only in events that have no athlete-weapon-event for this fencer
-                if(!weaponevents[i]) {
-                    // check all events and pick the one for the highest category
-                    var highestcat=-1;
-                    for(var j in allweaponevents[i]) {
-                        var ev=allweaponevents[i][j];
-                        if(ev.category.value > highestcat) highestcat=ev.category.value;
+            if(allow_registration_lower_age) {
+                var openevents={};
+                for(var i in allweaponevents) {
+                    // look only in events that have no athlete-weapon-event for this fencer
+                    if(!weaponevents[i]) {
+                        // check all events and pick the one for the highest category
+                        // only events that are for younger categories are listed at this point
+                        var highestcat=-1;
+                        for(var j in allweaponevents[i]) {
+                            var ev=allweaponevents[i][j];
+                            if(ev.category.value > highestcat) highestcat=ev.category.value;
+                        }
+                        openevents[i]=highestcat;
                     }
-                    openevents[i]=highestcat;
                 }
-            }
 
-            // now set the is_athlete flag on the events we need to open for a younger category as well
-            events = events.map((ev) => {
-                if (ev.competition) {
-                    if (ev.category && ev.weapon) {
-                        var hasOwnCat = openevents[ev.weapon.abbr];
-                        if(hasOwnCat && ev.weapon.gender == fencer.gender && ev.category.value == hasOwnCat) {
-                            ev.is_athlete_event = true;
-                            ev.default_role="0"; // default role for athlete events is athlete
+                // now set the is_athlete flag on the events we need to open for a younger category as well
+                events = events.map((ev) => {
+                    if (ev.competition) {
+                        if (ev.category && ev.weapon) {
+                            var hasOwnCat = openevents[ev.weapon.abbr];
+                            if(hasOwnCat && ev.weapon.gender == fencer.gender && ev.category.value == hasOwnCat) {
+                                ev.is_athlete_event = true;
+                                ev.default_role="0"; // default role for athlete events is athlete
+                            }
                         }
                     }
-                }
-                return ev;
-            });
+                    return ev;
+                });
+            }
         }
         return events;
     }

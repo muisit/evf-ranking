@@ -27,8 +27,44 @@
 namespace EVFRanking\Jobs;
 
 class CreateSummary extends BaseJob {
+    const QUEUENAME="evfranking_queued_summary";
+
+    private function createSummaryKey() {
+        $eid=intval($this->queue->getData("event_id"));
+        $type=$this->queue->getData("type");
+        $tid=intval($this->queue->getData("type_id"));
+        return $eid."_".$type."_".$tid;
+    }
+
+    private function setQueue() {
+        // store the 'currently running jobs' in the wp config
+        $activequeue = get_option(CreateSummary::QUEUENAME);
+        if(empty($activequeue)) {
+            $activequeue=array();
+            add_option(CreateSummary::QUEUENAME,array());
+        }
+        $key=$this->createSummaryKey();
+        $activequeue[$key]=array($this->queue->id, time());
+        update_option(CreateSummary::QUEUENAME,$activequeue);
+        error_log("created running queue entry for $key");
+    }
+
+    private function unsetQueue() {
+        $activequeue = get_option(CreateSummary::QUEUENAME);
+        if(empty($activequeue)) {
+            $activequeue=array();
+            add_option(CreateSummary::QUEUENAME,array());
+        }
+        $key=$this->createSummaryKey();
+        if(isset($activequeue[$key])) {
+            unset($activequeue[$key]);
+        }
+        update_option(CreateSummary::QUEUENAME,$activequeue);
+    }
+
     // first argument is an event id, then the selection type and the selection type ID
     public function create() {
+        error_log("createsummary::create");
         $args= func_get_args();
         $eid = sizeof($args) > 0 ? $args[0] : null;
         $type = sizeof($args) > 1 ? $args[1] : null;
@@ -37,6 +73,8 @@ class CreateSummary extends BaseJob {
         $this->queue->setData("type",$type);
         $this->queue->setData("type_id",intval($typeid));
         parent::create();
+
+        $this->setQueue();
     }
 
     public function run() {
@@ -84,5 +122,11 @@ class CreateSummary extends BaseJob {
         if(!file_exists($path)) {
             $this->fail("Could not create PDF");
         }
+        $this->unsetQueue();
+    }
+
+    public function fail($msg=NULL) {
+        $this->unsetQueue();
+        parent::fail($msg);
     }
 }

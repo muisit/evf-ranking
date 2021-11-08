@@ -1,4 +1,5 @@
 import { create_abbr, is_valid, create_wpnById, create_catById, create_cmpById, create_roleById  } from '../functions';
+import { wrong_category } from '../rules/wrong_category';
 
 export function ParticipantList(props) {
     if (!props.fencers) {
@@ -41,7 +42,6 @@ export function ParticipantList(props) {
         fencer.is_registered=!props.event; // if we are not filtering on event, always registered
         fencer.role=[];
         fencer.has_role = [];
-        fencer.reg_cat=-1;
         fencer.incorrect_cat = false;
         fencer.has_team=false;
 
@@ -95,14 +95,18 @@ export function ParticipantList(props) {
                 }
             }
 
-            // Requirement 1.1.6: events with a mismatch in category are marked
-            if (comp && comp.category && comp.category.value) {
-                fencer.reg_cat = comp.category.value;
+            var ruleobject = {
+                event: props.event,
+                competition: comp,
+                fencer: fencer,
+                fencers: props.fencers,
+                categories: props.categories,
+                weapons: props.weapons
+            };
 
-                // mark the incorrect-category error only for competition events
-                if (fencer.role.includes(0) && is_valid(fencer.reg_cat) && parseInt(fencer.reg_cat) != parseInt(fencer.category_num)) {
-                    fencer.incorrect_cat = true;
-                }
+            // Requirement 1.1.6: events with a mismatch in category are marked
+            if(wrong_category(ruleobject)) {
+                fencer.incorrect_cat=true;
             }
 
             // Requirement 1.4.1: sort by team name

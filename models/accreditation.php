@@ -338,6 +338,7 @@ class Accreditation extends Base {
             $job = new \EVFRanking\Jobs\CreateSummary();
             $job->create($eid,$type,$typeid);
         }
+        return array();
     }
 
     public function generateForFencer($eid,$fid) {
@@ -381,6 +382,14 @@ class Accreditation extends Base {
         return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$sz[$factor];
     }
 
+    private function isValidQueue($entry) {
+        $q=new Queue($entry[0],true);
+        if($q->exists() && $q->state==="new") {
+            return true;
+        }
+        return false;
+    }
+
     public function overview($eid) {
         $retval=array();
         $event=new \EVFRanking\Models\Event($eid,true);
@@ -415,6 +424,56 @@ class Accreditation extends Base {
             $retval["countries"]=$this->overviewForCountries($event,$sids,$templateByType,$roleByType, $rtype);
             $retval["roles"]=$this->overviewForRoles($event,$sids,$templateByType,$roleByType, $rtype);
             $retval["templates"]=$this->overviewForTemplates($event,$sids,$templateByType,$roleByType, $rtype);
+
+            // create a list of all jobs for this event based on the running jobs in our wordpress queue configuration
+            $jobs=array();
+            $activequeue = get_option(\EVFRanking\Jobs\CreateSummary::QUEUENAME);
+            foreach($retval["events"] as $ev) {
+                $key=$event->getKey()."_Event_".$ev["event"];
+                if(isset($activequeue[$key])) {
+                    if($this->isValidQueue($activequeue[$key])) {
+                        $jobs[$key]=array("id"=>$ev["event"],"start"=>$activequeue[$key][1]); // value [0] is the queue id
+                    }
+                    else {
+                        unset($activequeue[$key]);
+                    }
+                }
+            }
+            foreach($retval["countries"] as $dat) {
+                $key=$event->getKey()."_Country_".$dat["country"];
+                if(isset($activequeue[$key])) {
+                    if($this->isValidQueue($activequeue[$key])) {
+                        $jobs[$key]=array("id"=>$dat["country"],"start"=>$activequeue[$key][1]);
+                    }
+                    else {
+                        unset($activequeue[$key]);
+                    }
+                }
+            }
+            foreach($retval["roles"] as $dat) {
+                $key=$event->getKey()."_Role_".$dat["role"];
+                if(isset($activequeue[$key])) {
+                    if($this->isValidQueue($activequeue[$key])) {
+                        $jobs[$key]=array("id"=>$dat["role"],"start"=>$activequeue[$key][1]);
+                    }
+                    else {
+                        unset($activequeue[$key]);
+                    }
+                }
+            }
+            foreach($retval["templates"] as $dat) {
+                $key=$event->getKey()."_Template_".$dat["template"];
+                if(isset($activequeue[$key])) {
+                    if($this->isValidQueue($activequeue[$key])) {
+                        $jobs[$key]=array("id"=>$dat["template"],"start"=>$activequeue[$key][1]);
+                    }
+                    else {
+                        unset($activequeue[$key]);
+                    }
+                }
+            }
+            $retval["jobs"]=$jobs;
+            update_option(\EVFRanking\Jobs\CreateSummary::QUEUENAME,$activequeue);
         }
         return $retval;
     }

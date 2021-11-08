@@ -39,7 +39,7 @@ function SideEvent(props) {
     return (
         <div className='sideevent'>
           {!hascomp && (
-          <div class='formelement'>
+          <div className='formelement'>
             <label>Title</label>
             <div className='input'>
               <InputText name={'etitle-'+ props.event.id} value={props.event.title} onChange={props.onChangeEl} placeholder='Title'/>
@@ -48,19 +48,19 @@ function SideEvent(props) {
           {!hascomp && (<span className="p-input-icon-left add-button">
             <i className="pi pi-trash"onClick={() => props.onRemoveEvent(props.event)}></i>
           </span>)}
-          {!hascomp && (<div class='formelement'>
+          {!hascomp && (<div className='formelement'>
             <label>Description</label>
             <div className='input'>
               <InputText name={'edescr-'+ props.event.id} value={props.event.description} onChange={props.onChangeEl} placeholder='Description'/>
             </div>
           </div>)}
-          {!hascomp && (<div class='formelement'>
+          {!hascomp && (<div className='formelement'>
             <label>Start</label>
             <div className='input'>
               <Calendar name={'estarts-' + props.event.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={starts.toDate()} viewDate={vdate1.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
             </div>
           </div>)}
-          <div class='formelement'>
+          <div className='formelement'>
             <label>Costs</label>
             <div className='input'>
               <InputNumber className='inputint' name={'ecosts-' + props.event.id} onChange={props.onChangeEl} 

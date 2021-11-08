@@ -10,6 +10,9 @@ import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
 import { ParticipantList } from './elements/participantlist';
 import FEBase from './febase';
+import { filter_event_category, filter_event_category_younger } from "./rules/wrong_category.jsx";
+import { filter_event_team_veterans } from "./rules/team_rule_veterans.jsx";
+import { filter_event_team_grandveterans } from "./rules/team_rule_grandveterans";
 
 export default class FERegistrationTab extends FEBase {
     constructor(props, context) {
@@ -147,7 +150,6 @@ export default class FERegistrationTab extends FEBase {
         var catById = create_catById(this.props.categories);
         var wpnById = create_wpnById(this.props.weapons);
         var cmpById = create_cmpById(this.state.competitions, wpnById, catById);
-        var mycat = null;
         var events=[];
         var allow_registration_lower_age = this.props.item.config && this.props.item.config.allow_registration_lower_age;
 
@@ -170,8 +172,6 @@ export default class FERegistrationTab extends FEBase {
         });
 
         if (fencer && this.state.sideevents && this.props.item) {
-            mycat = date_to_category_num(fencer.birthday, this.props.item.opens);
-
             var weaponevents={}; // stores the events qualified for this fencer based on weapon
             var allweaponevents={}; // stores all events based on weapon
 
@@ -189,20 +189,21 @@ export default class FERegistrationTab extends FEBase {
 
                     ev.default_role = roles[0].id; // any non-athlete role
                     if (ev.category && ev.weapon) {
-                        if(ev.category.type == 'T' && ev.weapon.gender == fencer.gender) {
-                            // team events are always athlete events
-                            ev.is_athlete_event = true;
-                            ev.is_team_event = true;
+                        ev.is_athlete_event = filter_event_category(fencer,ev,this.props.item)
+                                || filter_event_team_veterans(fencer,ev,this.props.item)
+                                || filter_event_team_grandveterans(fencer,ev, this.props.item);
+
+                        if(ev.is_athlete_event) {
                             ev.default_role = "0";
-                            weaponevents["T"+ev.weapon.abbr]=ev; // allow individual and team events in the same tournament
+                            if(ev.category.type == 'T') {
+                                ev.is_team_event = true;
+                                weaponevents["T"+ev.weapon.abbr]=ev; // allow individual and team events in the same tournament
+                            }
+                            else {
+                                weaponevents[ev.weapon.abbr]=ev;
+                            }
                         }
-                        else if (ev.category.value == mycat && ev.weapon.gender == fencer.gender) {
-                            // this event matches gender and category, so is selectable
-                            ev.is_athlete_event = true;
-                            ev.default_role="0"; // default role for athlete events is athlete
-                            weaponevents[ev.weapon.abbr]=ev;
-                        }
-                        if(allow_registration_lower_age && my_category_is_older(mycat,ev.category.value) && ev.weapon.gender == fencer.gender) {
+                        if(allow_registration_lower_age && filter_event_category_younger(fencer,ev, this.props.item)) {
                             // create a list of all events that match gender and are for a younger category
                             if(!allweaponevents[ev.weapon.abbr]) allweaponevents[ev.weapon.abbr]=[];
                             allweaponevents[ev.weapon.abbr].push(ev);

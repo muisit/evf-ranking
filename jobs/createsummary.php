@@ -46,7 +46,6 @@ class CreateSummary extends BaseJob {
         $key=$this->createSummaryKey();
         $activequeue[$key]=array($this->queue->id, time());
         update_option(CreateSummary::QUEUENAME,$activequeue);
-        error_log("created running queue entry for $key");
     }
 
     private function unsetQueue() {
@@ -64,7 +63,6 @@ class CreateSummary extends BaseJob {
 
     // first argument is an event id, then the selection type and the selection type ID
     public function create() {
-        error_log("createsummary::create");
         $args= func_get_args();
         $eid = sizeof($args) > 0 ? $args[0] : null;
         $type = sizeof($args) > 1 ? $args[1] : null;

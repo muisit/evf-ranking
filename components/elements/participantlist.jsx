@@ -1,5 +1,7 @@
 import { create_abbr, is_valid, create_wpnById, create_catById, create_cmpById, create_roleById  } from '../functions';
 import { wrong_category } from '../rules/wrong_category';
+import { team_rule_grandveterans } from '../rules/team_rule_grandveterans';
+import { team_rule_veterans } from '../rules/team_rule_veterans';
 
 export function ParticipantList(props) {
     if (!props.fencers) {
@@ -99,6 +101,7 @@ export function ParticipantList(props) {
                 event: props.event,
                 competition: comp,
                 fencer: fencer,
+                registration: reg,
                 fencers: props.fencers,
                 categories: props.categories,
                 weapons: props.weapons
@@ -106,6 +109,12 @@ export function ParticipantList(props) {
 
             // Requirement 1.1.6: events with a mismatch in category are marked
             if(wrong_category(ruleobject)) {
+                fencer.incorrect_cat=true;
+            }
+            if(team_rule_veterans(ruleobject)) {
+                fencer.incorrect_cat=true;
+            }
+            if(team_rule_grandveterans(ruleobject)) {
                 fencer.incorrect_cat=true;
             }
 

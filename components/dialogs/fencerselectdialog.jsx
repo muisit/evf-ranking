@@ -664,7 +664,7 @@ export default class FencerSelectDialog extends React.Component {
                         )}
                         {!is_error && !is_success && !is_saving && (<span>&nbsp;</span>)}
                     </td>
-                    <td class='expand-cell'></td>
+                    <td className='expand-cell'></td>
                 </tr>
                 {ev.description.length > 0 && (
                 <tr className='sideevent-description'>

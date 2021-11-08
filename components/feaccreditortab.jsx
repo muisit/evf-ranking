@@ -24,6 +24,11 @@ export default class FEAccreditorTab extends FEBase {
         this.getSummary(true);
     }
 
+    componentWillUnmount = () => {
+        // still leaves a state-update-on-unmounted-component-error
+        window.clearTimeout(this.timeout);
+    }
+
     getSummary = (firsttime) => {
         accreditation("overview", { event: this.props.item.id })
             .then((json) => {
@@ -34,7 +39,7 @@ export default class FEAccreditorTab extends FEBase {
     }
 
     startRegularRefresh = () => {
-        window.setTimeout(()=> this.startRegularRefresh(), 5000);
+        this.timeout = window.setTimeout(()=> this.startRegularRefresh(), 5000);
         this.getSummary(false);
     }
 
@@ -227,7 +232,7 @@ export default class FEAccreditorTab extends FEBase {
                         <td>{line.generated}</td>
                         <td>
                             {is_generating && (
-                                <span className='pi pi-spin pi-spinner'> </span>
+                                    <span className='pi pi-spin pi-spinner'> </span>
                             )}
                             {!is_generating && parseInt(line.accreditations) > 0 && line.available && (
                                 <span className='pi pi-file-pdf' onClick={()=>this.downloadDoc(nameheader, line[idmember])}> {line.doc_size}</span>

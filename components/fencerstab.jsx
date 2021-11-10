@@ -7,6 +7,7 @@ import { InputText } from 'primereact/inputtext';
 import { Paginator } from 'primereact/paginator';
 import { Toast } from 'primereact/toast';
 import FencerDialog from './dialogs/fencerdialog';
+import MergeFencers from "./dialogs/mergefencers.jsx";
 
 import PagedTab from './pagedtab';
 
@@ -26,6 +27,10 @@ export default class FencersTab extends PagedTab {
         super(props, context);
         this.dt = React.createRef();
         this.abortType='fencers';
+
+        this.state = Object.assign(this.state, {
+            displayMergeDialog: false
+        });
     }
 
     apiCall = (o,p,f,s) => {
@@ -47,9 +52,26 @@ export default class FencersTab extends PagedTab {
     }
 
     renderDialog() {
-        return (
+        return (<div>
             <FencerDialog countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />
+            <MergeFencers countries={this.props.countries} display={this.state.displayMergeDialog} onClose={()=> { this.setState({displayMergeDialog:false}, this.loadItemPage); }} />
+            </div>
         );
+    }
+
+    onMerge = (event) => {
+        this.setState({item: {id:-1},displayMergeDialog:true});
+    }
+
+    renderAdd() {
+        return (<div>
+            <span className="p-input-icon-left header-button">
+                <i className="pi pi-plus-circle"></i><a onClick={this.onAdd}>&nbsp;Add</a>
+            </span>
+            <span className="p-input-icon-left header-button">
+              <i className="pi pi-link"></i><a href='#' onClick={this.onMerge}>&nbsp;Merge</a>
+            </span>
+        </div>);
     }
 
     renderTable(pager) {

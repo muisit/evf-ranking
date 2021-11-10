@@ -186,5 +186,28 @@
         return array(); 
     }
 
+    public function merge($modeldata) {
+        // merge two fencers in the database. All data from fencer 1 is retained, but
+        // fencer 2 is removed
+        if(!isset($modeldata['id1']) || !isset($modeldata['id2'])) {
+            return array("error"=> true, "messages"=>array("Invalid call, missing parameters"));
+        }
+        $model1=new Fencer($modeldata['id1'],true);
+        $model2=new Fencer($modeldata['id2'],true);
+
+        if(!$model1->exists() || !$model2->exists()) {
+            return array("error"=> true, "messages"=>array("Fencer does not exist"));
+        }
+        if($model1->getKey() == $model2->getKey()) {
+            return array("error"=> true, "messages"=>array("Cannot merge fencer with him/herself"));
+        }
+
+        $this->query()->from("TD_Accreditation")->set("fencer_id",$model1->getKey())->set('is_dirty',strftime('%F %T'))->where("fencer_id",$model2->getKey())->update();
+        $this->query()->from("TD_Registration")->set("registration_fencer",$model1->getKey())->where("registration_fencer",$model2->getKey())->update();
+        $this->query()->from("TD_Result")->set("result_fencer",$model1->getKey())->where("result_fencer",$model2->getKey())->update();
+        $this->query()->from("TD_Fencer")->where("fencer_id",$model2->getKey())->delete();
+        return array("messages"=>array("Fencers merged successfully"));
+    }
+
 }
  

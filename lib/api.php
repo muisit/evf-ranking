@@ -372,6 +372,10 @@ class API extends BaseLib {
                     $this->checkPolicy("fencers","save", array("filter" => $filter, "model" => $modeldata));
                     $retval= array_merge($retval, $model->preSaveCheck($modeldata));
                 }
+                else if($path[0] == 'fencers' && isset($path[1]) && $path[1] == "merge") {
+                    $this->checkPolicy("fencers","save", array("filter" => $filter, "model" => $modeldata));
+                    $retval= array_merge($retval, $model->merge($modeldata));
+                }
                 else {
                     $this->checkPolicy($path[0],"list", array("filter" => $filter, "model" => $modeldata));
                     $retval=array_merge($retval, $this->listAll($model,$offset,$pagesize,$filter,$sort,$special));

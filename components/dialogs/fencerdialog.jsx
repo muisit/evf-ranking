@@ -5,12 +5,17 @@ import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputMask } from 'primereact/inputmask';
+import DuplicateFencer from './duplicatefencer';
+import { parse_net_error, get_yob } from '../functions';
 
 export default class FencerDialog extends React.Component {
     constructor(props, context) {
         super(props, context);
         this.state = {
-            old_status:-1
+            old_status:-1,
+            suggestiondialog: false,
+            suggestions: null,
+            pendingSave: null
         }
     }
 
@@ -20,6 +25,8 @@ export default class FencerDialog extends React.Component {
 
     close = () => {
         if(this.props.onClose) this.props.onClose();
+        // clear our duplicate check settings for the next new fencer
+        this.setState({suggestionDialog: false, suggestions:null, pendingSave:null});
     }
 
     save = (item) => {
@@ -34,10 +41,8 @@ export default class FencerDialog extends React.Component {
         this.close();
     }
 
-    onCloseDialog = (event) => {
-        this.loading(true);
-
-        fencer('save',Object.assign({},this.props.value, this.props.apidata ? this.props.apidata : {}))
+    actualSave = (obj) => {
+        fencer('save',obj)
             .then((json) => {
                 this.loading(false);
                 var itm=Object.assign({},this.props.value);
@@ -49,18 +54,38 @@ export default class FencerDialog extends React.Component {
                 }
                 this.save(itm);
             })
-            .catch((err) => {
-                if(err.response.data.messages && err.response.data.messages.length) {
-                    var txt="";
-                    for(var i=0;i<err.response.data.messages.length;i++) {
-                       txt+=err.response.data.messages[i]+"\r\n";
-                    }
-                    alert(txt);
+            .catch(parse_net_error);
+    }
+
+    onCloseDialog = (event) => {
+        this.loading(true);
+
+        var obj = Object.assign({},this.props.value, this.props.apidata ? this.props.apidata : {});
+        if(obj.gender != 'M' && obj.gender != 'F') {
+            alert('Please select the proper gender');
+            return;
+        }
+        var yob=get_yob(obj.birthday);
+        var now=get_yob();
+        if(now-yob < 10 || now-yob > 120) {
+            alert('Please select a proper date of birth');
+            return;
+        }
+        if(obj.name.length<2 || obj.firstname.length<2) {
+            alert("Please set the surname and firstname");
+            return;
+        }
+
+        fencer('presavecheck',obj)
+            .then((json) => {
+                if(json && json.data && json.data.suggestions && json.data.suggestions.length) {
+                    this.setState({suggestiondialog: true, suggestions: json.data.suggestions, pendingSave: obj})
                 }
                 else {
-                    alert('Error storing the data. Please try again');
+                    this.actualSave(obj);
                 }
-            });
+            })
+            .catch(parse_net_error);
     }
 
     onCancelDialog = (event) => {
@@ -159,6 +184,7 @@ export default class FencerDialog extends React.Component {
         </div>
       </div>
     </div>
+    <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.actualSave(this.state.pendingSave)} onClose={()=>this.close()} />
 </Dialog>
 );
     }

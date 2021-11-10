@@ -164,5 +164,27 @@
         return parent::filterData($retval,$caps);
     }
 
+    public function preSaveCheck($modeldata) {
+        // this check is meant to allow the front-end to check if a given fencer may have,
+        // per-chance, a duplicate in the database. If so, we can signal the user that he
+        // may need to request a change-of-country
+        // We only do this for new entries, not for existing ones.
+        if(intval($modeldata['id']) <= 0) {
+            $results = $this->select('TD_Fencer.*, c.country_name')
+                ->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
+                ->where('SOUNDEX(\''.addslashes($modeldata['firstname']).'\')=SOUNDEX(fencer_firstname)')
+                ->where('SOUNDEX(\''.addslashes($modeldata['name']).'\')=SOUNDEX(fencer_surname)')
+                ->where("fencer_dob",strftime("%F",strtotime($modeldata['birthday'])))
+                ->get();
+            $retval=array();
+            foreach($results as $row) {
+                $fencer=new Fencer($row);
+                $retval[]=$fencer->export();
+            }
+            return array("suggestions"=>$retval);
+        }
+        return array(); 
+    }
+
 }
  

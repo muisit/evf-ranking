@@ -107,7 +107,7 @@
 
     public function export($result=null) {
         $retval=parent::export($result);
-        $retval["config"]=json_decode($retval["config"],true);
+        if(isset($retval["config"])) $retval["config"]=json_decode($retval["config"],true);
         return $retval;
     }
 

@@ -187,14 +187,6 @@ export default class ResultDialog extends React.Component {
                         value={this.props.value.total_points}></InputNumber>
                 </div>
             </div>
-            <div>
-                <label>Factor</label>
-                <div className='input'>
-                    <InputNumber className='inputint' name='factor' onChange={this.onChangeEl}
-                        mode="decimal" inputMode='decimal' minFractionDigits={1} maxFractionDigits={5} min={0} useGrouping={false}
-                        value={this.props.value.factor}></InputNumber>
-                </div>
-            </div>
         </Dialog>);
     }
 }

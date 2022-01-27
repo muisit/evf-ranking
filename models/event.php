@@ -140,7 +140,7 @@
     private function addFilter($qb, $filter,$special) {
         if(!empty(trim($filter))) {
             global $wpdb;
-            $filter=$wpdb->esc_like($filter);
+            $filter=esc_sql($wpdb->esc_like($filter));
             //$filter=str_replace("%","%%",$filter);
             $qb->where( function($qb2) use ($filter) {
 //                $qb2->where("fencer_surname","like","%$filter%")
@@ -178,7 +178,7 @@
         if($id === null) $id = $this->getKey();
         // find the competitions belonging to this event
         $model = new Competition();
-        $dt = $model->listByEvent($id);
+        $dt = $model->listByEvent(intval($id));
 
         $retval = array();
         if (!empty($dt) && is_array($dt)) {
@@ -198,7 +198,7 @@
         if($id === null) $id = $this->getKey();
         // find the side events belonging to this event
         $model = new SideEvent();
-        $dt = $model->listByEvent($id);
+        $dt = $model->listByEvent(intval($id));
 
         $retval = array();
         if (!empty($dt) && is_array($dt)) {
@@ -218,7 +218,7 @@
         if ($id === null) $id = $this->{$this->pk};
         // find the roles belonging to this event
         $model = new EventRole();
-        $dt = $model->listByEvent($id);
+        $dt = $model->listByEvent(intval($id));
 
         $retval = array();
         if (!empty($dt) && is_array($dt)) {
@@ -234,7 +234,7 @@
     }
     public function roleOfUser($userid) {
         $model = new EventRole();
-        return $model->roleOfUser($this->{$this->pk},$userid);
+        return $model->roleOfUser($this->getKey(),intval($userid));
     }
 
     public function postSave($wassaved) {

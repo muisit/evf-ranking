@@ -65,8 +65,6 @@
         if(!empty($vals)) {
             return new EventRole($vals);        
         }
-        global $evflogger;
-        $evflogger->log("event-role not found for $eventid $userid, returning null");
         return null;
     }
 }

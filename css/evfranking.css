@@ -39,11 +39,13 @@ table.compact { width: auto; }
 .pager .page { width: 5%; text-align: center; position: relative;top:-7px;}
 .pager .pagesize { width: 14%; float: right; margin-top: -15px;}
 .pager .pagesize.fixed { margin-top: -10px; }
-.datatable { position:relative; }
+.p-tabview .p-tabview-panels { padding: 10px 5px; }
+.datatable { position:relative; min-height: 50px;}
 .datatable .p-inputtext { width: 100%; }
-.datatable .search-input { width: 300px; display: block; float: right; margin-top:-10px;padding-bottom:5px;}
+.datatable .search-input { width: 300px; display: block; float: right;padding-bottom:5px;}
 .datatable .search-input .pi-search { margin-top: -12px; }
-.datatable .search-input-results { width: 720px; }
+.datatable .search-input-results { width: auto; }
+.datatable p { margin: 0px; padding: 10px;}
 
 .datatable .header-button { display: block; float: left; margin-top: 0px;}
 .datatable .p-datatable { clear: both; }

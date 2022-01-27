@@ -172,7 +172,7 @@ class Accreditation extends Base {
         if(is_object($eventid) && get_class($eventid) == "EVFRanking\\Models\\Registration") {
             $eventid = $eventid->registration_mainevent;
         }        
-
+        $fid=intval($fid);
         $cnt=$this->numrows()->where("fencer_id",$fid)->where("event_id",$eventid)->count();
         if($cnt == 0 && !empty($eventid)) {
             // we create an empty accreditation to signal the queue that this set needs to be reevaluated
@@ -194,6 +194,7 @@ class Accreditation extends Base {
         else {
             $qb=$this->query()->set("is_dirty",strftime('%F %T'))->where('fencer_id',$fid);
             if(!empty($eventid)) {
+                $eventid=intval($eventid);
                 $qb->where("event_id",$eventid);
             }
             $qb->update();
@@ -206,6 +207,8 @@ class Accreditation extends Base {
             $this->save();
         }
         else {
+            $fid=intval($fid);
+            $eventid=intval($eventid);
             $this->query()->set("is_dirty", null)->where('fencer_id', $fid)->where("event_id", $eventid)->update();
         }
     }
@@ -799,7 +802,7 @@ class Accreditation extends Base {
     }
 
     public function cleanForFencer($fid,$eid) {
-        $this->query()->where("fencer_id",$fid)->where("event_id",$eid)->delete();
+        $this->query()->where("fencer_id",intval($fid))->where("event_id",intval($eid))->delete();
     }
 }
  

@@ -9,13 +9,14 @@ export const team_rule_grandveterans = (data) => {
         var team=[];
         var teamname=data.registration.team;
 
-        // loop over all fencers and pick all registrations with the same team name
+        // loop over all fencers and pick all registrations with the same team name and category
         var keys=Object.keys(data.fencers);
         keys.map((k) => {
             var itm=data.fencers[k];
             if(itm.registrations) {
                 itm.registrations.map((r) => {
-                    if(r.team === teamname) {
+                    // make sure we pick teams from the same competition/sideevent
+                    if(r.sideevent == data.registration.sideevent && r.team === teamname) {
                         team.push(itm);
                     }
                 });

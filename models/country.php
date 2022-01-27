@@ -89,15 +89,12 @@
         $baseurl = str_replace("http://","",get_site_url(null, '', 'http'));
         $pos = strpos($this->country_flag_path, $baseurl);
         if($pos !== FALSE) {
-            error_log("url found, removing base ".$baseurl);
             $offset = $pos + strlen($baseurl) + 1; // remove slash
             $this->country_flag_path = substr($this->country_flag_path,$offset);
-            error_log("new flag path is ".$this->country_flag_path);
         }
 
         // see if the file exists
         $fname = trailingslashit(ABSPATH).$this->country_flag_path;
-        error_log("testing $fname");
         if(!file_exists($fname)) {
             $this->country_flag_path='';
         }
@@ -105,7 +102,8 @@
     }
 
     public function delete($id=null) {
-        if($id === null) $id = $this->{$this->pk};
+        if($id === null) $id = $this->getKey();
+        $id=intval($id);
 
         // check that country is not used in Fencer or Event
         $nr1 = $this->numrows()->from("TD_Fencer")->where("fencer_country",$id)->count();

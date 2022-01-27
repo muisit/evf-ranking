@@ -14,7 +14,8 @@ export const team_rule_veterans = (data) => {
             var itm=data.fencers[k];
             if(itm.registrations) {
                 itm.registrations.map((r) => {
-                    if(r.team === teamname) {
+                    // make sure we pick teams from the same competition/sideevent
+                    if(r.sideevent == data.registration.sideevent && r.team === teamname) {
                         team.push(itm);
                     }
                 });

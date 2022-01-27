@@ -58,7 +58,7 @@
     private function addFilter($qb, $filter, $special) {
         if (!empty(trim($filter))) {
             global $wpdb;
-            $filter = $wpdb->esc_like($filter);
+            $filter = esc_sql($wpdb->esc_like($filter));
             $qb->where(function ($qb2) use ($filter) {
                 $qb2->where("user_nicename like '%$filter%' or user_login like '%$filter%'");
             });

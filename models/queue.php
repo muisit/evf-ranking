@@ -213,7 +213,7 @@ class Queue extends Base {
     }
 
     private function doRun($timelimit) {
-        $this->end_time = time() + $timelimit;
+        $this->end_time = time() + intval($timelimit);
         $model = $this->getData("model");
         $method=$this->getData("method","run");
         if(!empty($model)) {

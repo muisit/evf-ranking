@@ -95,13 +95,13 @@
         if($id === null) $id = $this->{$this->pk};
 
         // check that role_type is not used in Role
-        $nr1 = $this->numrows()->from("TD_Role")->where("role_type",$id)->count();
+        $nr1 = $this->numrows()->from("TD_Role")->where("role_type",intval($id))->count();
         $this->errors=array();
         if($nr1>0) {
             $this->errors[]="Cannot delete Role Type that is still used for Roles";
         }
         if(sizeof($this->errors)==0) {
-            return parent::delete($id);
+            return parent::delete(intval($id));
         }
         return false;
     }

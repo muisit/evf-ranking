@@ -6,7 +6,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputMask } from 'primereact/inputmask';
 import DuplicateFencer from './duplicatefencer';
-import { parse_net_error, get_yob } from '../functions';
+import { parse_net_error, get_yob, format_date } from '../functions';
 
 export default class FencerDialog extends React.Component {
     constructor(props, context) {
@@ -129,6 +129,36 @@ export default class FencerDialog extends React.Component {
         }
     }
 
+    renderResults() {
+        if(!this.props.value.results) return (null);
+        return (<div className="ranking-results">
+            <table className='list'>
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Country</th>
+                        <th>Competition</th>
+                        <th>Place</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {this.props.value.results.map((itm,idx) => (
+                        <tr key={itm.id} className={(idx%2)==0 ? "even":"odd"}>
+                            <td>{itm.event_name}</td>
+                            <td>{format_date(itm.event_date)}</td>
+                            <td>{itm.event_country_name}</td>
+                            <td>{itm.weapon_abbr} {itm.category_name}</td>
+                            <td>{itm.place}</td>
+                            <td>{itm.total_points}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>);
+    }
+
     render() {
         var footer=(<div>
         <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
@@ -183,6 +213,7 @@ export default class FencerDialog extends React.Component {
           <Dropdown name='gender' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.gender} options={genders} placeholder="Gender" onChange={this.onChangeEl}/>
         </div>
       </div>
+      { this.renderResults() }
     </div>
     <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.actualSave(this.state.pendingSave)} onClose={()=>this.close()} />
 </Dialog>

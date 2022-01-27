@@ -85,7 +85,7 @@
             $qb->where("model",$filter["model"]);
         }
         if (isset($filter["modelid"]) && !empty(trim($filter["modelid"]))) {
-            $qb->where("modelid", $filter["modelid"]);
+            $qb->where("modelid", intval($filter["modelid"]));
         }
     }
 
@@ -104,7 +104,7 @@
 
     public static function SelectAllOfModel($model,$id) {
         $model=new Audit();
-        return $model->selectAll(null,null,array("model"=>$model,"modelid"=>$id),"C");
+        return $model->selectAll(null,null,array("model"=>$model,"modelid"=>intval($id)),"C");
     }
 
     private function getClassFromModel($model) {

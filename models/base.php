@@ -73,7 +73,7 @@
         else if($id <=0) {
             $id=-1;
         }
-        $this->{$this->pk} = $id;
+        $this->{$this->pk} = intval($id);
         $this->_state = $id <= 0 ? "new": "pending";
     }
 

@@ -67,7 +67,7 @@
 
     private function addFilter($qb, $filter,$special) {
         if(!empty(trim($filter))) {
-            $filter=str_replace("%","%%",$filter);
+            $filter=esc_sql(str_replace("%","%%",$filter));
             $qb->where("role_name","like","%$filter%");
         }
     }
@@ -89,7 +89,7 @@
     }
 
     public function findByUser($userid) {
-        $vals = $this->select('*')->where('user_id',$userid)->first();
+        $vals = $this->select('*')->where('user_id',intval($userid))->first();
         if(!empty($vals)) {
             return new Registrar($vals);
         }

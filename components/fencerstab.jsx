@@ -1,11 +1,6 @@
-import { fencers, fencer } from "./api.js";
+import { fencers, results } from "./api.js";
 import { DataTable } from 'primereact/components/datatable/DataTable';
 import { Column } from 'primereact/components/column/Column';
-import { Slider } from 'primereact/slider';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
-import { Paginator } from 'primereact/paginator';
-import { Toast } from 'primereact/toast';
 import FencerDialog from './dialogs/fencerdialog';
 import MergeFencers from "./dialogs/mergefencers.jsx";
 
@@ -49,6 +44,15 @@ export default class FencersTab extends PagedTab {
             return { severity: 'info', summary: 'Fencer Deleted', detail: 'Fencer ' + item.name + ' was succesfully removed from the database', life: 3000 };
         }
         return {"severity":"info","summary":"Unknown","detail":"","life":1};
+    }
+
+
+    onEdit = (event)=> {
+        results(0,10000,{id: event.data.id},"D",{"withevents":true})
+            .then((json) => {
+                this.setState({item: Object.assign({},event.data, {results: json.data.list}), displayDialog:true });
+            });
+        return false;
     }
 
     renderDialog() {

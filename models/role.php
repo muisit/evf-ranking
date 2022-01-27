@@ -92,7 +92,8 @@
     }
 
     public function delete($id=null) {
-        if($id === null) $id = $this->{$this->pk};
+        if($id === null) $id = $this->getKey();
+        $id=intval($id);
 
         // check that role is not used in 
         $nr1 = $this->numrows()->from("TD_Registration")->where("registration_role",$id)->count();

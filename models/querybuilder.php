@@ -309,7 +309,8 @@
             else {
                 $id=uniqid();            
                 $this->_where_values[$id]=$clause;
-                $this->_where_clauses[]=array($andor,$field.$comparison.'{'.$id.'}');
+                // make sure there are spaces between field, comparison ('like') and value
+                $this->_where_clauses[]=array($andor,$field.' '.$comparison.' {'.$id.'}');
             }
             // else clause is null does not make sense for any other comparison
         }

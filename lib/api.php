@@ -450,6 +450,7 @@ class API extends BaseLib {
                     $wid = intval(isset($modeldata['weapon_id']) ? $modeldata['weapon_id'] : "-1");
                     $fid = intval(isset($modeldata['id']) ? $modeldata['id'] : "-1");
                     if($cid > 0 && $wid > 0 && $fid>0) {
+                        error_log("listing detail for $fid");
                         $retval = $model->listDetail($wid,$cid,$fid);
                     }
                     else {

@@ -43,13 +43,18 @@
         global $wpdb;
 
         // category is factually not interesting
-        $results = $wpdb->get_results("select fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr, ".
-            " event_name, event_open, event_location, country_name, ".
-            " category_name, weapon_name, ".
-            " result_entry, result_place, result_points, result_de_points, result_podium_points, result_total_points, event_factor, result_in_ranking".
-            " from VW_Ranking where weapon_id='$wid' and fencer_id='$fid' ".
-            " order by result_total_points DESC, event_open DESC, event_name"
-        );
+        $sql = "select fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr, ".
+               " event_name, event_open, event_location, country_name, ".
+               " category_name, weapon_name, ".
+               " result_entry, result_place, result_points, result_de_points, result_podium_points, result_total_points, event_factor, result_in_ranking".
+               " from VW_Ranking where fencer_id='$fid' ";
+        if(intval($wid)>0) {
+            $sql.=" and weapon_id='$wid' ";
+        }
+        $sql.=" order by result_total_points DESC, event_open DESC, event_name";
+        error_log("sql is $sql");
+        $results=$wpdb->get_results($sql);
+
 
         $retval=array();
         foreach($results as $r) {
@@ -128,6 +133,7 @@
     }
 
     public function listResults($wid,$category) {
+        $wid=intval($wid);
         global $wpdb;
 
         // determine the minimal and maximal year-of-birth values for the indicated category

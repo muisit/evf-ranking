@@ -92,14 +92,14 @@
                     });
                 }
                 else {
-                    $qb->where("fencer_country", $filter["country"]);
+                    $qb->where("fencer_country", intval($filter["country"]));
                 }
             }
             if (isset($filter["sideevent"])) {
-                $qb->where("TD_Registration.event_id", $filter["sideevent"]);
+                $qb->where("TD_Registration.event_id", intval($filter["sideevent"]));
             }
             if (isset($filter["event"])) {
-                $qb->where("TD_Registration.registration_mainevent", $filter["event"]);
+                $qb->where("TD_Registration.registration_mainevent", intval($filter["event"]));
             }
         }
         if(!empty($special)) {
@@ -139,14 +139,14 @@
     public function filterData($data, $caps) {
         if ($caps == "cashier") {
             return array(
-                "id" => isset($data["id"]) ? $data["id"] : -1,
-                "paid" => isset($data["paid"]) ? $data["paid"] : 'N'
+                "id" => isset($data["id"]) ? intval($data["id"]) : -1,
+                "paid" => (isset($data["paid"]) && in_array($data['paid'],['N','Y'])) ? $data["paid"] : 'N'
             );
         } 
         else if ($caps == "accreditation") {
             return array(
-                "id" => isset($data["id"]) ? $data["id"] : -1,
-                "state" => isset($data["state"]) ? $data["state"] : 'R'
+                "id" => isset($data["id"]) ? intval($data["id"]) : -1,
+                "state" => (isset($data["state"]) && in_array($data['state'],['R','P','C'])) ? $data["state"] : 'R'
             );
         } 
         else if ($caps == "registrar" || $caps == "hod") {
@@ -229,7 +229,7 @@
     }
 
     public function overview($eid) {
-        $event=new Event($eid,true);
+        $event=new Event(intval($eid),true);
         $retval=array();
         if($event->exists()) {
             $sides = $event->sides(null,true);

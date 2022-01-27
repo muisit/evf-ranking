@@ -56,6 +56,7 @@ export function ParticipantList(props) {
                 // this is a fencer participating in a specific event (competition or other side-event)
                 fencer.sideevent = reg;
                 fencer.is_registered = true;
+                console.log("setting competition to ",props.event.competition_id);
                 comp = cmpById["c" + props.event.competition_id];
 
                 // determine the roleof the fencer for this specific event.
@@ -81,6 +82,7 @@ export function ParticipantList(props) {
                         rname += " (" + regFor.title + ")";
                         fencer.has_role.push(rname);
                     }
+                    console.log("setting competition to ",regFor.competition_id);
                     comp = cmpById["c" + regFor.competition_id];
                 }
                 else {
@@ -108,14 +110,18 @@ export function ParticipantList(props) {
             };
 
             // Requirement 1.1.6: events with a mismatch in category are marked
+            console.log("testing rules using ",ruleobject);
             if(wrong_category(ruleobject)) {
                 fencer.incorrect_cat=true;
+                fencer.error="(C)";
             }
             if(team_rule_veterans(ruleobject)) {
                 fencer.incorrect_cat=true;
+                fencer.error="(T)";
             }
             if(team_rule_grandveterans(ruleobject)) {
                 fencer.incorrect_cat=true;
+                fencer.error="(G)";
             }
 
             // Requirement 1.4.1: sort by team name
@@ -178,7 +184,7 @@ export function ParticipantList(props) {
             <tbody>
                 {fencers.map((fencer,idx) => (
                         <tr key={idx} className={fencer.incorrect_cat ? "incorrect-cat": ""}>
-                            <td>{fencer.name}</td>
+                            <td>{fencer.name}{fencer.error}</td>
                             <td>{fencer.firstname}</td>
                             {props.showCountry && (
                                 <td>{fencer.country_name}</td>

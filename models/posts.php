@@ -59,7 +59,7 @@
     private function addFilter($qb, $filter, $special) {
         if (!empty(trim($filter))) {
             global $wpdb;
-            $filter = $wpdb->esc_like($filter);
+            $filter = esc_sql($wpdb->esc_like($filter));
             $qb->where("post_title like '%$filter%'");
         }
 

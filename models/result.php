@@ -50,7 +50,13 @@
         "fencer_firstname" => "fencer_firstname",
         "fencer_surname" => "fencer_surname",
         "country_abbr" => "country",
-        "country_id" => "country_id"
+        "country_id" => "country_id",
+        "event_name" => "event_name",
+        "event_country_name" => "event_country",
+        "event_open" => "event_date",
+        "category_name" => "category_name",
+        "category_value"=>"category_value",
+        "weapon_abbr" => "weapon_abbr"
     );
     public $rules=array(
         "result_id" => "skip",
@@ -83,47 +89,60 @@
             case 'S': $orderBy[]="result_points desc"; break;
             case 'i': $orderBy[]="result_id asc"; break;
             case 'I': $orderBy[]="result_id desc"; break;
-            case 'n': $orderBy[]="fencer_surname asc"; break;
-            case 'N': $orderBy[]="fencer_surname desc"; break;
-            case 'f': $orderBy[]="fencer_firstname asc"; break;
-            case 'F': $orderBy[]="fencer_firstname desc"; break;
-            case 'c': $orderBy[]="country_name asc"; break;
-            case 'C': $orderBy[]="country_name desc"; break;
+            case 'n': $orderBy[]="f.fencer_surname asc"; break;
+            case 'N': $orderBy[]="f.fencer_surname desc"; break;
+            case 'f': $orderBy[]="f.fencer_firstname asc"; break;
+            case 'F': $orderBy[]="f.fencer_firstname desc"; break;
+            case 'c': $orderBy[]="c.country_name asc"; break;
+            case 'C': $orderBy[]="c.country_name desc"; break;
+            case 'd': $orderBy[]="cm.competition_opens asc"; break;
+            case 'D': $orderBy[]="cm.competition_opens desc"; break;
             }
         }
         return $orderBy;
     }
 
     private function addFilter($qb, $filter,$special) {
-        if(!empty(trim($filter))) {
-            global $wpdb;
-            $filter=$wpdb->esc_like($filter);
-            //$filter=str_replace("%","%%",$filter);
-            $qb->where( function($qb2) use ($filter) {
-                $qb2->where("fencer_surname like '%$filter%' or fencer_firstname like '%$filter%' or country_name like '%$filter%'");
-            });
+        if(is_string($filter)) $filter=json_decode($filter,true);
+        if(!empty($filter)) {
+            if(isset($filter["id"])) {
+                $fid=intval($filter["id"]);
+                $qb->where( function($qb2) use ($fid) {
+                    $qb2->where("f.fencer_id",$fid);
+                });
+            }
         }
         if($special) {
-            $doc = json_decode($special);
-            if(is_object($doc)) {
-                if(isset($doc->event_id)) {
-                    $qb->where("cm.competition_event",$doc->event_id);
+            if(is_string($special)) $special = json_decode($special,true);
+            if(is_object($special)) $special=(array)$special;
+            error_log("special is ".json_encode($special));
+            if(is_array($special)) {
+                if(isset($special["event_id"])) {
+                    $qb->where("cm.competition_event",intval($special["event_id"]));
                 }
-                if (isset($doc->category_id)) {
-                    $qb->where("cm.competition_category", $doc->category_id);
+                if (isset($special["category_id"])) {
+                    $qb->where("cm.competition_category", intval($special["category_id"]));
                 }
-                if (isset($doc->weapon_id)) {
-                    $qb->where("cm.competition_weapon", $doc->weapon_id);
+                if (isset($special["weapon_id"])) {
+                    $qb->where("cm.competition_weapon", intval($special["weapon_id"]));
                 }
-                if (isset($doc->competition_id)) {
-                    $qb->where("cm.competition_id", $doc->competition_id);
+                if (isset($special["competition_id"])) {
+                    $qb->where("cm.competition_id", intval($special["competition_id"]));
+                }
+                if(isset($special["withevents"])) {
+                    error_log("adding events");
+                    $qb->join("TD_Event", "e", "cm.competition_event=e.event_id");
+                    $qb->join("TD_Category", "ct", "cm.competition_category=ct.category_id");
+                    $qb->join("TD_Weapon", "w", "cm.competition_weapon=w.weapon_id");
+                    $qb->join("TD_Country", "c2", "e.event_country=c2.country_id");
+                    $qb->select("e.event_name,c2.country_name as event_country_name, e.event_open, ct.category_name, ct.category_value, w.weapon_abbr");
                 }
             }
         }
     }
 
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
-        $qb = $this->select('TD_Result.*, f.fencer_surname, f.fencer_firstname, c.country_abbr, c.country_id')
+        $qb = $this->select('TD_Result.*, f.fencer_id, f.fencer_surname, f.fencer_firstname, c.country_abbr, c.country_id')
             ->join("TD_Fencer","f","TD_Result.result_fencer=f.fencer_id")
             ->join("TD_Country","c","f.fencer_country=c.country_id")
             ->join("TD_Competition", "cm", "TD_Result.result_competition=cm.competition_id")
@@ -135,7 +154,8 @@
 
     public function count($filter,$special=null) {
         $qb = $this->numrows()
-            ->join("TD_Competition", "cm", "TD_Result.result_competition=cm.competition_id");
+        ->join("TD_Fencer","f","TD_Result.result_fencer=f.fencer_id")
+        ->join("TD_Competition", "cm", "TD_Result.result_competition=cm.competition_id");
         $this->addFilter($qb,$filter,$special);
         return $qb->count();
     }
@@ -174,7 +194,7 @@
 
         $obj=(array)$obj;
         if(isset($obj["competition_id"])) {
-            $competition = $competition->get($obj["competition_id"]);
+            $competition = $competition->get(intval($obj["competition_id"]));
         }
 
         $errors=array();
@@ -289,9 +309,9 @@
         $retval=array("ranking"=>array());
         foreach($ranking as $entry) {
             // we leave 'position' as it is: an integer front-end check can be done there without problem
-            $lastname = $entry["lastname"];
-            $firstname = $entry["firstname"];
-            $country = $entry["country"];
+            $lastname = Fencer::Sanitize($entry["lastname"]);
+            $firstname = Fencer::Sanitize($entry["firstname"]);
+            $country = Fencer::Sanitize($entry["country"]);
 
             $fencerid=-1;
             $suggestions=null;

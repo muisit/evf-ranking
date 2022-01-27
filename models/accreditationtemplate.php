@@ -105,7 +105,7 @@
         if($id === null) $id = $this->getKey();
 
         // remove all accreditations for this template
-        $accrs = $this->select('*')->from("TD_Accreditation")->where("template_id",$id)->get();
+        $accrs = $this->select('*')->from("TD_Accreditation")->where("template_id",intval($id))->get();
         if(!empty($accrs) && sizeof($accrs) > 0) {
             foreach($accrs as $a) {
                 $accreditation = new Accreditation($a);
@@ -314,8 +314,8 @@
 
         // import a few variables from the data
         $template = new \EVFRanking\Models\AccreditationTemplate();
-        $template->setKey($modeldata['id']);
-        $template->event_id=$modeldata["event"];
+        $template->setKey(intval($modeldata['id']));
+        $template->event_id=intval($modeldata["event"]);
 
         if(isset($modeldata["content"])) {
             $content=$modeldata["content"];

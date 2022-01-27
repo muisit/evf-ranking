@@ -87,13 +87,14 @@
         if(!empty($filter)) {
             if(isset($filter["name"])) {
                 global $wpdb;
-                $name=$wpdb->esc_like($filter["name"]);
+                $name = Fencer::Sanitize($filter["name"]);
+                $name=esc_sql($wpdb->esc_like($name));
                 //$filter=str_replace("%","%%",$filter);
                 //$qb->where("(fencer_surname like '$name%' or fencer_firstname like '$name%')");
                 $qb->where("(fencer_surname like '$name%')");
             }
             if(isset($filter["country"])) {
-                $qb->where("fencer_country",$filter["country"]);
+                $qb->where("fencer_country",intval($filter["country"]));
             }
         }
     }
@@ -112,16 +113,20 @@
     }
 
     public function allByName($lastname,$firstname) {
+        $lastname=Fencer::Sanitize($lastname);
+        $firstname=Fencer::Sanitize($firstname);
         return $this->select('TD_Fencer.*, c.country_abbr')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
             ->where("fencer_surname",$lastname)->where("fencer_firstname",$firstname)->get();
     }
 
     public function allByLastName($lastname) {
+        $lastname=Fencer::Sanitize($lastname);
         return $this->select('TD_Fencer.*, c.country_abbr')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
             ->where("fencer_surname",$lastname)->get();
     }
 
     public function allByFirstName($name) {
+        $name=Fencer::Sanitize($name);
         return $this->select('TD_Fencer.*, c.country_abbr')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
             ->where("fencer_firstname",$name)->get();
     }
@@ -138,6 +143,8 @@
     }
 
     public function save() {
+        $this->fencer_name = Fencer::Sanitize($this->fencer_surname);
+        $this->fencer_firstname = Fencer::Sanitize($this->fencer_firstname);
         if(parent::save()) {
             $accr=new Accreditation();
             $accr->makeDirty($this->getKey());
@@ -153,7 +160,7 @@
         $retval=array();
         if(in_array($caps, array("accreditation"))) {
             $retval=array(
-                "id" => isset($data["id"]) ? $data["id"] :-1,
+                "id" => isset($data["id"]) ? intval($data["id"]) :-1,
                 "picture" => isset($data["picture"]) ? $data["picture"] : 'N'
             );
         }
@@ -170,10 +177,12 @@
         // may need to request a change-of-country
         // We only do this for new entries, not for existing ones.
         if(intval($modeldata['id']) <= 0) {
+            $name=Fencer::Sanitize($modeldata['name']);
+            $firstname=Fencer::Sanitize($modeldata['firstname']);
             $results = $this->select('TD_Fencer.*, c.country_name')
                 ->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
-                ->where('SOUNDEX(\''.addslashes($modeldata['firstname']).'\')=SOUNDEX(fencer_firstname)')
-                ->where('SOUNDEX(\''.addslashes($modeldata['name']).'\')=SOUNDEX(fencer_surname)')
+                ->where('SOUNDEX(\''.addslashes($firstname).'\')=SOUNDEX(fencer_firstname)')
+                ->where('SOUNDEX(\''.addslashes($name).'\')=SOUNDEX(fencer_surname)')
                 ->where("fencer_dob",strftime("%F",strtotime($modeldata['birthday'])))
                 ->get();
             $retval=array();
@@ -192,8 +201,8 @@
         if(!isset($modeldata['id1']) || !isset($modeldata['id2'])) {
             return array("error"=> true, "messages"=>array("Invalid call, missing parameters"));
         }
-        $model1=new Fencer($modeldata['id1'],true);
-        $model2=new Fencer($modeldata['id2'],true);
+        $model1=new Fencer(intval($modeldata['id1']),true);
+        $model2=new Fencer(intval($modeldata['id2']),true);
 
         if(!$model1->exists() || !$model2->exists()) {
             return array("error"=> true, "messages"=>array("Fencer does not exist"));
@@ -207,6 +216,16 @@
         $this->query()->from("TD_Result")->set("result_fencer",$model1->getKey())->where("result_fencer",$model2->getKey())->update();
         $this->query()->from("TD_Fencer")->where("fencer_id",$model2->getKey())->delete();
         return array("messages"=>array("Fencers merged successfully"));
+    }
+
+    public static function Sanitize($value) {
+        error_log("sanitizing ".json_encode($value));
+        // trim whitespace in front and after
+        $value = preg_replace("/(^\s+)|(\s+$)/u", "", $value);
+        // replace any non-numeric, non-lexical, non-space characters
+        $value = preg_replace("/[^- '\p{L}\p{N}]/u", " ", $value);
+        error_log("returning ".json_encode($value));
+        return $value;
     }
 
 }

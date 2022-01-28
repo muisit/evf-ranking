@@ -333,7 +333,7 @@ class API extends BaseLib {
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "importcheck") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $model->doImportCheck($modeldata['ranking']));
+                    $retval=array_merge($retval, $model->doImportCheck($modeldata['ranking'], $modeldata["competition"]));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "import") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));

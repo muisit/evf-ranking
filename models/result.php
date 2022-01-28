@@ -300,13 +300,19 @@
         $res->save();
     }
 
-    public function doImportCheck($ranking) {
+    public function doImportCheck($ranking, $cid) {
         // ranking consists of a list of pos,lastname,firstname,country values
         // Check for each entry that the combination of lastname, firstname, country exists
         //
         $model = new Fencer();
+        $competition = new Competition(intval($cid));
                 
         $retval=array("ranking"=>array());
+        if(!$competition->exists()) return $retval;
+
+        $weapon = new Weapon($competition->competition_weapon);
+        $gender=$weapon->weapon_gender;
+
         foreach($ranking as $entry) {
             // we leave 'position' as it is: an integer front-end check can be done there without problem
             $lastname = Fencer::Sanitize($entry["lastname"]);
@@ -324,10 +330,12 @@
             $atext='';
             $acheck='und';
 
-            $allbyname = $model->allByName($lastname,$firstname);
+            $allbyname = $model->allByName($lastname,$firstname,$gender);
+            //error_log("allbyname says ".json_encode($allbyname));
             // see if anyone of these results matches the country abbreviation
             foreach($allbyname as $fencer) {
                 $values = (array)$fencer;
+                error_log("checking country abbr $country vs ".$values["country_abbr"]);
                 if($values["country_abbr"] === $country) {
                     $fencerid = $values["fencer_id"];
                     $lcheck='ok';
@@ -338,7 +346,10 @@
                     break;
                 }
             }
+            
+            // no match, but if we found exactly one fencer, it is only a country change
             if(sizeof($allbyname) == 1 && $fencerid < 0) {
+                //error_log("no match on country, but only one match in total");
                 $values=(array)$allbyname[0];
                 $fencerid = $values["fencer_id"];
                 $lcheck='ok';
@@ -350,40 +361,12 @@
             }
 
             if($fencerid<0) {
-                $suggestions=array();
-                $allbylastname = $model->allByLastName($lastname);
-                $allbyfirstname = $model->allByFirstName($firstname);
-                $allbycountry = $model->allByCountry($country);
-
-                $ln=array();
-                foreach($allbylastname as $f) {
-                    $v = (array)$f;
-                    $ln["f_".$v["fencer_id"]] = $v;
-                }
-                $fn=array();
-                foreach($allbyfirstname as $f) {
-                    $v = (array)$f;
-                    $fn["f_".$v["fencer_id"]] = $v;
-                }
-                $cn=array();
-                foreach($allbycountry as $f) {
-                    $v = (array)$f;
-                    $cn["f_".$v["fencer_id"]] = $v;
-                }
-
-                $m1 = array_intersect(array_keys($ln),array_keys($fn));
-                $m2 = array_intersect(array_keys($ln),array_keys($cn));
-                $m3 = array_intersect(array_keys($fn),array_keys($cn));
-                $keys = array_unique(array_merge($m1,$m2,$m3));
-                $values = array_merge($ln,$fn,$cn);
-                foreach($keys as $k) {
-                    if(isset($values[$k])) {
-                        $vs = $model->export($values[$k]);
-                        $suggestions[]=$vs;
-                    }
-                }
+                //error_log("fencer id not set, finding suggestions");
+                $suggestions=$this->findSuggestions($model,$firstname, $lastname, $country, $gender);
 
                 if(sizeof($suggestions) == 1) {
+                    // only 1 suggestion means we are more or less sure this 'is the one'
+                    // but indicate the failing fields to be sure
                     $key = $keys[0];
                     $fencer = $values[$key];
                     $fencerid=$fencer["fencer_id"];
@@ -403,6 +386,7 @@
                     $atext='at least one field did not match properly';
                 }
                 else {
+                    // more than 1 suggestion means the user needs to pick
                     $lcheck='nok';
                     $ltext=sizeof($suggestions)>0 ? 'Please pick a suggestion' : 'not found';
                     $fcheck='nok';
@@ -411,19 +395,6 @@
                     $ctext=sizeof($suggestions)>0 ? 'Please pick a suggestion' : 'not found';
                     $acheck='nok';
                     $atext=sizeof($suggestions)>0 ? 'Please pick a suggestion' : 'not found';
-                }
-
-                if(sizeof($cn) == 0) {
-                    $ccheck='nok';
-                    $ctext='No such country';
-                }
-                if(sizeof($fn) == 0) {
-                    $fcheck='nok';
-                    $ftext='No such first name found';
-                }
-                if(sizeof($ln) == 0) {
-                    $lcheck='nok';
-                    $ltext='No such last name found';
                 }
             }
             
@@ -441,6 +412,52 @@
                 "all_check" => $acheck
             );
             $retval["ranking"][]=$values;
+        }
+        return $retval;
+    }
+
+    private function findSuggestions($model, $firstname, $lastname, $country, $gender) {
+        $retval = array();
+        $allbylastname = $model->allByLastNameSound($lastname,$gender);
+        $allbyfirstname = $model->allByFirstNameSound($firstname,$gender);
+        $allbycountry = $model->allByCountry($country,$gender);
+
+        $ln=array();
+        foreach($allbylastname as $f) {
+            $v = (array)$f;
+            $ln["f_".$v["fencer_id"]] = $v;
+        }
+        $fn=array();
+        foreach($allbyfirstname as $f) {
+            $v = (array)$f;
+            $fn["f_".$v["fencer_id"]] = $v;
+        }
+        $cn=array();
+        foreach($allbycountry as $f) {
+            $v = (array)$f;
+            $cn["f_".$v["fencer_id"]] = $v;
+        }
+
+        // find out the records that match 2 out of 3 fields
+        $m1 = array_intersect(array_keys($ln),array_keys($fn));
+        $m2 = array_intersect(array_keys($ln),array_keys($cn));
+        $m3 = array_intersect(array_keys($fn),array_keys($cn));
+        $keys = array_unique(array_merge($m1,$m2,$m3));
+
+        // if any list is very small and we have less than 10 values, add that list
+        // first add all matching lastnames (which are relatively country-specific)
+        if(sizeof($keys)<10 && sizeof($ln) < 10) $keys = array_unique(array_merge($keys,array_keys($ln)));
+        // then add all matching firstnames (which are more international)
+        if(sizeof($keys)<10 && sizeof($fn) < 10) $keys = array_unique(array_merge($keys,array_keys($fn)));
+        // then add all fencers from the same country
+        if(sizeof($keys)<10 && sizeof($cn) < 10) $keys = array_unique(array_merge($keys,array_keys($cn)));
+
+        $values = array_merge($ln,$fn,$cn);
+        foreach($keys as $k) {
+            if(isset($values[$k])) {
+                $vs = $model->export($values[$k]);
+                $retval[]=$vs;
+            }
         }
         return $retval;
     }

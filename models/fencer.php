@@ -112,27 +112,30 @@
         return $qb->count();
     }
 
-    public function allByName($lastname,$firstname) {
+    public function allByName($lastname,$firstname,$gender) {
         $lastname=Fencer::Sanitize($lastname);
         $firstname=Fencer::Sanitize($firstname);
         return $this->select('TD_Fencer.*, c.country_abbr')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
-            ->where("fencer_surname",$lastname)->where("fencer_firstname",$firstname)->get();
+            ->where("fencer_surname",$lastname)
+            ->where("fencer_firstname",$firstname)
+            ->where("fencer_gender",$gender)
+            ->get();
     }
 
-    public function allByLastName($lastname) {
+    public function allByLastNameSound($lastname,$gender) {
         $lastname=Fencer::Sanitize($lastname);
         return $this->select('TD_Fencer.*, c.country_abbr')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
-            ->where("fencer_surname",$lastname)->get();
+            ->where("SOUNDEX(fencer_surname)=SOUNDEX('".esc_sql($lastname)."')")->where("fencer_gender",$gender)->get();
     }
 
-    public function allByFirstName($name) {
+    public function allByFirstNameSound($name,$gender) {
         $name=Fencer::Sanitize($name);
         return $this->select('TD_Fencer.*, c.country_abbr')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
-            ->where("fencer_firstname",$name)->get();
+            ->where("SOUNDEX(fencer_firstname)=SOUNDEX('".esc_sql($name)."')")->where("fencer_gender",$gender)->get();
     }
-    public function allByCountry($name) {
+    public function allByCountry($name,$gender) {
         return $this->select('TD_Fencer.*, c.country_abbr')->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
-            ->where("c.country_abbr",$name)->get();
+            ->where("c.country_abbr",$name)->where("fencer_gender",$gender)->get();
     }
 
     public function getPath() {
@@ -219,12 +222,12 @@
     }
 
     public static function Sanitize($value) {
-        error_log("sanitizing ".json_encode($value));
+        //error_log("sanitizing ".json_encode($value));
         // trim whitespace in front and after
         $value = preg_replace("/(^\s+)|(\s+$)/u", "", $value);
         // replace any non-numeric, non-lexical, non-space characters
         $value = preg_replace("/[^- '\p{L}\p{N}]/u", " ", $value);
-        error_log("returning ".json_encode($value));
+        //error_log("returning ".json_encode($value));
         return $value;
     }
 

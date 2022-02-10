@@ -37,7 +37,6 @@ export default class RegistrarDialog extends React.Component {
                 this.save(this.props.value);
             })
             .catch((err) => {
-                console.log("caught error ",err);
                 if(err.response.data.messages && err.response.data.messages.length) {
                     var txt="";
                     for(var i=0;i<err.response.data.messages.length;i++) {
@@ -57,9 +56,10 @@ export default class RegistrarDialog extends React.Component {
 
     onChangeEl = (event) => {
         var item=this.props.value;
+        var value=event.target.value;
         switch(event.target.name) {
-        case 'country':
-        case 'user': item[event.target.name] = event.target.value; break;
+        case 'country': if(value == -1) value=null;
+        case 'user': item[event.target.name] = value; break;
         }
         if (this.props.onChange) this.props.onChange(item);
     }
@@ -101,12 +101,16 @@ export default class RegistrarDialog extends React.Component {
 </div>);
         }
 
+        // we mess around with null and -1, because we cannot set null as drop-down value
+        // but we cannot pass -1 to the back-end, because no-such-country
         var nullvalue = { 
-            id:null,
+            id:-1,
             name: 'General Administration'
         };
         var countries = this.props.countries.slice();
-        countries.splice(0,0,nullvalue);
+        countries.unshift(nullvalue);
+        var cntvalue=this.props.value.country;
+        if(cntvalue==null) cntvalue=-1;
 
         return (<Dialog header="Edit Registrar" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
       <div>
@@ -118,7 +122,7 @@ export default class RegistrarDialog extends React.Component {
       <div>
         <label>Country</label>
         <div className='input'>
-            <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country} options={countries} onChange={this.onChangeEl} />
+            <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={cntvalue} options={countries} onChange={this.onChangeEl} />
         </div>
       </div>
 </Dialog>

@@ -63,14 +63,16 @@ table.compact { width: auto; }
 
 /* generic input width, old-style */
 .p-dialog-content { position: relative; }
-.p-dialog-content label { display: block; width: 8vw; height: 3.5rem; line-height: 2.5rem; font-weight: 700; float: left; clear: both;}
+.p-dialog-content label { display: block; width: 10vw; height: 2.5rem; line-height: 2.5rem; font-weight: 700; float: left; clear: both;}
+.p-dialog-content label.wide { width: 38vw; }
 .p-dialog-content label.header { width: 100%; }
-.p-dialog-content label.checkbox { float: none; clear: none; width: auto; display: inline-flex; padding-left: 10px; padding-top: 9px;}
-.p-dialog-content div div.input { width: 38vw; float: left; display: flex;align-items: center; }
+.p-dialog-content label.checkbox { float: none; clear: none; width: auto; display: inline-flex; padding-left: 10px; }
+.p-dialog-content div div.input { width: 38vw; float: left; display: flex;align-items: center; flex-wrap: wrap; }
 .p-dialog-content div div.input .p-inputtext { width: 35vw; }
 .p-dialog-content div div.input .p-dropdown { width: 35vw; }
 .p-dialog-content div div.input .p-checkbox { vertical-align: middle; }
 .p-dialog-content div div.input .inputint input { width: 5vw; }
+.p-dialog-content div div.input .config { width: 100%; }
 
 /* specific settings for fencer-dialog */
 .fencer-dialog .p-dialog-content div div .p-inputgroup .p-inputtext { width: 8vw; }
@@ -269,3 +271,22 @@ table tr.notcounting { background-color: #ff9999; color: #003366; }
 .filter-event .p-checkbox { vertical-align: middle; }
 .filter-title { background-color: #eee; }
 .filter-header { background-color: #eee; padding: 5px;}
+
+/* Loading overlay */
+.overlay-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.overlay-panel .progress-panel {
+    align-self: center;
+    width: 50vw;
+    height: 8rem;
+    padding: 3rem;
+    background-color: white;
+}
+
+.overlay-panel .progress-panel .p-progressbar { height: 2rem;}
+.overlay-panel .progress-panel .p-progressbar-label { line-height: 2rem; }

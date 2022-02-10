@@ -126,10 +126,11 @@
     public function export($result=null) {
         if(empty($result)) {
             $result=$this;
+            $this->load();
         }
         $result = (array) $result;
         $retval=array();
-        $this->load();
+        error_log("exporting ".json_encode($result));
         foreach($this->fieldToExport as $fld=>$exp) {
             if(isset($result[$fld])) {
                 $retval[$exp] = $result[$fld];

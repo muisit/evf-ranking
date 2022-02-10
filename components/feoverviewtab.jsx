@@ -19,8 +19,10 @@ export default class FEOverviewTab extends FEBase {
     }
 
     getSummary = () => {
+        this.onload("registrations","Loading registrations",this.props.item.id);
         registration("overview", { event: this.props.item.id, filter: { event: this.props.item.id, country: this.state.country }})
             .then((json) => {
+                this.unload("registrations",this.props.item.id);
                 this.setState({ summary: json.data });
             })
             .catch((err) => parse_net_error(err));

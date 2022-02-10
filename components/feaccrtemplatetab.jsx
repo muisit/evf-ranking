@@ -62,7 +62,7 @@ export default class FEAccrTemplateTab extends React.Component  {
                 break;
             case 'open':
                 if(!dt) {
-                    dt= {id:-1,name:'New Template', event: this.props.item.id};
+                    dt= {id:-1,name:'New Template', event: this.props.item.id, content: {}};
                 }
 
                 this.setState({displayDialog: true, template: dt});

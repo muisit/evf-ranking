@@ -136,7 +136,6 @@ export default class FencerAccreditationDialog extends React.Component {
     render() {
         if(!this.props.value) return (null);
         if (!is_sysop() && !is_organiser() && !is_accreditor()) {
-            console.log("wrong rights");
             return (null);
         }
 

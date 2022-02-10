@@ -231,9 +231,13 @@ export default class FencerSelectDialog extends React.Component {
             registration('delete', { id: reg.id, fencer: this.props.value.id })
                 .then((json) => {
                     this.loading(false);                    
+                    reg.id=-1;  // avoid reusing the now removed id
                     this.changePendingSituation(reg,"deleted");
                     var self = this;
-                    setTimeout(() => { self.removeRegistration(reg); },1000);
+                    setTimeout(() => { 
+                        // keep the network interaction icons for a second
+                        self.removeRegistration(reg); 
+                    },1000);
             })
             .catch((err) => {
                 this.changePendingSituation(reg,"error2");
@@ -342,6 +346,7 @@ export default class FencerSelectDialog extends React.Component {
             else selectThisOne = (value != "0"); 
             // selecting a role selects the event as well
             // so we fall through
+            // (note that selecting a specific event role is currently not supported anymore)
         case 'role':
             if(name == "role") {
                 // note: this is dead code, as we no longer select roles
@@ -366,8 +371,12 @@ export default class FencerSelectDialog extends React.Component {
                 if(name == "role") {
                     selectedItem.role = value;
                 }
-                if(name == "teamselect") {
-                    selectedItem.team = value;
+                else {
+                    // check that value is a string
+                    //console.log("setting team value to ",event.value);
+                    if(typeof(event.value) == "string") {
+                        selectedItem.team = event.value; // only valid for teams
+                    }
                 }
                 selectedItem.pending = "save";                
                 this.saveRegistration(selectedItem); // send to backend
@@ -513,24 +522,28 @@ export default class FencerSelectDialog extends React.Component {
 
         // create a list of valid team names based on all available teams
         // This list is specific for each competition sideevent of category team
+        var cfg = this.props.event.config;
+        var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
         var validteams={};
-        this.props.events.map((ev) => {
-            if(ev.category && ev.category.type == 'T') {
-                var key = "k" + ev.id;
-                var validoptions=[{value:"0", text:'No'}];
-                var highestnum=0;
-                if(this.props.teams && this.props.teams[key] && Object.keys(this.props.teams[key]).length > 0) {
-                    Object.keys(this.props.teams[key]).map((teamkey) => {
-                        validoptions.push({value: teamkey, text: teamkey});
-                        highestnum = parse_team_for_number(teamkey);
-                    });
+        if(allow_more_teams) {
+            this.props.events.map((ev) => {
+                if(ev.category && ev.category.type == 'T') {
+                    var key = "k" + ev.id;
+                    var validoptions=[{value:"0", text:'No'}];
+                    var highestnum=0;
+                    if(this.props.teams && this.props.teams[key] && this.props.teams[key].length > 0) {
+                        this.props.teams[key].map((teamkey) => {
+                            validoptions.push({value: teamkey, text: teamkey});
+                            highestnum = parse_team_for_number(teamkey);
+                        });
+                    }                    
+                    highestnum+=1;
+                    var leadname=ev.category.name;
+                    validoptions.push({value: leadname + " " + highestnum, text: 'New team'});
+                    validteams[key]=validoptions;
                 }
-                highestnum+=1;
-                var leadname=ev.category.name;
-                validoptions.push({value: leadname + " " + highestnum, text: 'New team'});
-                validteams[key]=validoptions;
-            }
-        });
+            });
+        }
 
         return (<Dialog baseZIndex={100000} header="Register Fencer" position="center" visible={this.props.display} className="fencer-select-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
     <h5>{ this.props.value.name }, {this.props.value.firstname }</h5>
@@ -538,7 +551,7 @@ export default class FencerSelectDialog extends React.Component {
         Year of birth: { this.props.value.birthyear } Gender: {this.props.value.gender == 'M' ? 'M': 'W'} Category: {mycatname}
     </h5>)}
     {payments}
-    {this.renderEvents(selectedevents, validteams)}
+    {this.renderEvents(selectedevents, validteams, allow_more_teams)}
     {this.renderRoles(overallroles, roles, roleById, allRolesById)}
     {this.renderAccreditation()}
     {this.renderPicture()}
@@ -599,7 +612,7 @@ export default class FencerSelectDialog extends React.Component {
         );
     }
 
-    renderEvents (selectedevents, validteams) {
+    renderEvents (selectedevents, validteams, allow_more_teams) {
         // these network states should still consider the event as selected
         var goodstates=["save","saved","error2",""];
 
@@ -615,7 +628,7 @@ export default class FencerSelectDialog extends React.Component {
         });
 
         return (<div className='clearfix'>
-        <label>Events</label>
+        <label className='wide'>Competitions and Side Events</label>
         <div className='input'>
             <table className='fencer-select-events'>
             {events.map((ev,idx) => {
@@ -638,6 +651,7 @@ export default class FencerSelectDialog extends React.Component {
                 var is_success = selected_event && (selected_event.pending == "saved" || selected_event.pending == "deleted");
                 var is_saving = selected_event && (selected_event.pending == "save" || selected_event.pending == "delete");
 
+                //console.log("allowing more teams ",allow_more_teams);
                 return (
                 <tbody key={idx}>
                 <tr>
@@ -649,8 +663,9 @@ export default class FencerSelectDialog extends React.Component {
                         {ev.category && ev.category.name}
                     </td>
                     <td>
-                        {!ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered}/>)}
-                        {ev.is_team_event && (<Dropdown name={"teamselect-" + ev.id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
+                        {!ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>)}
+                        {allow_more_teams && ev.is_team_event && (<Dropdown name={"teamselect-" + ev.id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
+                        {!allow_more_teams && ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={(e)=> this.onChangeEl({target:e.target, checked: e.checked, value: ev.category.name})} checked={is_registered}  disabled={is_saving}/>)}
                     </td>
                     <td className="state-icons">
                         {is_error && (

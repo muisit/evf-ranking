@@ -159,6 +159,7 @@
     }
 
     public function save() {
+        error_log("saving registration");
         $wasnew=false;
         if($this->isNew()) {
             $this->registration_date = strftime('%Y-%m-%d');
@@ -195,21 +196,27 @@
 
             return true;
         }
+        error_log("parent save failed");
         return false;
     }
 
     public function delete($id=null) {
+        error_log("deleting registration");
         $model=$this;
         if($id!==null) {
             $model = $this->get($id);
         }
         if(empty($model)) {
+            error_log("deleting non-existing registration");
             // deleting a non-existing registration always succeeds
             return true;
         }
         
         $event = new Event($model->registration_mainevent);
-        if (!$event->exists()) return false;
+        if (!$event->exists()) {
+            error_log("deleting for non-existing event");
+            return false;
+        }
 
         $caps = $event->eventCaps();
 
@@ -225,6 +232,7 @@
                 return true;
             }
         }
+        error_log("caps $caps not correct");
         return false;
     }
 

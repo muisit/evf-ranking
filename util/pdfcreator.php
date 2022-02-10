@@ -815,18 +815,25 @@ class PDFCreator {
         $fname= tempnam(null,"phid");
         $evflogger->log("output file is $fname");
         if(file_exists($fname)) {
-            $fsize=18;
-            $rotation=0;
             $evflogger->log("allocating colour");
             $text_color = imagecolorallocate($img, 196,196,196);
             $ffile=__DIR__."/arial.ttf";
             $evflogger->log("writing text ".$this->event->event_name);
-            $box = imagettfbbox($fsize,$rotation,$ffile, $this->event->event_name);
-            $evflogger->log("box is ".json_encode($box));
-            $maxx=max(array($box[0], $box[2], $box[4], $box[6]));
-            $minx = min( array($box[0], $box[2], $box[4], $box[6]) ); 
-            $maxy=max( array($box[1], $box[3], $box[5], $box[7]) ); 
-            $miny=min( array($box[1], $box[3], $box[5], $box[7]) ); 
+            $fsize = 19; // we start with a font size decrement
+            $rotation = 0;
+            $wdiff=$w+1;
+            $hdiff=$h+1;
+            while($wdiff > $w || $hdiff > $h) {
+                $fsize-=1;
+                $box = imagettfbbox($fsize,$rotation,$ffile, $this->event->event_name);            
+                $evflogger->log("box is ".json_encode($box));
+                $maxx=max(array($box[0], $box[2], $box[4], $box[6]));
+                $minx = min( array($box[0], $box[2], $box[4], $box[6]) ); 
+                $maxy=max( array($box[1], $box[3], $box[5], $box[7]) ); 
+                $miny=min( array($box[1], $box[3], $box[5], $box[7]) ); 
+                $wdiff = $maxx - $minx;
+                $hdiff = $maxy - $miny;
+            }
             $x = ($w - ($maxx - $minx))/2.0;
             $y = $h - ($maxy - $miny)-2;
             $evflogger->log("position is $x,$y");
@@ -834,7 +841,19 @@ class PDFCreator {
             $evflogger->log("storing image");
             imagejpeg($img, $fname, 90);
             imagedestroy($img);
-            return $fname;
+
+            // determine an output name, which needs to end with the JPG extension to
+            // allow the putImageAt method to read it (which will not accept files
+            // without extensions for security)
+            // It would be silly if this file would exist, but better safe than sorry
+            $outputname = $fname.".jpg";
+            $outputindex=1;
+            while(file_exists($outputname)) {
+                $outputname = $fname."_".$outputindex.".jpg";
+                $outputindex+=1;
+            }
+            rename($fname, $outputname);
+            return $outputname;
         }
         return null;
     }

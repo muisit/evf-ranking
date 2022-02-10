@@ -237,6 +237,29 @@
         return $model->roleOfUser($this->getKey(),intval($userid));
     }
 
+    public function save() {
+        // check the config array, only allow settings we use
+        // this avoids allowing hackers to enter arbitrary data in this database field
+        $cfg=json_decode($this->config, true);
+        if($cfg!==false && is_array($cfg)) {
+            $allowed = array(
+                "allow_registration_lower_age" => "bool",
+                "allow_more_teams" => "bool"
+            );
+            $cfg=array_intersect_keys($allowed,$cfg);
+
+            // make sure each value is correctly typed
+            foreach($cfg as $key=>$val) {
+                if($allowed[$key] == "bool") $cfg[$key]=boolval($val);
+            }
+        }
+        else {
+            $cfg=array();
+        }
+        $this->config=json_encode($cfg);
+        return parent::save();
+    }
+
     public function postSave($wassaved) {
         if(isset($this->competition_list)) {
             $oldcomps = $this->competitions(null,true);

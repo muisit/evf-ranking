@@ -1,7 +1,7 @@
 const controllers  = {};
 
 export function abort_all_calls(type) {
-    console.log("aborting all fetch calls for "+ type);
+    //console.log("aborting all fetch calls for "+ type);
     if(controllers[type]) {
         controllers[type].abort();
         delete controllers[type];
@@ -37,7 +37,7 @@ function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor) {
         .then(postprocessor())
         .catch(err => {
             if(err.name === "AbortError") {
-                console.log('disregarding aborted call');
+                //console.log('disregarding aborted call');
             }
             else {
                 console.log("error in fetch: ",err);
@@ -52,7 +52,7 @@ function validateResponse() {
         return res.json().then(json => {
             //console.log('validate response ',json);
             if (!json || !json.success) {
-                console.log('no success entry found or success is false');
+                //console.log('no success entry found or success is false');
                 const error = new Error(res.statusText);
                 error.response = json;
                 throw error;

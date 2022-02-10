@@ -1,6 +1,7 @@
 import { competitions, sideevents, registrations, abort_all_calls } from "./api.js";
 import { parse_date, format_date_fe, date_to_category, date_to_category_num, format_date, is_hod, is_valid } from './functions';
 import { Dropdown } from 'primereact/dropdown';
+import { Loading } from './elements/loading';
 import React from 'react';
 
 export default class FEBase extends React.Component {
@@ -15,6 +16,7 @@ export default class FEBase extends React.Component {
         }
 
         this.state = {
+            loading: {},
             country: cid,
             country_item: this.countryFromId(cid),
             sideevents: [],
@@ -41,8 +43,26 @@ export default class FEBase extends React.Component {
         this._componentDidMount();
     }
 
+    unload = (key, value) => {
+        this.setState((state) => {
+            if(state.loading[key] && state.loading[key].value == value) {
+                state.loading[key].state=true;
+            }
+            return { loading: state.loading };
+        });
+    }
+
+    onload = (key, label,value) => {
+        this.setState((state) => {
+            state.loading[key]={label: label, state:false, value: value};
+            return { loading: state.loading };
+        });
+    }
+
     _componentDidMount = () => {
         if(this.props.item.id > 0) {
+            this.onload("sideevents","Loading side events", this.props.item.id);
+            this.onload("competitions","Loading competitions",this.props.item.id);
             sideevents(this.props.item.id).then((cmp1) => { 
                 if(cmp1 && cmp1.data && cmp1.data.list) {
                     var sortedevents = cmp1.data.list.slice();
@@ -55,11 +75,13 @@ export default class FEBase extends React.Component {
                         // else compare only on title
                         return (e1.title < e2.title) ? -1 : 1;
                     });
-                    this.setState({sideevents: sortedevents}); 
+                    this.unload("sideevents",this.props.item.id);
+                    this.setState({sideevents: sortedevents});
                 }
             });
             competitions(this.props.item.id).then((cmp) => {
                 if(cmp && cmp.data && cmp.data.list) {
+                    this.unload("competitions",this.props.item.id);
                     this.setState({competitions: cmp.data.list});
                 }
             });
@@ -109,8 +131,12 @@ export default class FEBase extends React.Component {
     }
 
     doGetRegistrations = (cid, doclear) => {
+        if(doclear) this.onload("registrations","Loading existing registrations", cid);
         return registrations(0, 10000, { country: cid, event: this.props.item.id })
-            .then((cmp) => this.parseRegistrations(cmp.data.list,doclear));
+            .then((cmp) => {
+                if(doclear) this.unload("registrations",cid);
+                return this.parseRegistrations(cmp.data.list,doclear)
+            });
     }
 
     parseRegistrations = (registrations, doclear) => {
@@ -180,9 +206,8 @@ export default class FEBase extends React.Component {
     }
 
     render() {
-        var startdate = format_date_fe(this.props.item.opens);
-
         return (<div className='container'>
+            <Loading loading={this.state.loading} />
             {this.countryHeader()}
             {this.renderContent()}
         </div>

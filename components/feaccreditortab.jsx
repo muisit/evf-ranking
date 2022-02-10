@@ -30,10 +30,14 @@ export default class FEAccreditorTab extends FEBase {
     }
 
     getSummary = (firsttime) => {
+        if(firsttime) this.onload("overview","Loading summary overview",this.props.item.id);
         accreditation("overview", { event: this.props.item.id })
             .then((json) => {
                 this.setState({ summary: json.data });
-                if(firsttime) this.startRegularRefresh();
+                if(firsttime) {
+                    this.unload("overview",this.props.item.id);
+                    this.startRegularRefresh();
+                }
             })
             .catch((err) => parse_net_error(err));
     }

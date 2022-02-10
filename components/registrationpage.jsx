@@ -31,6 +31,7 @@ export default class RegistrationPage extends React.Component {
     componentDidMount = () => {
         singleevent("view",{id: evfranking.eventid})
             .then(json => {
+                //console.log("registration event is ",json.data.item);
                 var opensat = parse_date(json.data.item.reg_open);
                 var closesat = parse_date(json.data.item.reg_close);
                 var now = parse_date();

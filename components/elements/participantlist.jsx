@@ -2,12 +2,14 @@ import { create_abbr, is_valid, create_wpnById, create_catById, create_cmpById, 
 import { wrong_category } from '../rules/wrong_category';
 import { team_rule_grandveterans } from '../rules/team_rule_grandveterans';
 import { team_rule_veterans } from '../rules/team_rule_veterans';
+import { fencer } from '../api';
 
 export function ParticipantList(props) {
     if (!props.fencers) {
         return (<div></div>);
     }
 
+    var showcaterrors=true;
     var catById = create_catById(props.categories || []);
     var wpnById=create_wpnById(props.weapons || []);
     var cmpById = create_cmpById(props.competitions || [], wpnById, catById);
@@ -19,6 +21,11 @@ export function ParticipantList(props) {
     // requirement 1.4.3: for specific team events, show the team name instead of the fencer category
     var showTeam = false;
 
+    // configuration setting: allow more than 1 team per competition. If so, we also store the team index
+    // If not, we do not need to display the team name in the role, only the category
+    var cfg = props.tournament ? props.tournament.config : {};
+    var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
+
     var roleById = create_roleById(props.roles || []);
     roleById["r0"] = { name: "Participant" };
     if(props.event && is_valid(props.event.competition_id)) {
@@ -28,6 +35,10 @@ export function ParticipantList(props) {
         if(comp && comp.category && comp.category.type == 'T') {
             showTeam=true;
         }
+    }
+    // if this is a team event, but only 1 team per country, do not show teams anyway
+    if(!allow_more_teams) {
+        showTeam=false;
     }
 
     var eventById={};
@@ -108,14 +119,18 @@ export function ParticipantList(props) {
             };
 
             // Requirement 1.1.6: events with a mismatch in category are marked
+            fencer.error='';
             if(wrong_category(ruleobject)) {
                 fencer.incorrect_cat=true;
+                fencer.error="(C)";
             }
             if(team_rule_veterans(ruleobject)) {
                 fencer.incorrect_cat=true;
+                fencer.error="(V)";
             }
             if(team_rule_grandveterans(ruleobject)) {
                 fencer.incorrect_cat=true;
+                fencer.error="(G)";
             }
 
             // Requirement 1.4.1: sort by team name
@@ -130,24 +145,49 @@ export function ParticipantList(props) {
         return fencer;
     }).filter((fencer) => {
         return fencer.is_registered;
+    }).map((fencer) => {
+        if(fencer.has_role) {
+            // sort the roles
+            fencer.has_role.sort();
+            fencer.allroles=fencer.has_role.join(", ");
+        }
+        return fencer;
     });
 
     // sort based on role (athletes or non-athletes) and name
     fencers.sort(function (a1, a2) {
-            // requirement 1.4.1: sort by athletes, team, role, name
+            // requirement 1.4.1: sort by event, then by team, then by name
+            // (two teams in the same event/role should 'stick' together)
             if(props.event) {
+                // listing for a specific event, only separate non-athletes from athletes
+                // if we have event-specific roles (currently not used)
                 if (a1.has_role.includes("Athlete") && !a2.has_role.includes('Athlete')) return -1;
                 if (a2.has_role.includes("Athlete") && !a1.has_role.includes("Athlete")) return 1;
+
+                // then sort by teams
+                if(allow_more_teams) {
+                    if(a1.has_team && !a2.has_team) return -1;
+                    if(!a1.has_team && a2.has_team) return 1;
+                    if(a1.has_team && a2.has_team && a1.has_team != a2.has_team) return a1.has_team > a2.has_team;
+                    // else same team, or no team
+                }
+
+                // then by name
                 return a1.fullname > a2.fullname;
             }
 
-            if(a1.has_team && !a2.has_team) return -1;
-            if(!a1.has_team && a2.has_team) return 1;
-            if(a1.has_team && a2.has_team && a1.has_team != a2.has_team) return a1.has_team > a2.has_team;
-            // else same team, or no team
-
             if(a1.has_role.length > 0 && a2.has_role.length == 0) return -1;
             if (a2.has_role.length > 0 && a1.has_role.length == 0) return 1;
+            if(a1.allroles && a2.allroles && a1.allroles != a2.allroles) return a1.allroles > a2.allroles;
+
+            // sort by teams if we have more than 1 team
+            if(allow_more_teams) {
+                if(a1.has_team && !a2.has_team) return -1;
+                if(!a1.has_team && a2.has_team) return 1;
+                if(a1.has_team && a2.has_team && a1.has_team != a2.has_team) return a1.has_team > a2.has_team;
+                // else same team, or no team
+            }
+
             return a1.fullname > a2.fullname;
         });
 
@@ -178,7 +218,7 @@ export function ParticipantList(props) {
             <tbody>
                 {fencers.map((fencer,idx) => (
                         <tr key={idx} className={fencer.incorrect_cat ? "incorrect-cat": ""}>
-                            <td>{fencer.name}</td>
+                            <td>{fencer.name}{showcaterrors && fencer.error}</td>
                             <td>{fencer.firstname}</td>
                             {props.showCountry && (
                                 <td>{fencer.country_name}</td>

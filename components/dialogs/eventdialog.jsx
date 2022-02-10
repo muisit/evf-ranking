@@ -261,7 +261,6 @@ export default class EventDialog extends React.Component {
         var end=parse_date(start);
 
         var year = parseInt(this.props.value.year);
-        console.log(year,start);
         if(isNaN(year)) year = start.year();
         var duration = parseInt(this.props.value.duration);
         if (isNaN(duration)) duration = 2;

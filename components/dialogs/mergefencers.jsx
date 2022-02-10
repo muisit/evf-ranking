@@ -75,7 +75,6 @@ export default class MergeFencers extends React.Component {
     }
 
     render() {
-        console.log("is_valid(this.state.mergeid1):",is_valid(this.state.mergeid1));
         var footer=(<div>
         <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
         <Button label="Merge" icon="pi pi-check" className="p-button-raised" onClick={this.onSaveDialog} />

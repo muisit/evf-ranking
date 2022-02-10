@@ -171,10 +171,11 @@ export default class EventRegistrationDialog extends React.Component {
             name = els[0];
             id=els[1];
         }
-        console.log("event ",name,id,value,event);
+        //console.log("event ",name,id,value,event);
 
         switch (name) {
         case 'allow_registration_lower_age':
+        case 'allow_more_teams':
             // checkbox configuration value
             var isset = event.checked;
             if(!item.config) {
@@ -348,11 +349,12 @@ export default class EventRegistrationDialog extends React.Component {
         var reg_open = parse_date(this.props.value.reg_open);
         var reg_close = parse_date(this.props.value.reg_close);
 
-        var basefee = parse_float(this.props.value.base_fee,30);
-        var compfee = parse_float(this.props.value.competition_fee,40);
+        var basefee = parse_float(this.props.value.base_fee,0);
+        var compfee = parse_float(this.props.value.competition_fee,0);
 
         var cfg = this.props.value.config;
         var allow_lower_reg = (cfg && cfg.allow_registration_lower_age) ? true : false;
+        var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
 
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
@@ -383,8 +385,14 @@ export default class EventRegistrationDialog extends React.Component {
       <div>
         <label>Configuration</label>
         <div className='input'>
-          <Checkbox inputId='cfg1' name={'allow_registration_lower_age'} onChange={this.onChangeEl} checked={allow_lower_reg} /> 
-          <label className='checkbox' htmlFor="cfg1">Allow registration in a lower age category</label>
+          <div className='config'>
+            <Checkbox inputId='cfg1' name={'allow_registration_lower_age'} onChange={this.onChangeEl} checked={allow_lower_reg} /> 
+            <label className='checkbox' htmlFor="cfg1">Allow registration in a lower age category</label>
+          </div>
+          <div className='config'>
+            <Checkbox inputId='cfg2' name={'allow_more_teams'} onChange={this.onChangeEl} checked={allow_more_teams} /> 
+            <label className='checkbox' htmlFor="cfg2">Allow registration of multiple teams</label>
+          </div>
         </div>
       </div>
       </TabPanel>

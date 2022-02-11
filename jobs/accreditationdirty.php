@@ -158,16 +158,15 @@ class AccreditationDirty extends BaseJob {
 
             // if any of the roles for this template was assigned, create an accreditation
             if(sizeof($assignedRoles) > 0) {
+
                 // see if any of these roles appears in the ALL list. In that case, we
                 // assign all the roles managed by this accreditation for ALL dates
                 $foundall=false;
                 foreach($dates["all"]["roles"] as $role) {
                     if(in_array(strval($role->getKey()),$roleids)) {
-                        if(sizeof($assignedRoles) > 0) {
-                            $accreditations[]= array("template" => $t, "data" => $this->createTemplate($t, $assignedRoles, array("ALL")));
-                            $foundall=true;
-                            break;
-                        }
+                        $accreditations[]= array("template" => $t, "data" => $this->createTemplate($t, $assignedRoles, array("ALL")));
+                        $foundall=true;
+                        break;
                     }
                 }
 
@@ -222,7 +221,8 @@ class AccreditationDirty extends BaseJob {
         // create a list of dates and the roles this fencer has on each date.
         // the dates are the days of each side event
         $dates = array("all" => array("sideevents" => array(), "roles" => array()));
-        foreach ($this->sidesById as $k=>$s) {
+        // make sure we have an entry for each date
+        foreach ($this->sidesById as $k => $s) {
             $date = strftime('%F', strtotime($s->starts));
             if (!isset($dates[$date])) {
                 $dates[$date] = array("sideevents" => array(), "roles" => array());
@@ -238,12 +238,13 @@ class AccreditationDirty extends BaseJob {
             $role = isset($this->rolesById["r" . $rid]) ? $this->rolesById["r" . $rid] : null;
 
             if (!empty($sideevent)) {
-                $date = strftime('%F', strtotime($s->starts));
+                $date = strftime('%F', strtotime($sideevent->starts));
                 if (empty($role)) {
                     // just a mere participant
                     // if the side event has a competition, accredit the person. Do not
                     // accredit for other side events
                     if ($sideevent->competition->exists()) {
+                        $date = strftime('%F', strtotime($sideevent->competition->competition_weapon_check));
                         // requirement 6.1.1: For team events, display the team name as well 
                         $role= new \EVFRanking\Models\Role();
                         $role->role_id=0;
@@ -254,9 +255,15 @@ class AccreditationDirty extends BaseJob {
                             $role->role_name.= " (" .$r->registration_team. ")";
                         }
 
+                        if(!isset($dates[$date])) {
+                            $dates[$date]=array("sideevents"=>array($sideevent), "roles"=>array());
+                        }
                         $dates[$date]["roles"][]=$role;
                     }
                 } else {
+                    if (!isset($dates[$date])) {
+                        $dates[$date] = array("sideevents" => array($sideevent), "roles" => array());
+                    }
                     $dates[$date]["roles"][] = $role;
                 }
             } else if (!empty($role)) {
@@ -277,6 +284,10 @@ class AccreditationDirty extends BaseJob {
                             break;
                         }
                     }
+                    // if we find a date that has roles that are not for all dates
+                    // then we can quite the loop: no role is set for all dates
+                    // Note: currently, this would only go for Athlete roles and
+                    // people will have to fence every day
                     if (!$found) {
                         $foralldates = false;
                         break;
@@ -284,6 +295,7 @@ class AccreditationDirty extends BaseJob {
                 }
             }
 
+            // this role is set for all dates, so add it to the 'all' list
             if ($foralldates) {
                 $dates["all"]["roles"][] = $r;
 
@@ -297,6 +309,7 @@ class AccreditationDirty extends BaseJob {
                 }
             }
         }
+
         return $dates;
     }
 

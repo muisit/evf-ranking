@@ -1,13 +1,14 @@
 import React from 'react';
 import FEBase from './febase';
 import { registration } from './api';
-import { parse_net_error } from "./functions";
+import { parse_net_error, is_valid } from "./functions";
 import FencerAccreditationDialog from './dialogs/fenceraccreditationdialog';
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import cloneDeep from 'lodash.clonedeep';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Checkbox } from 'primereact/checkbox';
 import { Button } from 'primereact/button';
+import { adjustFencerData } from './lib/registrations';
 
 export default class FEAccreditationTab extends FEBase {
     constructor(props, context) {
@@ -21,7 +22,6 @@ export default class FEAccreditationTab extends FEBase {
             displayEvents: false,
             displayPresent: false,
             selectedEvents: {},
-            allCountries: this.props.countries.length,
             callPending:false,
             autoRefresh: true
         });
@@ -33,67 +33,19 @@ export default class FEAccreditationTab extends FEBase {
     }
 
     setConvenienceData = () => {
-        this.roleById = {};
-        this.props.roles.map((r) => {
-            this.roleById["r" + r.id] = r;
-        });
-        this.cntById = {};
-        this.props.countries.map((r) => {
-            this.cntById["c" + r.id] = r;
-        });
+        this.roleById = this.props.basic ? this.props.basic.rolesById : {};
+        this.cntById = this.props.basic ? this.props.basic.countriesById : {};
         this.cntById["soff"]={name:"Officials"};
         this.cntById["sorg"]={name: "Organisation"};
 
-        this.wpnById = {};
-        this.props.weapons.map((w) => {
-            var key = "w" + w.id;
-            this.wpnById[key] = w;
-        });
-
-        this.catById = {};
-        this.props.categories.map((c) => {
-            var key = "c" + c.id;
-            this.catById[key] = c;
-        });
-
-        this.cmpById = {};
-        this.state.competitions.map((c) => {
-            var key = "c" + c.id;
-            var wkey = "w" + c.weapon;
-            if (this.wpnById[wkey]) c.weapon_obj = this.wpnById[wkey];
-
-            var ckey = "c" + c.category;
-            if (this.catById[ckey]) c.category_obj = this.catById[ckey];
-
-            this.cmpById[key] = c;
-        });
-
-        if(this.state && this.state.sideevents) {
-            this.eventById = {};
-            this.state.sideevents.map((se) => {
-                var key = "s" + se.id;
-                var ckey = "c" + se.competition_id;
-                if (this.cmpById[ckey]) {
-                    var cmp = this.cmpById[ckey];
-                    var wpn = cmp.weapon_obj ? cmp.weapon_obj : { abbr: '??' };
-                    var cat = cmp.category_obj ? cmp.category_obj : { abbr: '??' };
-                    se.abbr = wpn.abbr + cat.abbr;
-                }
-                else {
-                    var words = se.title.split(' ');
-                    se.abbr = "";
-                    for (var i in words) {
-                        var word = words[i];
-                        se.abbr += word[0];
-                    }
-                }
-                this.eventById[key] = se;
-            });
-        }
+        this.wpnById = this.props.basic ? this.props.basic.weaponsById : {};
+        this.catById = this.props.basic ? this.props.basic.categoriesById : {};
+        this.cmpById = this.props.basic ? this.props.basic.competitionsById : {};
+        this.eventById = this.props.basic ? this.props.basic.sideeventsById : {};
     }
 
     componentDidUpdate(prevProps) {
-        if (this.props.countries.length != prevProps.countries.length) {
+        if (this.props.basic.countries.length != prevProps.basic.countries.length) {
             this.setConvenienceData();
             this.getAllRegistrations();
         }
@@ -101,7 +53,7 @@ export default class FEAccreditationTab extends FEBase {
 
     getAllRegistrations = () => {
         this.setState({registrations: {}});
-        this.props.countries.map((cnt) => {
+        this.props.basic.countries.map((cnt) => {
             this.doGetRegistrations(cnt.id,false);
         });
     }
@@ -146,7 +98,7 @@ export default class FEAccreditationTab extends FEBase {
             }            
 
             if(!myfencers[fid]) {
-                var obj = this.adjustFencerData(reg.fencer_data);
+                var obj = adjustFencerData(reg.fencer_data, this.props.basic.event);
                 myfencers[fid] = obj;
             }
             delete reg.fencer_data;
@@ -204,9 +156,9 @@ export default class FEAccreditationTab extends FEBase {
                 }
                 else {
                     // add the event abbreviation as a role
-                    role = this.eventById["s" + r.sideevent];
-                    if (role) {
-                        roles.push(role.abbr);
+                    var se = this.eventById["s" + r.sideevent];
+                    if (se) {
+                        roles.push(se.abbreviation);
                     }
                 }
 
@@ -281,8 +233,8 @@ export default class FEAccreditationTab extends FEBase {
         }
 
         var countries=[];
-        this.props.countries.map((country) => {
-            if(country.id && parseInt(country.id) > 0) {
+        this.props.basic.countries.map((country) => {
+            if(is_valid(country.id)) {
                 var key="c"+country.id;
                 var total=0;
                 if(this.state.registered.countries[key]) {
@@ -378,7 +330,7 @@ export default class FEAccreditationTab extends FEBase {
                 registration('save', {
                     id: r.id || -1,
                     state: r.state,
-                    event: this.props.item.id,
+                    event: this.props.basic.event.id,
                     sideevent: r.sideevent,
                     fencer: r.fencer
                 })
@@ -444,7 +396,7 @@ export default class FEAccreditationTab extends FEBase {
         // filter out any registrations not for the indicated events
         var allselected = Object.keys(this.state.selectedEvents).length == 0;
         var myfencers = fencers.filter((fencer) => {
-            var ispresent = fencer.registration.state != 'R'; // not absent, so present or some combination
+            var ispresent = fencer.registration.state != 'R'; // not still-registered, so present or some combination
             if (!this.state.displayPresent || (!dopresent && !ispresent) || (dopresent && ispresent)) {
                 if (allselected) return true;
                 var anyfound = false;
@@ -544,7 +496,7 @@ export default class FEAccreditationTab extends FEBase {
         var absent = (
                 <div className='row'>
                     <div className='col-12'>
-                        <h5>Entries per Country{this.state.displayPresent && (<span>&nbsp;(Absent)</span>)}</h5>
+                        <h5>Entries per Country{this.state.displayPresent && (<span>&nbsp;(Missing)</span>)}</h5>
                         <Accordion id="accreditcountries" activeIndex={0}>
                             {sortedlist.map((cnt,idx) => this.renderCountry(cnt,idx,false))}
                         </Accordion>
@@ -556,7 +508,7 @@ export default class FEAccreditationTab extends FEBase {
             present = (
                 <div className='row'>
                     <div className='col-12'>
-                        <h5>Entries per Country (Present)</h5>
+                        <h5>Entries per Country (Present/Absent)</h5>
                         <Accordion id="accreditcountries">
                             {sortedlist.map((cnt, idx) => this.renderCountry(cnt, idx,true))}
                         </Accordion>
@@ -664,7 +616,7 @@ export default class FEAccreditationTab extends FEBase {
 
         var absent= (<div className='row'>
                     <div className='col-12'>
-                        <h5>Entries per Event/Role{this.displayPresent && (<span>&nbsp;(Absent)</span>)}</h5>
+                        <h5>Entries per Event/Role{this.displayPresent && (<span>&nbsp;(Missing)</span>)}</h5>
                         <Accordion id="accreditcountries" activeIndex={0}>
                             {leftover.map((obj, idx) => this.renderEvent(obj, idx,false))}
                         </Accordion>
@@ -674,7 +626,7 @@ export default class FEAccreditationTab extends FEBase {
         if(this.state.displayPresent) {
             present = (<div className='row'>
                 <div className='col-12'>
-                    <h5>Entries per Event/Role (Present)</h5>
+                    <h5>Entries per Event/Role (Present/Absent)</h5>
                     <Accordion id="accreditcountries">
                         {leftover.map((obj, idx) => this.renderEvent(obj, idx, true))}
                     </Accordion>
@@ -738,7 +690,7 @@ export default class FEAccreditationTab extends FEBase {
                 {Object.keys(this.eventById).map((key,idx) => {
                     return (
                         <div className='filter-event' key={'filter-'+idx}>
-                            <Checkbox name={'fe-'+key} checked={selectedEvents[key] ? true:false} onChange={(e) => this.selectFilterEvent("event",key,e.checked)} /> {this.eventById[key].title} ({this.eventById[key].abbr})
+                            <Checkbox name={'fe-'+key} checked={selectedEvents[key] ? true:false} onChange={(e) => this.selectFilterEvent("event",key,e.checked)} /> {this.eventById[key].title} ({this.eventById[key].abbreviation})
                         </div>
                     );
                 })}
@@ -776,7 +728,7 @@ export default class FEAccreditationTab extends FEBase {
             {this.state.displayEvents && (<div>
                 {this.renderPerEvent()}
             </div>)}
-            <FencerAccreditationDialog value={this.state.fencer} display={this.state.displayDialog} events={this.state.sideevents} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('save', itm)} roles={this.props.roles} event={this.props.item} competitions={this.state.competitions} categories={this.props.categories} weapons={this.props.weapons}/>
+            <FencerAccreditationDialog value={this.state.fencer} display={this.state.displayDialog} events={this.props.basic.sideevents} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('save', itm)} basic={this.props.basic}/>
         </div>);
     }
 }

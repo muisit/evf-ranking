@@ -28,9 +28,46 @@
  namespace EVFRanking\Models;
 
  class QueryBuilder {
+    private $_model=null;
+    private $_issub=false;
+    private $_action="select";
+    private $_select_fields=array();
+    private $_where_clauses=array();
+    private $_where_values=array();
+    private $_from=null;
+    private $_joinclause=array();
+    private $_orderbyclause=array();
+    private $_groupbyclause=array();
+    private $_havingclause=array();
+    private $_limit=null;
+    private $_offset=null;
+    private $_error=false;
+
+    private function _reset_values() {
+        $this->_action="select";
+        $this->_select_fields=array();
+        $this->_where_clauses=array();
+        $this->_where_values=array();
+        $this->_from=null;
+        $this->_joinclause=array();
+        $this->_orderbyclause=array();
+        $this->_groupbyclause=array();
+        $this->_havingclause=array();
+        $this->_limit=null;
+        $this->_offset=null;
+        $this->_error=false;
+
+        if(!empty($this->_model) && isset($this->_model->table)) {
+            $this->_from=$this->_model->table;
+        }
+    }
+
     public function __construct($model, $issub=false) {
         $this->_model=$model;
         $this->_issub=$issub;
+        if(!empty($model) && isset($model->table)) {
+            $this->_from=$model->table;
+        }
     }
 
     public function sub() {
@@ -38,41 +75,72 @@
         return $qb;
     }
 
-    private $_action="select";
     public function delete() {
-        if($this->_issub) return "";
+        // delete as subclause not supported
+        if($this->_issub || $this->_error || empty($this->_model) || !method_exists($this->_model,"prepare")) {
+            $this->_reset_values();
+            return "";
+        }
         $sql = "DELETE FROM ".$this->_from;
         $sql .= $this->buildClause("where");
-        return $this->_model->prepare($sql,$this->_where_values);
+        $qry = $this->_model->prepare($sql,$this->_where_values);
+        $this->_reset_values();
+        return $qry;
     }
 
     public function update() {
-        if($this->_issub || sizeof($this->_select_fields) == 0) return "";
+        // update not supported as subclause
+        if($this->_issub || sizeof($this->_select_fields) == 0 || $this->_error || empty($this->_model) || !method_exists($this->_model,"prepare")) {
+            $this->_reset_values();
+            return "";
+        }
         $sql = "UPDATE ".$this->_from;
         $sql .= $this->buildClause("join");
         $sql .= $this->buildClause("set");
         $sql .= $this->buildClause("where");
-        return $this->_model->prepare($sql,$this->_where_values);
+        $qry = $this->_model->prepare($sql,$this->_where_values);
+        $this->_reset_values();
+        return $qry;
     }
 
     public function count() {
+        if($this->_error) {
+            $this->_reset_values();
+            return 0;
+        }
         $sql = $this->_doget();
         $result = $this->_model->prepare($sql, $this->_where_values);
+        $this->_reset_values();
         if(empty($result) || !is_array($result)) return 0;
         return intval($result[0]->cnt);
     }
 
     public function first() {
+        if($this->_error) {
+            $this->_reset_values();
+            return null;
+        }
         if ($this->_issub) return $this->_dosub();
         $sql = $this->_doget();
-        return $this->_model->first($sql, $this->_where_values);
+        $qry = $this->_model->first($sql, $this->_where_values);
+        $this->_reset_values();
+        return $qry;
     }
     public function get() {
+        if($this->_error) {
+            $this->_reset_values();
+            return "";
+        }
         if($this->_issub) return $this->_dosub();
         $sql = $this->_doget();
-        return $this->_model->prepare($sql, $this->_where_values);
+        $qry=$this->_model->prepare($sql, $this->_where_values);
+        $this->_reset_values();
+        return $qry;
     }
     private function _doget() {
+        if(empty($this->_from) || empty($this->_select_fields) || $this->_error) {
+            return "";
+        }
         $sql = strtoupper($this->_action)." "
             .implode(',', array_keys($this->_select_fields))
             ." FROM ".$this->_from;
@@ -187,7 +255,6 @@
         return $sql;
     }
 
-    private $_select_fields=array();
     public function select($f=null) {
         $this->_action="select";
         if(empty($f)) {
@@ -216,7 +283,7 @@
         return $this;
     }
 
-    public function set($f,$v) {
+    public function set($f,$v=null) {
         if(empty($f)) {
             return $this;
         }
@@ -224,17 +291,17 @@
             $this->_select_fields[$f]=$v;
         }
         else if(is_array($f)) {
-            foreach(array_keys($f) as $n=>$v) {
-                $this->_select_fields[$n]=$v;
+            foreach($f as $n=>$v) {
+                if(!is_numeric($n)) {
+                    $this->_select_fields[$n]=$v;
+                }
             }
         }
         return $this;
     }
 
-    private $_where_clauses=array();
-    private $_where_values=array();
-    public function where($field,$comparison=null,$clause=null) {
-        return $this->andor_where($field,$comparison,$clause,"AND");
+    public function where($field,$comparison=null,$clause=null,$andor="AND") {
+        return $this->andor_where($field,$comparison,$clause,$andor);
     }
 
     private function andor_where($field,$comparison,$clause,$andor) {
@@ -270,18 +337,34 @@
     }
 
     private function _where($field, $comparison, $clause, $andor="AND") {
-        if(strtolower($comparison) == "in") {
+        if(!empty($comparison) && strtolower($comparison) == "in") {
             if(is_array($clause)) {
-                $clause="('".implode("','",$clause)."')";
+                $clause="'".implode("','",$clause)."'";
             }
-            $this->_where_clauses[]=array($andor,"$field IN $clause");
+            else if(is_callable($clause)) {
+                $qb = $this->sub();
+                ($clause)($qb);
+                $sql = $qb->get();
+                $clause = $sql;
+            }
+            else if(is_object($clause) && !method_exists($clause,"__toString")) {
+                $this->_error=true;
+                $clause="";
+            }
+            else {
+                $clause=strval($clause);
+            }
+            $this->_where_clauses[]=array($andor,"$field IN ($clause)");
         }
-        else if(strtolower($comparison) == "exists") {
+        else if(!empty($comparison) && strtolower($comparison) == "exists") {
             if (is_callable($field)) {
                 $qb = $this->sub();
                 ($field)($qb);
                 $sql = $qb->get();
                 $this->_where_clauses[] = array($andor, "exists(".$sql.")");
+            }
+            else {
+                $this->_error=true;
             }
         }
         else if(is_callable($field)) {
@@ -316,7 +399,6 @@
         }
     }
 
-    private $_from=null;
     public function from($table, $alias=null) {
         if(is_callable($table) && $alias !== null) {
             $qb=$this->sub();
@@ -329,7 +411,6 @@
         return $this;
     }
 
-    private $_joinclause=array();
     public function join($table, $alias, $onclause, $dr=null) {
         if(empty($dr)) {
             $dr="left";
@@ -343,18 +424,17 @@
         return $this;
     }
 
-    private $_orderbyclause=array();
     public function orderBy($field, $dr=null) {
         if(is_array($field)) {
             foreach($field as $k=>$v) {
                 if(is_numeric($k)) {
-                    $this->_orderbyclause[]=$v;
+                    $this->_orderbyclause[]=trim($v." ".$dr);
                 }
                 else if(in_array(strtolower($v),array("asc","desc"))) {
                     $this->_orderbyclause[]="$k $v";
                 }
                 else {
-                    $this->_orderbyclause[]=$k;
+                    $this->_orderbyclause[]=trim($k." ".$dr);
                 }
             }
         }
@@ -364,7 +444,6 @@
         return $this;
     }
 
-    private $_groupbyclause=array();
     public function groupBy($field) {
          if(is_array($field)) {
             foreach($field as $v) {
@@ -377,7 +456,6 @@
         return $this;
     }
 
-    private $_havingclause=array();
     public function having($field) {
          if(is_array($field)) {
             foreach($field as $v) {
@@ -390,11 +468,9 @@
         return $this;
     }
 
-    private $_limit=null;
-    private $_offset=null;
     public function page($v,$ps=20) {
         $this->_limit=$ps;
-        if($v<1) $v=1;
+        if($v<0) $v=0;
         $this->_offset = $v * $ps;
         return $this;
     }

@@ -5,8 +5,7 @@ import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Checkbox } from 'primereact/checkbox';
 import { parse_team_for_number, random_hash, format_date_fe_short, is_valid, date_to_category, parse_net_error, 
-        is_hod, is_organisation, is_sysop, is_organiser, is_accreditor,
-        create_roleById } from "../functions";
+        is_hod, is_organisation, is_sysop, is_organiser, is_accreditor, create_roleById } from "../functions";
 
 // the fencer-select-dialog displays all events a fencer can be a part of.
 // We now only select roles for the overall event, or Athlete/Participant roles for
@@ -46,24 +45,6 @@ export default class FencerSelectDialog extends React.Component {
 
     save = (item) => {
         if(this.props.onChange) this.props.onChange(item);
-    }
-
-    eventsToObj = () => {
-        var obj={};
-        this.props.events.map((itm) => {
-            obj["se_"+itm.id]=itm;
-        });
-        return obj;
-    }
-
-    findEvent = (sideeventid) => {
-        for (var r in this.props.events) {
-            var ev = this.props.events[r];
-            if (ev.id == sideeventid) {
-                return ev;
-            }
-        }
-        return null;
     }
 
     findRegistration = (sideeventid, roleid) => {
@@ -177,10 +158,10 @@ export default class FencerSelectDialog extends React.Component {
         }
         else {
             // for HoD or lesser, follow the event restrictions
-            if(this.props.event.payments == "group") {
+            if(this.props.basic.event.payments == "group") {
                 payment = 'G';
             }
-            else if(this.props.event.payments == "individual") {
+            else if(this.props.basic.event.payments == "individual") {
                 payment = 'I';
             }
             // else we can select, but it should be G or I
@@ -196,7 +177,7 @@ export default class FencerSelectDialog extends React.Component {
         registration('save', { 
             id: reg.id || -1,
             fencer: this.props.value.id, 
-            event: this.props.event.id, 
+            event: this.props.basic.event.id, 
             sideevent: se,
             role: reg.role,
             team: reg.team,
@@ -269,7 +250,7 @@ export default class FencerSelectDialog extends React.Component {
         var selectedFile=event.target.files[0];
         upload_file("events",selectedFile,{
             fencer: this.props.value.id,
-            event: this.props.event.id})
+            event: this.props.basic.event.id})
         .then((json) => {
             var itm = Object.assign({}, this.props.value);
             if (json.data.model) {
@@ -290,10 +271,10 @@ export default class FencerSelectDialog extends React.Component {
         if (is_sysop() || is_organiser() || is_accreditor()) {
             // regenerate all accreditations for this fencer
             if(this.props.reloadAccreditations) this.props.reloadAccreditations();
-            accreditation("generateone",{event: this.props.event.id,fencer: this.props.value.id})
+            accreditation("generateone",{event: this.props.basic.event.id,fencer: this.props.value.id})
                 .then((json) => {
                     if(json) {
-                        if(this.props.reloadAccreditations) this.props.reloadAccreditations(this.props.event.id, this.props.value.id);
+                        if(this.props.reloadAccreditations) this.props.reloadAccreditations(this.props.basic.event.id, this.props.value.id);
                     }
                 });
         }
@@ -354,13 +335,12 @@ export default class FencerSelectDialog extends React.Component {
                 selectThisOne=true; // selecting a role selects the event
             }
             var selectedItem=this.findRegistration(id); // this is the side-event registration
-            //var selectedEvent=this.findEvent(id); // used for the default role
 
             if(selectThisOne) {
                 if(selectedItem === null) {
                     // create a new registration for this item
                     selectedItem = {
-                        event: this.props.event.id,
+                        event: this.props.basic.event.id,
                         sideevent: id,
                         individual: this.state.paysIndividual,
                         //role: selectedEvent ? selectedEvent.default_role : 0 
@@ -395,7 +375,7 @@ export default class FencerSelectDialog extends React.Component {
             if (selectedItem === null) {
                 // create a new registration for this item
                 selectedItem = {
-                    event: this.props.event.id,
+                    event: this.props.basic.event.id,
                     sideevent: -1,
                     individual: this.state.paysIndividual
                 }
@@ -422,7 +402,7 @@ export default class FencerSelectDialog extends React.Component {
     downloadAccreditation = (accr) => {
         if (is_sysop() || is_organiser() || is_accreditor()) {
             var href = evfranking.url + "&download=accreditation&id="+accr.id;
-            href += "&mainevent=" + this.props.event.id + "&nonce=" + evfranking.nonce;
+            href += "&mainevent=" + this.props.basic.event.id + "&nonce=" + evfranking.nonce;
             window.open(href);
         }
     }
@@ -466,7 +446,7 @@ export default class FencerSelectDialog extends React.Component {
         }
 
         // filter out valid roles for the capabilities
-        var roles = this.props.roles.filter((itm) => {
+        var roles = this.props.basic.roles.filter((itm) => {
             if (is_hod() && itm.org == 'Country') return true;
             if (is_organisation() && (itm.org == 'Org' || itm.org == 'Country')) return true;
             if (is_sysop()) return true; // allow all roles for system administrators
@@ -478,18 +458,16 @@ export default class FencerSelectDialog extends React.Component {
             if (a.org == 'Org' && b.org != 'Org') return -1;
             if (b.org == 'Org' && a.org != 'Org') return 1;
 
-            if (a.name < b.name) return -1;
-            if (a.name > b.name) return 1;
-            return 0;
+            return a.name > b.name;
         });
 
         var roleById = create_roleById(roles);
-        var allRolesById = create_roleById(this.props.roles);
+        var allRolesById = this.props.basic.rolesById;
 
         // add a None role
         roles.splice(0, 0, { id: -1, name: "None" });
 
-        var mycatname = date_to_category(this.props.value.birthday, this.props.event.opens);
+        var mycatname = date_to_category(this.props.value.birthday, this.props.basic.event.opens);
 
         var payments = (null);
         if(is_organisation()) {
@@ -509,7 +487,7 @@ export default class FencerSelectDialog extends React.Component {
                 </div>
             </div>);
         }
-        else if (this.props.event.payments == "all") {
+        else if (this.props.basic.event.payments == "all") {
             // payments can be selected by the user, but only choose between I or G
             var payment = [{ name: 'Individual', code: 'I' }, { name: 'As group', code: 'G' }];
             payments = (<div className='clearfix'>
@@ -522,7 +500,7 @@ export default class FencerSelectDialog extends React.Component {
 
         // create a list of valid team names based on all available teams
         // This list is specific for each competition sideevent of category team
-        var cfg = this.props.event.config;
+        var cfg = this.props.basic.event.config;
         var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
         var validteams={};
         if(allow_more_teams) {
@@ -728,7 +706,7 @@ export default class FencerSelectDialog extends React.Component {
             <div>
             {['Y','A','R'].includes(this.props.value.picture) && (
                 <div className='accreditation'>
-                  <img src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + "&event=" + this.props.event.id + '&hash='+this.state.imageHash}></img>
+                  <img src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + "&event=" + this.props.basic.event.id + '&hash='+this.state.imageHash}></img>
                 </div>
             )}
             <div className='textcenter'>

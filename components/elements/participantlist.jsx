@@ -1,53 +1,35 @@
 import { create_abbr, is_valid, create_wpnById, create_catById, create_cmpById, create_roleById  } from '../functions';
 import { wrong_category } from '../rules/wrong_category';
+import { wrong_gender } from '../rules/wrong_gender';
 import { team_rule_grandveterans } from '../rules/team_rule_grandveterans';
 import { team_rule_veterans } from '../rules/team_rule_veterans';
-import { fencer } from '../api';
 
 export function ParticipantList(props) {
-    if (!props.fencers) {
+    if (!props.fencers || !props.basic) {
         return (<div></div>);
     }
 
-    var showcaterrors=true;
-    var catById = create_catById(props.categories || []);
-    var wpnById=create_wpnById(props.weapons || []);
-    var cmpById = create_cmpById(props.competitions || [], wpnById, catById);
-
-    // Roles are assigned over the whole event now, and not on a specific sideevent. This
-    // means we show roles only if this is not a list of a specific event and we actually 
-    // have a roles list
-    var showRoles = props.roles && !props.event;
+    var showErrors=true; // debug setting
     // requirement 1.4.3: for specific team events, show the team name instead of the fencer category
     var showTeam = false;
 
     // configuration setting: allow more than 1 team per competition. If so, we also store the team index
     // If not, we do not need to display the team name in the role, only the category
-    var cfg = props.tournament ? props.tournament.config : {};
+    var cfg = props.basic.event ? props.basic.event.config : {};
     var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
 
-    var roleById = create_roleById(props.roles || []);
+    var roleById = Object.assign({},props.basic.rolesById);
     roleById["r0"] = { name: "Participant" };
-    if(props.event && is_valid(props.event.competition_id)) {
+    if(props.event && props.event.competition) {
         roleById["r0"] = { name: "Athlete" };
 
-        var comp = cmpById["c"+props.event.competition_id];
-        if(comp && comp.category && comp.category.type == 'T') {
+        if(props.event.category && props.event.category.type == 'T') {
             showTeam=true;
         }
     }
     // if this is a team event, but only 1 team per country, do not show teams anyway
     if(!allow_more_teams) {
         showTeam=false;
-    }
-
-    var eventById={};
-    if(props.events) {
-        props.events.map((evt) => {
-            var cmp=cmpById["c"+evt.competition_id];
-            if(cmp) evt.competition=cmp;
-            eventById["e"+evt.id]=evt;            
-        });
     }
 
     var fencers=Object.keys(props.fencers).map((key) => {
@@ -67,7 +49,7 @@ export function ParticipantList(props) {
                 // this is a fencer participating in a specific event (competition or other side-event)
                 fencer.sideevent = reg;
                 fencer.is_registered = true;
-                comp = cmpById["c" + props.event.competition_id];
+                comp = props.event.competition;
 
                 // determine the roleof the fencer for this specific event.
                 fencer.role.push(role);
@@ -75,14 +57,14 @@ export function ParticipantList(props) {
             }
             else if (!props.event) {
                 // if we are not filtering out fencers, summarise all registrations
-                var regFor = eventById["e" + reg.sideevent];
-                if (roleById["r" + reg.role] && regFor && is_valid(regFor.competition_id)) {
+                var regFor = props.basic.sideeventsById["s" + reg.sideevent] || null;
+                if (roleById["r" + reg.role] && regFor && regFor.competition) {
                     // role for a specific competition
                     fencer.role.push(role);
 
                     // generic participant/athlete: push the event title
                     if(role == 0) {
-                        fencer.has_role.push(create_abbr(regFor, cmpById));
+                        fencer.has_role.push(regFor.abbreviation);
                     }
                     else {
                         // specific event role, push the actual role name + event title
@@ -92,9 +74,10 @@ export function ParticipantList(props) {
                         rname += " (" + regFor.title + ")";
                         fencer.has_role.push(rname);
                     }
-                    comp = cmpById["c" + regFor.competition_id];
+                    comp = regFor.competition;
                 }
                 else {
+                    // role for the entire event
                     var role = parseInt(reg.role);
                     fencer.role.push(role);
                     var rname = roleById["r" + role] ? roleById["r" + role].name : "";
@@ -113,9 +96,7 @@ export function ParticipantList(props) {
                 competition: comp,
                 fencer: fencer,
                 registration: reg,
-                fencers: props.fencers,
-                categories: props.categories,
-                weapons: props.weapons
+                fencers: props.fencers
             };
 
             // Requirement 1.1.6: events with a mismatch in category are marked
@@ -123,6 +104,10 @@ export function ParticipantList(props) {
             if(wrong_category(ruleobject)) {
                 fencer.incorrect_cat=true;
                 fencer.error="(C)";
+            }
+            if (wrong_gender(ruleobject)) {
+                fencer.incorrect_cat = true;
+                fencer.error = "(S)";
             }
             if(team_rule_veterans(ruleobject)) {
                 fencer.incorrect_cat=true;
@@ -176,9 +161,12 @@ export function ParticipantList(props) {
                 return a1.fullname > a2.fullname;
             }
 
-            if(a1.has_role.length > 0 && a2.has_role.length == 0) return -1;
-            if (a2.has_role.length > 0 && a1.has_role.length == 0) return 1;
-            if(a1.allroles && a2.allroles && a1.allroles != a2.allroles) return a1.allroles > a2.allroles;
+            // do not sort by roles if this is an overall listing (not for a specific event)
+            // it depends on how the roles were ordered and when people
+            // have multiple roles it gets confusing
+            //if(a1.has_role.length > 0 && a2.has_role.length == 0) return -1;
+            //if (a2.has_role.length > 0 && a1.has_role.length == 0) return 1;
+            //if(a1.allroles && a2.allroles && a1.allroles != a2.allroles) return a1.allroles > a2.allroles;
 
             // sort by teams if we have more than 1 team
             if(allow_more_teams) {
@@ -203,14 +191,13 @@ export function ParticipantList(props) {
                 <tr>
                     <th>Name</th>
                     <th>First name</th>
-                    {props.showCountry && (
-                        <th>Country</th>
-                    )}
+                    {props.showCountry && (<th>Country</th>)}
                     <th>Gender</th>
                     <th>YOB</th>
                     {!showTeam && (<th>Category</th>)}
                     {showTeam && (<th>Team</th>)}
-                    {showRoles && (<th>Role</th>)}
+                    {props.showRoles && (<th>Role</th>)}
+                    {props.camera && (<th></th>)}
                     <th></th>
                     <th></th>
                 </tr>
@@ -218,7 +205,7 @@ export function ParticipantList(props) {
             <tbody>
                 {fencers.map((fencer,idx) => (
                         <tr key={idx} className={fencer.incorrect_cat ? "incorrect-cat": ""}>
-                            <td>{fencer.name}{showcaterrors && fencer.error}</td>
+                            <td>{fencer.name}{showErrors && fencer.error}</td>
                             <td>{fencer.firstname}</td>
                             {props.showCountry && (
                                 <td>{fencer.country_name}</td>
@@ -227,7 +214,7 @@ export function ParticipantList(props) {
                             <td>{fencer.birthyear}</td>
                             {!showTeam && (<td>{fencer.category}</td>)}
                             {showTeam && (<td>{fencer.has_team}</td>)}
-                            {showRoles && (<td>{fencer.has_role.map((rl,idx) => (<span key={idx}>{idx>0 && (", ")}{rl}</span>))}</td>)}
+                            {props.showRoles && (<td>{fencer.has_role.map((rl,idx) => (<span key={idx}>{idx>0 && (", ")}{rl}</span>))}</td>)}
                             {props.camera && (<td>
                                 {fencer.picture == 'Y' && (<span className='pi pi-camera blue'></span>)}
                                 {fencer.picture == 'A' && (<span className='pi pi-camera green'></span>)}

@@ -46,7 +46,7 @@ export const team_rule_veterans = (data) => {
     return false;
 }
 
-export const filter_event_team_veterans = (fencer, sideevent, event) => {
+export const filter_event_team_veterans = (fencer, sideevent) => {
     return sideevent.category.type == 'T' 
         && sideevent.category.abbr == 'T' 
         && sideevent.weapon.gender == fencer.gender

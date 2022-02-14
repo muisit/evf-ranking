@@ -78,39 +78,48 @@ class Policy extends BaseLib {
         $sideevent = null;
         $basemodel = null;
         $fencer=null;
+        global $evflogger;
 
         if(isset($data["model"])) {
             $sid = isset($data["model"]["sideevent"]) ? $data["model"]["sideevent"] : null;
             if (empty($sid) && isset($data["filter"])) {
                 $sid = isset($data["filter"]["sideevent"]) ? $data["filter"]["sideevent"] : null;
             }
+            $evflogger->log("sideevent is $sid");
 
             $eid = isset($data["model"]["event"]) ? $data["model"]["event"] : null;
             if (empty($eid) && isset($data["filter"])) {
                 $eid = isset($data["filter"]["event"]) ? $data["filter"]["event"] : null;
             }
+            $evflogger->log("event is $eid");
 
             $sideevent = new \EVFRanking\Models\SideEvent($sid, true);
             if (!$sideevent->exists()) {
+                $evflogger->log("no such sideevent");
                 $sideevent = null;
             }
 
             $event = new \EVFRanking\Models\Event($eid, true);
             if(!$event->exists()) {
                 $event = null;
+                $evflogger->log("no such event");
             }
 
             $rid = isset($data["model"]["id"]) ? $data["model"]["id"] : null;
             $modelname="\\EVFRanking\\Models\\$modelname";
+            $evflogger->log("loading model $modelname($rid)");
             $basemodel = new $modelname($rid, true);
             if(!$basemodel->exists()) {
+                $evflogger->log("model not specified in modeldata, or -$rid- does not exist");
                 $basemodel = null;
             }
-
+            
             $fid = isset($data["model"]["fencer"]) ? $data["model"]["fencer"] : null;
+            $evflogger->log("fencer is ".json_encode($fid));
             $fencer = new \EVFRanking\Models\Fencer($fid);
             if (!$fencer->exists()) {
                 $fencer = null;
+                $evflogger->log("no such fencer");
             }            
         }
         return array($sideevent,$event, $basemodel,$fencer);
@@ -217,6 +226,7 @@ class Policy extends BaseLib {
             return true;
         }
         // check on correct filter for this HoD
+        $evflogger->log("testing $cid vs $hodcountry");
         if (intval($cid) === intval($hodcountry)) {
             return true;
         }
@@ -229,7 +239,7 @@ class Policy extends BaseLib {
         global $evflogger;
         // if the user has registration capabilities, always allow
         if ($userdata["rankings"] === true || $userdata["registration"] === true) {
-            error_log("user has rankings or registration rights, fsave allowed");
+            $evflogger->log("user has rankings or registration rights, fsave allowed");
             return true;
         }
 
@@ -355,6 +365,7 @@ class Policy extends BaseLib {
             $evflogger->log("no event specified (1)");
             return false;
         }
+        if(!empty($sideevent)) $evflogger->log("testing ".$sideevent->event_id." vs ".$event->getKey());
         if (!empty($sideevent) && $sideevent->event_id != $event->getKey()) {
             $evflogger->log("sideevent does not match event (2)");
             return false;
@@ -473,6 +484,11 @@ class Policy extends BaseLib {
         }
         if (empty($fencer)) {
             $evflogger->log("fencer does not exist (2)");
+            return false;
+        }
+
+        if($registration->registration_fencer != $fencer->getKey()) {
+            $evflogger->log("fencer does not match registration");
             return false;
         }
 

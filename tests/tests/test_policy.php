@@ -3,7 +3,7 @@
 namespace EVFTest;
 
 class Test_Policy extends BaseTest {
-    public $disabled=true;
+    public $disabled=false;
 
     public function init() {
         parent::init();
@@ -12,11 +12,12 @@ class Test_Policy extends BaseTest {
 
     public function test_policy_fencers() {
         $this->checkPolicy("fencers",array(
-            TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-            TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-            TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
-            TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
-            TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
+            // list view save delete misc nosuchcapa
+            TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,  // admin
+            TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,  // ranking
+            TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, // register
+            TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, // unpriv
+            TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, // anonymous
         ));
     }
 
@@ -42,8 +43,8 @@ class Test_Policy extends BaseTest {
 
     public function test_policy_ranking() {
         $this->checkPolicy("ranking", array(
-            TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-            TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
+            TRUE, TRUE, TRUE, TRUE, TRUE, FALSE,
+            TRUE, TRUE, TRUE, TRUE, TRUE, FALSE,
             TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
             TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
             TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
@@ -216,7 +217,16 @@ class Test_Policy extends BaseTest {
                 1024                                                                // unknown
         );
 
-        // missing side-event
+        $outcome=array(FALSE,"delete"=>TRUE);
+        $outcomeorg=array(TRUE, "save"=>FALSE,"misc"=>FALSE,"nosuch"=>FALSE);
+        $outcomeorgb=array(FALSE, "save"=>TRUE, "view"=>TRUE,"list"=>TRUE); // when a valid registration is passed
+        $outcomeorgc=array(FALSE, "view"=>TRUE,"list"=>TRUE); // when an invalid fencer or registration is passed
+        $outcomeorg2=array(TRUE, "misc"=>FALSE,"nosuch"=>FALSE); // when save is allowed
+        $outcomehod=array(FALSE, "save"=>TRUE, "delete"=>TRUE); // when country is not set, but fencer is
+        $outcomehodb=array(FALSE, "save"=>TRUE); // when country is not set, but registration is
+        // missing side-event and registration
+        // listing, viewing  all registrations is allowed for organisers
+        // Deleting a non-existing registration is also allowed for everyone
         $this->subtest_registration_policy("case 1", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1
@@ -225,14 +235,17 @@ class Test_Policy extends BaseTest {
                 "event" => 1,
             )
         ), array( // matches users above
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 1...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 1...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 1...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 1...
-            FALSE                                            // 1
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome
         ));
 
-        // missing event
+        // missing event and registration
+        // deleting a missing registration is always allowed
+        // missing event fails list/view (case '1')
+        $outcome=array(FALSE,"delete"=>TRUE);
         $this->subtest_registration_policy("case 2",$policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "sideevent" => 1
@@ -240,14 +253,15 @@ class Test_Policy extends BaseTest {
             "filter" => array(
             )
         ), array( // matches users above
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 2...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 2...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 2...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 2...
-            FALSE                                            // 2
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome
         ));
 
-        // missing model
+        // missing registration model
+        // see above
         $this->subtest_registration_policy("case 3",$policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 100
@@ -257,14 +271,16 @@ class Test_Policy extends BaseTest {
                 "sideevent" => 1
             )
         ), array( // matches users above
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 3...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 3...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 3...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 3...
-            FALSE                                            // 3
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome
         ));
 
-        // missing side event does not match event
+        // side event does not match event
+        // missing registration, but delete always allowed
+        // incorrect side event fails view and list (case '2')
         $this->subtest_registration_policy("case 4",$policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "sideevent" => 3
@@ -273,14 +289,15 @@ class Test_Policy extends BaseTest {
                 "event" => 1
             )
         ), array( // matches users above
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 4...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 4...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 4...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 4...
-            FALSE                                            // 4
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome
         ));
 
-        // no event in filter
+        // no event in filter (exit case '4')
+        // fails on both list and view (capa rview is no longer tested, list and view both test rlist)
         $this->subtest_registration_policy("case 5",$policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "sideevent" => 1,
@@ -288,14 +305,15 @@ class Test_Policy extends BaseTest {
             ),
             "filter" => array()
         ), array( // matches users above
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 5...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 5...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 5...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 5...
-            FALSE                                            // 5
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome
         ));
 
         // filter incorrect
+        // same results as missing filter (exit case '5')
         $this->subtest_registration_policy("case 6", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1
@@ -305,32 +323,16 @@ class Test_Policy extends BaseTest {
                 "sideevent" => 1
             )
         ), array( // matches users above
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 6...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 6...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 6...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 6...
-            FALSE                                            // 6
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, $outcome, 
+            $outcome
         ));
 
-        // invalid action
-        $this->subtest_registration_policy("case 7", $policy, $users, array("view", "misc", "nosuch"), array(
-            "model" => array(
-                "event" => 1
-            ),
-            "filter" => array(
-                "event" => 1, // event does not match up
-                "sideevent" => 1
-            )
-        ), array( // matches users above
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 7...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 7...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 7...
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 7...
-            FALSE                                            // 7
-        ));
-
-
-        $this->subtest_registration_policy("case 8", $policy, $users, "list", array(
+        // event and sideevent match up
+        // allow list, view, delete
+        $this->subtest_registration_policy("case 8", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "sideevent" => 1,
                 "event" => 1
@@ -339,14 +341,15 @@ class Test_Policy extends BaseTest {
                 "event" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 9 - 11 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 9 - 11 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 9 - 11 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 9 - 11 - 10
-            FALSE                                       // 8
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome
         ));
 
-        $this->subtest_registration_policy("case 9", $policy, $users, "list", array(
+        // country specified, so allowed for HoD as well
+        $this->subtest_registration_policy("case 9", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1
             ),
@@ -356,15 +359,15 @@ class Test_Policy extends BaseTest {
                 "country" => 1
             )
         ), array( // matches users above
-            FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, // 8 - 21 - 21 - 21 - 9 - 12 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, // 8 - 21 - 21 - 21 - 9 - 12 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, // 8 - 21 - 21 - 21 - 9 - 12 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, // 8 - 21 - 21 - 21 - 9 - 12 - 10
-            FALSE                                      // 8
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, 
+            $outcome
         ));
 
         // country does not match HoD country
-        $this->subtest_registration_policy("case 10", $policy, $users, "list", array(
+        $this->subtest_registration_policy("case 10", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1
             ),
@@ -374,31 +377,16 @@ class Test_Policy extends BaseTest {
                 "country" => 2
             )
         ), array( // matches users above
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 21 - 20 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 21 - 20 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 21 - 20 - 10
-            FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, // 8 - 21 - 21 - 21 - 21 - 20 - 10
-            FALSE                                      // 8
-        ));
-
-        $this->subtest_registration_policy("case 11", $policy, $users, "save", array(
-            "model" => array(
-                "event" => 1
-            ),
-            "filter" => array(
-                "event" => 1,
-                "sideevent" => 1
-            )
-        ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 22 - 13 - 22 - 22 - 22 - 22
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 22 - 13 - 22 - 22 - 22 - 22
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 22 - 13 - 22 - 22 - 22 - 22
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 22 - 13 - 22 - 22 - 22 - 22
-            FALSE                                            // 8
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome
         ));
 
         // invalid fencer
-        $this->subtest_registration_policy("case 12", $policy, $users, "save", array(
+        // fails for all but list, view, delete for organisers
+        $this->subtest_registration_policy("case 12", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
                 "fencer" => array(
@@ -410,15 +398,15 @@ class Test_Policy extends BaseTest {
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 14 - 13 - 14 - 14 - 14 - 14
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 14 - 13 - 14 - 14 - 14 - 14
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 14 - 13 - 14 - 14 - 14 - 14
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 14 - 13 - 14 - 14 - 14 - 14
-            FALSE                                            // 8
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome
         ));
 
         // fencer country does not match HoD country
-        $this->subtest_registration_policy("case 13", $policy, $users, "save", array(
+        $this->subtest_registration_policy("case 13", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
                 "fencer" => 2
@@ -428,14 +416,15 @@ class Test_Policy extends BaseTest {
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 23 - 13 - 23 - 23 - 20 - 24
-            FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 23 - 13 - 23 - 23 - 20 - 24
-            FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 23 - 13 - 23 - 23 - 20 - 24
-            FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 23 - 13 - 23 - 23 - 20 - 24
-            FALSE                                        // 8
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcome, $outcomeorg2, 
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcome, $outcomeorg2, 
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcome, $outcomeorg2, 
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcome, $outcomeorg2, 
+            $outcome
         ));
 
-        $this->subtest_registration_policy("case 14", $policy, $users, "save", array(
+        // fencer correct, but country not set in filter, so fails for HoD
+        $this->subtest_registration_policy("case 14", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
                 "fencer" => 1
@@ -445,32 +434,16 @@ class Test_Policy extends BaseTest {
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 23 - 13 - 23 - 23 - 15 - 24
-            FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 23 - 13 - 23 - 23 - 15 - 24
-            FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 23 - 13 - 23 - 23 - 15 - 24
-            FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 23 - 13 - 23 - 23 - 15 - 24
-            FALSE                                       // 8
-        ));
-
-        // no registration set
-        $this->subtest_registration_policy("case 14b", $policy, $users, "delete", array(
-            "model" => array(
-                "event" => 1,
-            ),
-            "filter" => array(
-                "event" => 1,
-                "sideevent" => 1
-            )
-        ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 25 - 25 - 25 - 25
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 25 - 25 - 25 - 25
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 25 - 25 - 25 - 25
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 25 - 25 - 25 - 25
-            FALSE                                        // 8
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomehod, $outcomeorg2, 
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomehod, $outcomeorg2, 
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomehod, $outcomeorg2, 
+            $outcome, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomeorg2, $outcomehod, $outcomeorg2, 
+            $outcome
         ));
 
         // invalid registration
-        $this->subtest_registration_policy("case 15", $policy, $users, "delete", array(
+        // save not allowed, because fencer not set
+        $this->subtest_registration_policy("case 15", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
                 "id" => 1000
@@ -480,84 +453,90 @@ class Test_Policy extends BaseTest {
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 17 - 17 - 17 - 17
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 17 - 17 - 17 - 17
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 17 - 17 - 17 - 17
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 17 - 17 - 17 - 17
-            FALSE                                        // 8
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome, $outcomeorg, $outcomeorg, $outcomeorg, $outcomeorg, $outcome, $outcomeorg, 
+            $outcome
         ));
 
-        // registration for different event
-        $this->subtest_registration_policy("case 16", $policy, $users, "delete", array(
+        // save allowed, fencer correct
+        // delete not allowed, because registration is set and should now match the rest
+        $this->subtest_registration_policy("case 16", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
-                "id" => 3
+                "id" => 1,
+                "fencer" => 1
             ),
             "filter" => array(
                 "event" => 1,
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 26 - 26 - 26 - 26
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 26 - 26 - 26 - 26
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 26 - 26 - 26 - 26
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 26 - 26 - 26 - 26
-            FALSE                                        // 8
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE
         ));
 
         // registration for non-existing fencer (database corruption)
-        $this->subtest_registration_policy("case 17", $policy, $users, "delete", array(
+        // save fails
+        $this->subtest_registration_policy("case 17", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
-                "id" => 2
+                "id" => 2,
+                "fencer" => 1000
             ),
             "filter" => array(
                 "event" => 1,
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 18 - 18 - 18 - 18
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 18 - 18 - 18 - 18
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 18 - 18 - 18 - 18
-            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // 8 - 16 - 16 - 18 - 18 - 18 - 18
-            FALSE                                        // 8
+            FALSE, $outcomeorgc, $outcomeorgc, $outcomeorgc, $outcomeorgc, FALSE, $outcomeorgc, 
+            FALSE, $outcomeorgc, $outcomeorgc, $outcomeorgc, $outcomeorgc, FALSE, $outcomeorgc, 
+            FALSE, $outcomeorgc, $outcomeorgc, $outcomeorgc, $outcomeorgc, FALSE, $outcomeorgc, 
+            FALSE, $outcomeorgc, $outcomeorgc, $outcomeorgc, $outcomeorgc, FALSE, $outcomeorgc, 
+            FALSE
         ));
 
         // registration for fencer of different country
-        global $DB;
-        $this->subtest_registration_policy("case 18", $policy, $users, "delete", array(
+        // save allowed (we're not checking the registration data)
+        $this->subtest_registration_policy("case 18", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
-                "id" => 4
+                "id" => 4,
+                "fencer"=>1
             ),
             "filter" => array(
                 "event" => 1,
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 16 - 16 - 27 - 27 - 20 - 28
-            FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 16 - 16 - 27 - 27 - 20 - 28
-            FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 16 - 16 - 27 - 27 - 20 - 28
-            FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, // 8 - 16 - 16 - 27 - 27 - 20 - 28
-            FALSE                                        // 8
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE
         ));
 
         // registration okay
-        $this->subtest_registration_policy("case 19", $policy, $users, "delete", array(
+        $this->subtest_registration_policy("case 19", $policy, $users, array("list", "view", "save", "delete", "misc", "nosuch"), array(
             "model" => array(
                 "event" => 1,
-                "id" => 1
+                "id" => 1,
+                "fencer"=>1
             ),
             "filter" => array(
                 "event" => 1,
                 "sideevent" => 1
             )
         ), array( // matches users above (no, cash, accr, reg, org, hod, superhod)
-            FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 16 - 16 - 27 - 27 - 19 - 28
-            FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 16 - 16 - 27 - 27 - 19 - 28
-            FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 16 - 16 - 27 - 27 - 19 - 28
-            FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, // 8 - 16 - 16 - 27 - 27 - 19 - 28
-            FALSE                                        // 8
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomeorgb, $outcomehodb, $outcomeorgb, 
+            FALSE
         ));
     }
 
@@ -571,9 +550,14 @@ class Test_Policy extends BaseTest {
                 global $evflogger;
                 $evflogger->clear();
                 $name = "registration policy $cs for $action $wp_current_user";
-                $evflogger->log("start test $name expected ".($outcomes[$i] ? "TRUE":"FALSE"));
+                $outcome=$outcomes[$i];
+                if(is_array($outcome)) {
+                    if(isset($outcome[$action])) $outcome=$outcome[$action];
+                    else $outcome=$outcome[0];
+                }
+                $evflogger->log("start test $name expected ".($outcome ? "TRUE":"FALSE"));
                 $result = $policy->check("registration", $action, $modeldata);
-                $this->assert($result == $outcomes[$i], $name);
+                $this->assert($result == $outcome, $name);
             }
         }
     }
@@ -999,17 +983,32 @@ class Test_Policy extends BaseTest {
         ));
 
 
-        $DB->onQuery('^SELECT \* FROM TD_Event_Role WHERE event_id=([-0-9]*) AND user_id=([-0-9]*)$', function($pattern, $qry,$matches) {
+        $DB->onQuery('^SELECT \* FROM TD_Event_Role WHERE event_id = ([-0-9]*) AND user_id = ([-0-9]*)$', function($pattern, $qry,$matches) {
             global $evflogger;
             $evflogger->log("selecting event_role for event ".$matches[1]." and user ".$matches[2]);
             global $DB;
             $f1=$matches[1];
             $f2=$matches[2];
-            return $DB->loopAll("TD_Event_Role", function($item) use ($f1, $f2) {
+            $value = $DB->loopAll("TD_Event_Role", function($item) use ($f1, $f2) {
                 return isset($item["user_id"]) && $item["user_id"] == $f2
                   && isset($item["event_id"]) && $item["event_id"]==$f1;                  
             });
+            $evflogger->log("returning event-role for ".json_encode($value));
+            return $value;
         });
+
+        $DB->onQuery('^SELECT \* FROM TD_Registrar WHERE user_id = ([-0-9]*)$', function($pattern, $qry,$matches) {
+            global $evflogger;
+            $evflogger->log("selecting registrar for user ".$matches[1]);
+            global $DB;
+            $f2=$matches[1];
+            $value = $DB->loopAll("TD_Registrar", function($item) use ($f2) {
+                return isset($item["user_id"]) && $item["user_id"] == $f2;                  
+            });
+            $evflogger->log("returning registrar for ".json_encode($value));
+            return $value;
+        });
+
     }
 }
 

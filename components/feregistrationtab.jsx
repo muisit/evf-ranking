@@ -2,9 +2,8 @@ import { fencers, accreditation } from "./api.js";
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
-import { parse_date, date_to_category_num, format_date, is_valid, my_category_is_older,
-         is_organisation, is_sysop, is_hod, is_accreditor, is_organiser,
-         create_cmpById, create_wpnById, create_catById } from './functions';
+import { parse_date, format_date, is_valid,
+         is_organisation, is_sysop, is_hod, is_accreditor, is_organiser } from './functions';
 import React from 'react';
 import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
@@ -13,6 +12,7 @@ import FEBase from './febase';
 import { filter_event_category, filter_event_category_younger } from "./rules/wrong_category.jsx";
 import { filter_event_team_veterans } from "./rules/team_rule_veterans.jsx";
 import { filter_event_team_grandveterans } from "./rules/team_rule_grandveterans";
+import { adjustFencerData, updateFencerData, updateFencerRegistrations } from "./lib/registrations.js";
 
 export default class FERegistrationTab extends FEBase {
     constructor(props, context) {
@@ -54,7 +54,7 @@ export default class FERegistrationTab extends FEBase {
                     if(this.state.fencer == thistarget) {
                         var fencers=[];
                         json.data.list.map((itm)=> {
-                            itm = this.adjustFencerData(itm);
+                            itm = adjustFencerData(itm, this.props.basic.event);
 
                             // see if we already have this item in our list of registered fencers
                             // If so, replace with our local version to retain the registrations
@@ -73,7 +73,7 @@ export default class FERegistrationTab extends FEBase {
     }
 
     addFencer = () => {
-        var dt=parse_date(this.props.item.opens);
+        var dt=parse_date(this.props.basic.event.opens);
         dt.add(-40,'y');
         this.setState({fencer_object: {
             id: -1,
@@ -96,16 +96,16 @@ export default class FERegistrationTab extends FEBase {
             this.setState({ displayFencerDialog: false });
         }
         else if (tp == 'save') {
-            itm = this.adjustFencerData(itm);
-            this.replaceRegistration(itm);
-            this.setState({suggestions:[itm]});
+            itm = adjustFencerData(itm, this.props.basic.event);
+            var newlist=updateFencerData(this.state.registered, itm); // replace data, keep registrations
+            this.setState({suggestions:[itm], registered:newlist});
         }
     }
 
     onFencerSelection = (tp, itm) => {
         if (tp == 'change') {
-            this.setState({ selected_fencer: itm });
-            this.changeSingleRegisteredFencer(itm);
+            var newlist=updateFencerRegistrations(this.state.registered, itm);
+            this.setState({ selected_fencer: itm, registered: newlist });
         }
         else if (tp == 'close') {
             this.setState({ displaySelectDialog: false });
@@ -118,17 +118,14 @@ export default class FERegistrationTab extends FEBase {
     onFencerSelect = (itm) => {
         // newly suggested fencers do not have a registration list yet
         // unless they were already enrolled
-        if (!itm.registrations) itm.registrations=[];
-        var key = "k" + itm.id;
-        var registered = Object.assign({}, this.state.registered);
-        registered[key] = itm;
+        var newlist = updateFencerData(this.state.registered, itm);
         var events=this.selectEventsForFencer(itm);
 
         // for accreditation purposes, retrieve the list of current badges first
         if(is_accreditor() || is_organiser() || is_sysop()) {
-            this.loadAccreditations(this.props.item.id, itm.id);
+            this.loadAccreditations(this.props.basic.event.id, itm.id);
         }
-        this.setState({displaySelectDialog: true, selected_fencer: itm, registered:registered, fencer_events:events });
+        this.setState({displaySelectDialog: true, selected_fencer: itm, fencer_events:events, registered: newlist });
     }
 
     loadAccreditations = (eid,fid) => {
@@ -147,14 +144,11 @@ export default class FERegistrationTab extends FEBase {
 
     selectEventsForFencer = (fencer) => {
         // filter the available events based on category and gender
-        var catById = create_catById(this.props.categories);
-        var wpnById = create_wpnById(this.props.weapons);
-        var cmpById = create_cmpById(this.state.competitions, wpnById, catById);
         var events=[];
-        var allow_registration_lower_age = this.props.item.config && this.props.item.config.allow_registration_lower_age;
+        var allow_registration_lower_age = this.props.basic.event.config && this.props.basic.event.config.allow_registration_lower_age;
 
         // filter out valid roles for the capabilities
-        var roles = this.props.roles.filter((itm) => {
+        var roles = this.props.basic.roles.filter((itm) => {
             if (is_hod() && itm.org=='Country')  return true;
             if (is_organisation() && (itm.org == 'Org' || itm.org=='Country')) return true;
             if (is_sysop()) return true; // allow all roles for system administrators
@@ -171,27 +165,23 @@ export default class FERegistrationTab extends FEBase {
             return 0;
         });
 
-        if (fencer && this.state.sideevents && this.props.item) {
+        if (fencer && this.props.basic && this.props.basic.sideevents && this.props.basic.event) {
             var weaponevents={}; // stores the events qualified for this fencer based on weapon
             var allweaponevents={}; // stores all events based on weapon
 
-            events = this.state.sideevents.map((event) => {
+            events = this.props.basic.sideevents.map((event) => {
                 var ev = Object.assign({}, event);
-                ev.is_athlete_event = false;
-                ev.is_team_event = false;
+                ev.is_athlete_event = false; // is this a competition event selectable for this specific athlete
+                ev.is_team_event = false; // is this a competition event selectable for this specific athlete AND a team event
                 ev.default_role = "0"; // regular participant
-                ev.is_sideevent=false;
+                ev.is_sideevent=false; // is this a non-competition event
 
-                if (ev.competition_id && cmpById["c" + ev.competition_id]) {
-                    ev.competition = cmpById["c" + ev.competition_id];
-                    ev.weapon = ev.competition.weapon;
-                    ev.category = ev.competition.category;
-
+                if (ev.competition) {
                     ev.default_role = roles[0].id; // any non-athlete role
                     if (ev.category && ev.weapon) {
-                        ev.is_athlete_event = filter_event_category(fencer,ev,this.props.item)
-                                || filter_event_team_veterans(fencer,ev,this.props.item)
-                                || filter_event_team_grandveterans(fencer,ev, this.props.item);
+                        ev.is_athlete_event = filter_event_category(fencer,ev)
+                                || filter_event_team_veterans(fencer,ev)
+                                || filter_event_team_grandveterans(fencer,ev);
 
                         if(ev.is_athlete_event) {
                             ev.default_role = "0";
@@ -203,7 +193,7 @@ export default class FERegistrationTab extends FEBase {
                                 weaponevents[ev.weapon.abbr]=ev;
                             }
                         }
-                        if(allow_registration_lower_age && filter_event_category_younger(fencer,ev, this.props.item)) {
+                        if(allow_registration_lower_age && filter_event_category_younger(fencer,ev)) {
                             // create a list of all events that match gender and are for a younger category
                             if(!allweaponevents[ev.weapon.abbr]) allweaponevents[ev.weapon.abbr]=[];
                             allweaponevents[ev.weapon.abbr].push(ev);
@@ -236,13 +226,11 @@ export default class FERegistrationTab extends FEBase {
 
                 // now set the is_athlete flag on the events we need to open for a younger category as well
                 events = events.map((ev) => {
-                    if (ev.competition) {
-                        if (ev.category && ev.weapon) {
-                            var hasOwnCat = openevents[ev.weapon.abbr];
-                            if(hasOwnCat && ev.weapon.gender == fencer.gender && ev.category.value == hasOwnCat) {
-                                ev.is_athlete_event = true;
-                                ev.default_role="0"; // default role for athlete events is athlete
-                            }
+                    if (ev.competition && ev.category && ev.weapon) {
+                        var hasOwnCat = openevents[ev.weapon.abbr];
+                        if(hasOwnCat && ev.weapon.gender == fencer.gender && ev.category.value == hasOwnCat) {
+                            ev.is_athlete_event = true;
+                            ev.default_role="0"; // default role for athlete events is athlete
                         }
                     }
                     return ev;
@@ -257,7 +245,7 @@ export default class FERegistrationTab extends FEBase {
         var pcount={"all":0};
         var acount={"all":0};
         var sevents={};
-        this.state.sideevents.map((s) => {
+        this.props.basic.sideevents.map((s) => {
             var skey="s"+ s.id;
             sevents[skey]=s;
             pcount[skey]=0;
@@ -272,7 +260,7 @@ export default class FERegistrationTab extends FEBase {
                 fencer.registrations.map((reg) => {
                     var skey = "s" + reg.sideevent;
                     if(sevents[skey]) {
-                        if(is_valid(sevents[skey].competition_id) > 0 && parseInt(reg.role) == 0) {
+                        if(sevents[skey].competition && parseInt(reg.role) == 0) {
                             isathlete=true;
                             acount[skey]+=1;
 
@@ -314,28 +302,28 @@ export default class FERegistrationTab extends FEBase {
                         <div className='subtitle center'>No fencers found</div>
                     )}
                     {this.state.suggestions.length > 0 && (
-                        <ParticipantList tournament={this.props.item} fencers={this.state.suggestions} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
+                        <ParticipantList basic={this.props.basic} fencers={this.state.suggestions} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
                     )}
                     <Button label="Add New Fencer" icon="pi pi-check" className="p-button-raised cright" onClick={this.addFencer} />
-                    <FencerDialog apidata={{event: this.props.item.id, country: this.state.country }} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
-                    <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} roles={this.props.roles}  event={this.props.item} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}  categories={this.props.categories}/>
+                    <FencerDialog apidata={{event: this.props.basic.event.id, country: this.state.country }} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
+                    <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} basic={this.props.basic} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}/>
                 </div>
                 <div className='col-12'>
                     {(is_valid(this.state.country_item.id)) && (
                     <Accordion id="evfrankingacc" activeIndex={0}>
                         <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
-                                <ParticipantList tournament={this.props.item} roles={this.props.roles} country={this.state.country_item} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories} weapons={this.props.weapons} onEdit={this.onFencerEdit}/>
+                                <ParticipantList basic={this.props.basic} showRoles camera country={this.state.country_item} fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} onEdit={this.onFencerEdit}/>
                         </AccordionTab>
-                        {this.state.sideevents.map((itm,idx) => (
+                        {this.props.basic.sideevents.map((itm,idx) => (
                             <AccordionTab header={itm.title + " (" + (is_valid(itm.competition_id) ? acount["s" + itm.id] : pcount["s" + itm.id]) + ")"} key={idx}>
-                                <ParticipantList tournament={this.props.item} event={itm} fencers={this.state.registered} onSelect={this.onFencerSelect} roles={this.props.roles} competitions={this.state.competitions} categories={this.props.categories} weapons={this.props.weapons} onEdit={this.onFencerEdit}/>
+                                <ParticipantList basic={this.props.basic} event={itm} fencers={this.state.registered} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
                             </AccordionTab>
                         ))}
                     </Accordion>)}
                     {is_organisation() && !is_valid(this.state.country_item.id) && (
                     <Accordion id="evfrankingacc" activeIndex={0}>
                             <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
-                                <ParticipantList tournament={this.props.item} roles={this.props.roles} country={this.state.country_item} showCountry={true} camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} events={this.state.sideevents} competitions={this.state.competitions} categories={this.props.categories} weapons={this.props.weapons} onEdit={this.onFencerEdit}/>
+                                <ParticipantList basic={this.props.basic} country={this.state.country_item} showCountry showRoles camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} onEdit={this.onFencerEdit}/>
                             </AccordionTab>
                     </Accordion>)}
                 </div>

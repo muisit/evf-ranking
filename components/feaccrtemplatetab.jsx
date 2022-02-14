@@ -17,8 +17,8 @@ export default class FEAccrTemplateTab extends React.Component  {
     }
 
     componentDidMount = () => {
-        if (this.props.item.id > 0) {
-            templates(0,10000,{"event":this.props.item.id},"i",{})
+        if (this.props.basic.event.id > 0) {
+            templates(0,10000,{"event":this.props.basic.event.id},"i",{})
                 .then((cmp1) => {
                     if(cmp1.data && cmp1.data.list) {
                         this.setState({templates:cmp1.data.list});
@@ -31,7 +31,7 @@ export default class FEAccrTemplateTab extends React.Component  {
     }
 
     loadDefaults = () => {
-        template("loaddefaults",{event: this.props.item.id, filter: { event: this.props.item.id }})
+        template("loaddefaults",{event: this.props.basic.event.id, filter: { event: this.props.basic.event.id }})
             .then((cmp1) => {
                 if (cmp1.data && cmp1.data.list) {
                     this.setState({ templates: cmp1.data.list });
@@ -62,9 +62,8 @@ export default class FEAccrTemplateTab extends React.Component  {
                 break;
             case 'open':
                 if(!dt) {
-                    dt= {id:-1,name:'New Template', event: this.props.item.id, content: {}};
+                    dt= {id:-1,name:'New Template', event: this.props.basic.event.id, content: {}};
                 }
-
                 this.setState({displayDialog: true, template: dt});
                 break;
             case 'close':
@@ -120,7 +119,7 @@ export default class FEAccrTemplateTab extends React.Component  {
                     <span className='pi pi-plus-circle' onClick={() => this.onDialog('open')}>&nbsp;Create New</span><br/>
                     <span className='pi pi-undo' onClick={() => this.onDialog('defaults')}>&nbsp;Add Defaults</span>
                 </div>
-                <AccreditationTemplateDialog roles={this.props.roles} event={this.props.item} value={this.state.template} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} onDelete={(itm) => this.onDialog('delete',itm)}/>
+                <AccreditationTemplateDialog roles={this.props.basic.roles} event={this.props.basic.event} value={this.state.template} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} onDelete={(itm) => this.onDialog('delete',itm)}/>
             </div>
         );
     }

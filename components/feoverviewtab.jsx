@@ -14,15 +14,15 @@ export default class FEOverviewTab extends FEBase {
     }
 
     componentDidMount = () => {
-        this._componentDidMount();
         this.getSummary();
     }
 
     getSummary = () => {
-        this.onload("registrations","Loading registrations",this.props.item.id);
-        registration("overview", { event: this.props.item.id, filter: { event: this.props.item.id, country: this.state.country }})
+        if(!this.props.basic || !this.props.basic.event) return;
+        this.props.onload("registrations","Loading registrations",this.props.basic.event.id);
+        registration("overview", { event: this.props.basic.event.id, filter: { event: this.props.basic.event.id, country: this.state.country }})
             .then((json) => {
-                this.unload("registrations",this.props.item.id);
+                this.props.unload("registrations",this.props.basic.event.id);
                 this.setState({ summary: json.data });
             })
             .catch((err) => parse_net_error(err));
@@ -33,34 +33,31 @@ export default class FEOverviewTab extends FEBase {
     }
 
     renderContent () {
-        if(  !this.props.item 
-          || !this.state.competitions.length 
+        if(  !this.props.basic
+          || !this.props.basic.event 
+          || !this.props.basic.competitions.length 
           || !this.state.summary 
-          || !this.state.sideevents.length) return (null);
+          || !this.props.basic.sideevents.length) return (null);
 
 
-        var wpnById=create_wpnById(this.props.weapons);
-        var catById=create_catById(this.props.categories);
-        var roleById=create_roleById(this.props.roles);
-        var cmpById=create_cmpById(this.state.competitions, wpnById,catById);
-
-        var eventById={};
-        var eventAbbrs=[];
-        this.state.sideevents.map((se) => {
-            var key="s"+se.id;
-            se.abbr = create_abbr(se, cmpById);
-            eventById[key]=se;
-            eventAbbrs.push(se.abbr);
+        var eventById=Object.assign({},this.props.basic.sideeventsById);
+        var eventAbbrsComps = [];
+        var eventAbbrsSide = [];
+        this.props.basic.sideevents.map((se) => {
+            if(se.competition) {
+                eventAbbrsComps.push(se.abbreviation);
+            }
+            else {
+                eventAbbrsSide.push(se.abbreviation);
+            }
         });
-        eventById["sorg"]={abbr: 'Support' };
-        eventAbbrs = eventAbbrs.sort();
-        eventAbbrs.push("Support");
+        eventAbbrsComps = eventAbbrsComps.sort();
+        eventAbbrsSide = eventAbbrsSide.sort();
 
-        var cntById={};
-        this.props.countries.map((c) => {
-            var key="c"+c.id;
-            cntById[key]=c;
-        });
+        // put the support roles after the competitions, but before the side events
+        eventById["sorg"] = { abbr: 'Support' };
+        eventAbbrsComps.push("Support");
+        var eventAbbrs = eventAbbrsComps.concat(eventAbbrsSide);
 
         var cntoverview=[];
         var orgoverview=[];
@@ -73,9 +70,9 @@ export default class FEOverviewTab extends FEBase {
                 for(var s in sides) {
                     var tot=sides[s];
 
-                    if(roleById[s]) {
+                    if(this.props.data.rolesById[s]) {
                         var obj={
-                            role: roleById[s],
+                            role: this.props.data.rolesById[s],
                             total: tot
                         };
                         orgoverview.push(obj);
@@ -87,29 +84,34 @@ export default class FEOverviewTab extends FEBase {
                 for(var s in sides) {
                     var tot=sides[s];
 
-                    if(roleById[s]) {
+                    if(this.props.basic.rolesById[s]) {
                         var obj={
-                            role: roleById[s],
+                            role: this.props.basic.rolesById[s],
                             total: tot
                         };
                         offoverview.push(obj);
                     }
                 }
             }
-            else if(cntById[c]) {
+            else if(this.props.basic.countriesById[c]) {
                 // list of sideevents
-                var obj={"country": cntById[c]};
+                var obj = { "country": this.props.basic.countriesById[c]};
 
                 for (var s in sides) {
                     var tot = sides[s];
 
                     if (eventById[s]) {
-                        obj[eventById[s].abbr] = tot;
+                        obj[eventById[s].abbreviation] = tot;
                     }
                 }
                 cntoverview.push(obj);
             }
         }
+
+        // sort countries by alphabet
+        cntoverview.sort(function(a,b) {
+            return a.country.name > b.country.name;
+        });
 
         return (<div>
             {this.renderCountry(cntoverview, eventAbbrs)}

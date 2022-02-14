@@ -1,7 +1,8 @@
-import { competitions, sideevents, registrations, abort_all_calls } from "./api.js";
+import { registrations, abort_all_calls } from "./api.js";
 import { parse_date, format_date_fe, date_to_category, date_to_category_num, format_date, is_hod, is_valid } from './functions';
 import { Dropdown } from 'primereact/dropdown';
 import { Loading } from './elements/loading';
+import { retrieve, parse } from "./lib/registrations.js";
 import React from 'react';
 
 export default class FEBase extends React.Component {
@@ -19,72 +20,80 @@ export default class FEBase extends React.Component {
             loading: {},
             country: cid,
             country_item: this.countryFromId(cid),
-            sideevents: [],
-            registrations: [],
             registered: {},
-            competitions: []
+            registrations: []
         };
     }
 
     countryFromId = (id) => {
-        var retval=null;
         if(id == -1) {
             return {id:-1,name:"Organisation"};
         }
-        this.props.countries.map((cnt, idx) => {
-            if (cnt.id == id) {
-                retval = cnt;
+        if(this.props.basic && this.props.basic.countriesById) {
+            var key="c" + id;
+            if(this.props.basic.countriesById[key]) {
+                return this.props.basic.countriesById[key];
             }
-        });
-        return retval;
+        }
+        return {id:id, name:"No such country"};
+    }
+
+    competitionFromId = (id) => {
+        if(this.props.basic && this.props.basic.competitionById) {
+            var key="c" + id;
+            if(this.props.basic.competitionById[key]) {
+                return this.props.basic.competitionById[key];
+            }
+        }
+        return {id: id, title: "No such competition"}
+    }
+
+    sideeventFromId = (id) => {
+        if(this.props.basic && this.props.basic.sideeventById) {
+            var key="s" + id;
+            if(this.props.basic.sideEventById[key]) {
+                return this.props.basic.sideEventById[key];
+            }
+        }
+        return {id: id, title: "No such event", abbreviation: "??", competition: null};
+    }
+
+    roleFromId = (id) => {
+        if (this.props.basic && this.props.basic.roleById) {
+            var key = "r" + id;
+            if (this.props.basic.roleById[key]) {
+                return this.props.basic.roleById[key];
+            }
+        }
+        return { id: id, name: "No such role", type: 0 }
+    }
+
+    categoryFromId = (id) => {
+        if (this.props.basic && this.props.basic.categoryById) {
+            var key = "c" + id;
+            if (this.props.basic.categoryById[key]) {
+                return this.props.basic.categoryById[key];
+            }
+        }
+        return { id: id, name: "No such category", type: "?", value: 10, abbr: "?" };
+    }
+
+    weaponFromId = (id) => {
+        if (this.props.basic && this.props.basic.weaponById) {
+            var key = "w" + id;
+            if (this.props.basic.weaponById[key]) {
+                return this.props.basic.cateweaponByIdgoryById[key];
+            }
+        }
+        return { id: id, name: "No such weapon", gender: "?", abbr: "?" };
     }
 
     componentDidMount = () => {
         this._componentDidMount();
     }
 
-    unload = (key, value) => {
-        this.setState((state) => {
-            if(state.loading[key] && state.loading[key].value == value) {
-                state.loading[key].state=true;
-            }
-            return { loading: state.loading };
-        });
-    }
-
-    onload = (key, label,value) => {
-        this.setState((state) => {
-            state.loading[key]={label: label, state:false, value: value};
-            return { loading: state.loading };
-        });
-    }
-
     _componentDidMount = () => {
-        if(this.props.item.id > 0) {
-            this.onload("sideevents","Loading side events", this.props.item.id);
-            this.onload("competitions","Loading competitions",this.props.item.id);
-            sideevents(this.props.item.id).then((cmp1) => { 
-                if(cmp1 && cmp1.data && cmp1.data.list) {
-                    var sortedevents = cmp1.data.list.slice();
-                    // Requirement 3.1.2: sort events first, then by title
-                    sortedevents.sort(function (e1, e2) {
-                        // we sort competitions first, so if one item has a competition_id and the other not, return a value
-                        if (e1.competition_id > 0 && !e2.competition_id) return -1; // e1 before e2
-                        if (e2.competition_id > 0 && !e1.competition_id) return 1; // e2 before e1
-
-                        // else compare only on title
-                        return (e1.title < e2.title) ? -1 : 1;
-                    });
-                    this.unload("sideevents",this.props.item.id);
-                    this.setState({sideevents: sortedevents});
-                }
-            });
-            competitions(this.props.item.id).then((cmp) => {
-                if(cmp && cmp.data && cmp.data.list) {
-                    this.unload("competitions",this.props.item.id);
-                    this.setState({competitions: cmp.data.list});
-                }
-            });
+        if(this.props.basic && this.props.basic.event.id > 0) {
             this.getRegistrations();
         }
     }
@@ -92,86 +101,29 @@ export default class FEBase extends React.Component {
         abort_all_calls(this.abortType);
     }
 
-    adjustFencerData = (fencer) => {
-        var name = fencer.name + ", " + fencer.firstname;
-        fencer.fullname = name;
-        if (fencer.birthday) {
-            fencer.category = date_to_category(fencer.birthday, this.props.item.opens);
-            fencer.category_num = date_to_category_num(fencer.birthday, this.props.item.opens);
-            fencer.birthyear = fencer.birthday.substring(0, 4);
-        }
-        else {
-            fencer.category = "None";
-            fencer.category_num = -1;
-            fencer.birthyear = "unknown";
-            fencer.birthday=format_date(parse_date());
-        }
-        fencer.fullgender = fencer.gender == 'M' ? "M" : "W";
-        if(!fencer.registrations) fencer.registrations = [];
-        return fencer;
-    }
-
-    changeSingleRegisteredFencer = (itm) => {
-        var newlist = {};
-        Object.keys(this.state.registered).map((key) => {
-            var fencer = this.state.registered[key];
-            if (fencer.id == itm.id) {
-                newlist[key] = itm;
-            }
-            else {
-                newlist[key] = fencer;
-            }
-        });
-        this.setState({ registered: newlist });
-    }
-
     getRegistrations = () => {
         if(!this.state.country_item) return;
-        return this.doGetRegistrations(this.state.country_item.id, true);
+        this.doGetRegistrations(this.state.country_item.id, true);
     }
 
     doGetRegistrations = (cid, doclear) => {
-        if(doclear) this.onload("registrations","Loading existing registrations", cid);
-        return registrations(0, 10000, { country: cid, event: this.props.item.id })
-            .then((cmp) => {
-                if(doclear) this.unload("registrations",cid);
-                return this.parseRegistrations(cmp.data.list,doclear)
-            });
-    }
-
-    parseRegistrations = (registrations, doclear) => {
-        // filter out all fencers for the active registrations
-        if (registrations) {
-            var allfencers = {};
-            if (!doclear) {
-                allfencers = this.state.registered;
-            }
-            registrations.map((itm) => {
-                var fid = itm.fencer;
-                var key = "k" + fid;
-                if (!allfencers[key]) {
-                    var obj = this.adjustFencerData(itm.fencer_data);
-                    allfencers[key] = obj;
+        // if we are clearing in between, indicate we need to reload the registration data
+        // If we are not, this is a add-or-update operation used in the continuous accreditation
+        // tab
+        if(doclear) this.props.onload("registrations","Loading existing registrations", cid);
+        retrieve(cid, this.props.basic.event.id)
+            .then((lst) => {
+                if(doclear) this.props.unload("registrations",cid);
+                if(lst.data.list) {
+                    console.log("parsing return value ",lst);
+                    this.parseRegistrations(lst.data.list,doclear);
                 }
-
-                delete itm.fencer_data;
-                allfencers[key].registrations.push(itm);
             });
-            this.setState({ registrations: registrations, registered: allfencers });
-        }
     }
 
-    replaceRegistration = (fencer) => {
-        var key="k" + fencer.id;
-        var allfencers = Object.assign({}, this.state.registered);
-        if(allfencers[key]) {
-            fencer.registrations = allfencers[key].registrations;
-        }
-        else {
-            fencer.registrations=[];
-        }
-        allfencers[key]=fencer;
-        this.setState({registered: allfencers});
+    parseRegistrations = (lst, doclear) => {
+        var newlst = parse(this.state.registered, lst, doclear, this.props.basic.event);
+        this.setState({registered: newlst});
     }
 
     onCountrySelect = (val) => {
@@ -180,7 +132,8 @@ export default class FEBase extends React.Component {
     }
 
     countryHeader = () => {
-        var countries=this.props.countries.slice();
+        if(!this.props.basic || !this.props.basic.countries) { return (null); }
+        var countries=this.props.basic.countries.slice();
         // add an Organisation at the top to allow all organisation-role fencers
         countries.splice(0,0,{id:-1,name:'Organisation'});
         var country = (
@@ -193,6 +146,7 @@ export default class FEBase extends React.Component {
             </div>
         );
 
+        // if this is a HoD, only display the currently selected country, do not allow switching
         if (is_hod()) {
             country = (
                 <div className='row'>

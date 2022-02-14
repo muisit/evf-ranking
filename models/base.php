@@ -130,7 +130,7 @@
         }
         $result = (array) $result;
         $retval=array();
-        error_log("exporting ".json_encode($result));
+
         foreach($this->fieldToExport as $fld=>$exp) {
             if(isset($result[$fld])) {
                 $retval[$exp] = $result[$fld];
@@ -164,7 +164,8 @@
             }
         }
         if(empty($fieldstosave)) {
-            error_log("no fields to save");
+            global $evflogger;
+            $evflogger->log("no fields to save");
         }
         else {
             global $wpdb;
@@ -297,7 +298,8 @@
         global $wpdb;
 
         if(empty($values)) {
-            error_log("SQL: $query");
+            global $evflogger;
+            $evflogger->log("SQL: $query");
             return $wpdb->get_results($query);
         }
 
@@ -337,8 +339,9 @@
             }
         }
 
-        error_log("SQL: $query");
-        error_log("VAL: ".json_encode($replvals));
+        global $evflogger;
+        $evflogger->log("SQL: $query");
+        $evflogger->log("VAL: ".json_encode($replvals));
         $prepared = $wpdb->prepare($query,$replvals);
         return $wpdb->get_results($prepared);
     }

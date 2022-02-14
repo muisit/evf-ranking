@@ -335,9 +335,11 @@ class BaseTest {
     public function assert($result, $subtest) {
         global $verbose;
         global $evflogger;
+        $retval=false;
         if($result) {
             $this->success+=1;
             $evflogger->clear();
+            $retval=true;
         }
         else {
             if($verbose) {
@@ -345,8 +347,33 @@ class BaseTest {
                 $evflogger->emit();
             }
             $this->fails+=1;
+            $retval=false;
         }
         $this->count+=1;
+        return $retval;
+    }
+
+    public function expects($result, $output, $subtest) {
+        global $verbose;
+        global $evflogger;
+        $retval=false;
+        if($result === $output) {
+            $this->success+=1;
+            $evflogger->clear();
+            $retval=true;
+        }
+        else {
+            if($verbose) {
+                $evflogger->log("expected: ".$output);
+                $evflogger->log("received: ".$result);
+                $evflogger->log("$subtest fails");
+                $evflogger->emit();
+            }
+            $this->fails+=1;
+            $retval=false;
+        }
+        $this->count+=1;
+        return $retval;
     }
 
     public function run() {

@@ -173,13 +173,11 @@ export function parse_team_for_number(name) {
     return parseInt(result[0]);
 }
 
-export function create_abbr(se, cmpById) {
+export function create_abbr(se) {
     var abbr='??';
-    var ckey="c" + se.competition_id;
-    if(cmpById[ckey]) {
-        var cmp = cmpById[ckey];
-        var wpn = cmp.weapon ? cmp.weapon : {abbr:'??'};
-        var cat = cmp.category ? cmp.category : {abbr: '??'};
+    if(se.competition) {
+        var wpn = se.competition.weapon ? se.competition.weapon : {abbr:'??'};
+        var cat = se.competition.category ? se.competition.category : {abbr: '??'};
         abbr = wpn.abbr + cat.abbr;
     }
     else {
@@ -191,6 +189,15 @@ export function create_abbr(se, cmpById) {
         }
     }
     return abbr;
+}
+
+export function create_countryById(countries) {
+    var countryById={};
+    countries.map((r) => {
+        var key="c"+r.id;
+        countryById[key]=r;
+    });
+    return countryById;
 }
 
 export function create_roleById(roles) {
@@ -233,4 +240,17 @@ export function create_cmpById(competitions, wpnById, catById) {
         cmpById[key]=c;
     });
     return cmpById;
+}
+
+export function create_sideeventById(sideevents, competitions) {
+    var byId={};
+    sideevents.map((c) => {
+        var key="s"+c.id;
+        var ckey="c"+c.competition_id;
+        c.competition=null;
+        if(competitions[ckey]) c.competition = competitions[ckey];
+
+        byId[key]=c;
+    });
+    return byId;
 }

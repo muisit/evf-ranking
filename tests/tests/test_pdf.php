@@ -79,7 +79,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("0d42f798111bc1beb42c9ab0ee71918f", $fname);
+        $this->checkHash("297c2eb5f9fcdc25a66c14d4d4ce1a51", $fname);
     }
 
     public function test_image2() {
@@ -118,7 +118,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("0d42f798111bc1beb42c9ab0ee71918f", $fname);
+        $this->checkHash("d354d504998cafdc09f27ed26341ab2d", $fname);
     }
 
 
@@ -148,7 +148,7 @@ class Test_PDF extends BaseTest {
         ));
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("0064b0ac7d626f162cc3002e395134f2", $fname);
+        $this->checkHash("28d99c3e995bc12bfe6fdafd630012b4", $fname);
     }
 
     public function test_text3() {
@@ -182,7 +182,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("07305f0adf25e5a9c8bb2110c822f427", $fname);
+        $this->checkHash("31066d6aa7dd23902820633edd6e94ff", $fname);
     }
 
     
@@ -210,7 +210,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("faff1abf53dccbbf241a9b0a9a2b79be", $fname);
+        $this->checkHash("d9eb87c847315336f807b40ad85f7a11", $fname);
     }
 
     public function test_text() {
@@ -233,7 +233,7 @@ class Test_PDF extends BaseTest {
         ));
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("aead805c66fb62a47c44ad94c82bf77f", $fname);
+        $this->checkHash("62139be125266dae9fc7470f9742ff1d", $fname);
     }
 
     public function test_box2() {
@@ -256,7 +256,7 @@ class Test_PDF extends BaseTest {
         $template->content=json_encode($content);
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("b3ad21a26ad0cb5d3e7f605b856f7ab4", $fname);
+        $this->checkHash("a7f7c2e75c13894a123b85b3fcc0885d", $fname);
     }
 
     public function test_box() {
@@ -307,7 +307,7 @@ class Test_PDF extends BaseTest {
         ));
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("165be703cb186325167b18c4992bff89",$fname);
+        $this->checkHash("8ba128430b7b1b770d91519fce1eff60",$fname);
     }
 }
 

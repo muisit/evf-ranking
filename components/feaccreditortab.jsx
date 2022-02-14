@@ -5,6 +5,7 @@ import { Tooltip } from 'primereact/tooltip';
 import { registrations, accreditation } from './api';
 import {is_organisation, parse_net_error} from "./functions";
 import AccreditationDialog from './dialogs/accreditationdialog';
+import { updateFencerRegistrations } from './lib/registrations';
 
 export default class FEAccreditorTab extends FEBase {
     constructor(props, context) {
@@ -30,12 +31,12 @@ export default class FEAccreditorTab extends FEBase {
     }
 
     getSummary = (firsttime) => {
-        if(firsttime) this.onload("overview","Loading summary overview",this.props.item.id);
-        accreditation("overview", { event: this.props.item.id })
+        if(firsttime) this.props.onload("overview","Loading summary overview",this.props.basic.event.id);
+        accreditation("overview", { event: this.props.basic.event.id })
             .then((json) => {
                 this.setState({ summary: json.data });
                 if(firsttime) {
-                    this.unload("overview",this.props.item.id);
+                    this.props.unload("overview",this.props.basic.event.id);
                     this.startRegularRefresh();
                 }
             })
@@ -55,7 +56,7 @@ export default class FEAccreditorTab extends FEBase {
         var href = evfranking.url + "&download=" + type;
         
         if(!event) {
-            href += "&mainevent=" + this.props.item.id + "&nonce=" + evfranking.nonce;
+            href += "&mainevent=" + this.props.basic.event.id + "&nonce=" + evfranking.nonce;
         }
         else {
             href += "&event=" + event.id + "&nonce=" + evfranking.nonce;
@@ -64,7 +65,7 @@ export default class FEAccreditorTab extends FEBase {
     }
 
     doGetPendingPhotos = (cid, doclear) => {
-        return registrations(0, 10000, { country: cid, event: this.props.item.id },"cnf",{photoid:true})
+        return registrations(0, 10000, { country: cid, event: this.props.basic.event.id },"cnf",{photoid:true})
             .then((cmp) => this.parseRegistrations(cmp.data.list, doclear));
     }
 
@@ -133,8 +134,8 @@ export default class FEAccreditorTab extends FEBase {
                 // skip
                 break;
             case 'change':
-                this.changeSingleRegisteredFencer(dt);
-                this.setState({ fencer_object: dt });
+                var newlist = updateFencerRegistrations(this.state.registered, dt);
+                this.setState({ fencer_object: dt, registered: newlist });
                 break;
             case 'goto':
                 this.findFencerWithPicture(this.state.fencer_object, dt)
@@ -155,7 +156,7 @@ export default class FEAccreditorTab extends FEBase {
 
     generateDoc = function(type, id) {
         var self=this;
-        accreditation("generate", { event: this.props.item.id, type:type, type_id:id })
+        accreditation("generate", { event: this.props.basic.event.id, type:type, type_id:id })
             .then((json) => {
                 self.getSummary(false);
             })
@@ -164,7 +165,7 @@ export default class FEAccreditorTab extends FEBase {
 
     downloadDoc = function(type,id) {
         var href = evfranking.url + "&download=summary&type=" + type + "&typeid="+id;
-        href += "&mainevent=" + this.props.item.id + "&nonce=" + evfranking.nonce;
+        href += "&mainevent=" + this.props.basic.event.id + "&nonce=" + evfranking.nonce;
         window.open(href);
     }
 
@@ -173,7 +174,7 @@ export default class FEAccreditorTab extends FEBase {
         switch(what) {
         case 'regenerate':
         case 'check':
-            accreditation(what, { event: this.props.item.id })
+            accreditation(what, { event: this.props.basic.event.id })
             .then((json) => {
                 self.getSummary(false);
             })
@@ -225,7 +226,7 @@ export default class FEAccreditorTab extends FEBase {
                 <Tooltip target='.pi-icon-generate' />
                 {elements.map((line, idx) => {
                     // check for an active PDF job
-                    var key=this.props.item.id + "_" + nameheader + "_" + line[idmember];
+                    var key=this.props.basic.event.id + "_" + nameheader + "_" + line[idmember];
                     var is_generating=this.state.summary.jobs && this.state.summary.jobs[key];
                     return (
                     <tr key={idx}>
@@ -263,7 +264,7 @@ export default class FEAccreditorTab extends FEBase {
                             </tr>
                         </thead>
                         <tbody>
-                        {this.state.sideevents.map((event,idx) => (
+                        {this.props.basic.sideevents.map((event,idx) => (
                             <tr key={'f'+event.id}>
                               <td>{event.title}</td>
                               <td className='textcenter'>
@@ -286,7 +287,7 @@ export default class FEAccreditorTab extends FEBase {
                         <span className='pi pi-search' onClick={() => this.onDialog('open')}>&nbsp;Inspect Photo's</span>
                     </div>
                 </div>
-                <AccreditationDialog event={this.props.item} value={this.state.fencer_object} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} goTo={(itm) => this.onDialog('goto',itm)} />
+                <AccreditationDialog event={this.props.basic.event} value={this.state.fencer_object} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} goTo={(itm) => this.onDialog('goto',itm)} />
             </div>
         );
     }
@@ -325,10 +326,7 @@ export default class FEAccreditorTab extends FEBase {
 
     renderSummaryRole() {
         if (!this.state.summary || !this.state.summary.roles) return (null);
-        var rolesById={};
-        this.props.roles.map((itm) => {
-            rolesById["r"+parseInt(itm.id)]=itm;
-        });
+        var rolesById=this.props.basic.rolesById;
 
         var roles=this.state.summary.roles.map((itm) => {
             if(rolesById["r"+parseInt(itm.role)]) {

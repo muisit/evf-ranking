@@ -1,9 +1,17 @@
 <?php
 
 $verbose=false;
+$namedtests=array();
+$nextisnamed=false;
 foreach($argv as $arg) {
+    if($nextisnamed) {
+        $namedtests[]=$arg;
+        $nextisnamed=false;
+    }
+
     if ($arg == "-v" || $arg == "--verbose") $verbose = true;
     if ($arg == "-s" || $arg == "--silent") $verbose = false;
+    if ($arg=="-n" || $arg == "--named") $nextisnamed=true;
 }
 
 function loadClassFile($filename) {
@@ -60,12 +68,14 @@ $numtests=0;
 $success=0;
 $fails=0;
 foreach ($alltests as $key=>$model) {
-    echo "Running tests for ".$model->name."\r\n";
-    $model->run();
-    echo "Tests: ".$model->count." Success: ".$model->success." Fails: ".$model->fails."\r\n";
-    $success+=$model->success;
-    $fails+=$model->fails;
-    $numtests += $model->count;
+    if(empty($namedtests) || in_array($model->name,$namedtests)) {
+        echo "Running tests for ".$model->name."\r\n";
+        $model->run();
+        echo "Tests: ".$model->count." Success: ".$model->success." Fails: ".$model->fails."\r\n";
+        $success+=$model->success;
+        $fails+=$model->fails;
+        $numtests += $model->count;
+    }
 }
 
 echo "\r\nEnd of testing.\r\nTotal tests: $numtests\r\nSuccess: $success\r\nFails: $fails\r\n";

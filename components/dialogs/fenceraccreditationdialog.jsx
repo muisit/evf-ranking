@@ -32,35 +32,10 @@ export default class FencerAccreditationDialog extends React.Component {
     }
 
     setConvenienceData = () => {
-        this.roleById = {};
-        this.props.roles.map((r) => {
-            this.roleById["r" + r.id] = r;
-        });
-
-        this.wpnById = {};
-        this.props.weapons.map((w) => {
-            var key = "w" + w.id;
-            this.wpnById[key] = w;
-        });
-
-        this.catById = {};
-        this.props.categories.map((c) => {
-            var key = "c" + c.id;
-            this.catById[key] = c;
-        });
-
-        this.cmpById = {};
-        this.props.competitions.map((c) => {
-            var key = "c" + c.id;
-            var wkey = "w" + c.weapon;
-            if (this.wpnById[wkey]) c.weapon_obj = this.wpnById[wkey];
-
-            var ckey = "c" + c.category;
-            if (this.catById[ckey]) c.category_obj = this.catById[ckey];
-
-            this.cmpById[key] = c;
-        });
-
+        this.roleById = this.props.basic.rolesById || {};
+        this.wpnById = this.props.basic.weaponsById || {};
+        this.catById = this.props.basic.categoriesById || {};
+        this.cmpById = this.props.basic.competitionsById || {};
         this.eventById = {};
         this.props.events.map((se) => {
             var key = "s" + se.id;
@@ -92,7 +67,7 @@ export default class FencerAccreditationDialog extends React.Component {
         registration('save', { 
             id: reg.id || -1,
             fencer: this.props.value.id, 
-            event: this.props.event.id, 
+            event: this.props.basic.event.id, 
             sideevent: reg.sideevent,
             state: reg.state
         })

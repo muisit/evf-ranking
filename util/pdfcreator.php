@@ -400,6 +400,9 @@ class PDFCreator {
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
         $txt = isset($data["dates"]) ? $data["dates"] : array();
+        if(isset($element["onedateonly"]) && $element["onedateonly"]===true) {
+            $txt=array($txt[0]);
+        }
         $txt = implode("\n", str_replace(" ","~",$txt));
         if (strlen(trim($txt))) {
             $this->putTextAt($pdf, $txt, array("replaceTilde"=>true, "offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "colour"=>$colour));

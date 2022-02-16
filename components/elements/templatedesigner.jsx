@@ -177,7 +177,8 @@ export default class TemplateDesigner extends React.Component {
             style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Sans", zIndex: 1, color: "#000000" },
             hasFontSize: true,
             hasColour: true,
-            resizeable: true
+            resizeable: true,
+            onedateonly: false
         };
         return element;
     }

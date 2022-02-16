@@ -66,7 +66,7 @@ class API extends BaseLib {
         wp_die();
     }
 
-    private function checkNonce($nonce) {
+    protected function checkNonce($nonce) {
         $result = wp_verify_nonce($nonce, $this->createNonceText());
         if (!($result === 1 || $result === 2)) {
             error_log('die because nonce does not match');
@@ -94,10 +94,10 @@ class API extends BaseLib {
             //error_log("filetype $filetype, sid $sid, eid $eid, picture $picture, tid $tid");
 
             if ((!empty($sid) || !empty($eid)) && in_array($filetype, array("participants"))) {
-                $sideevent = new \EVFRanking\Models\SideEvent($sid);
-                $event = new \EVFRanking\Models\Event($eid);
+                $sideevent = $this->loadModel("SideEvent",$sid);
+                $event = $this->loadModel("Event",$eid);
                 if(empty($eid) && $sideevent->exists()) {
-                    $event=new \EVFRanking\Models\Event($sideevent->event_id);
+                    $event=$this->loadModel("Event",$sideevent->event_id);
                 }
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
@@ -115,7 +115,7 @@ class API extends BaseLib {
                 }
             }
             else if(!empty($eid) && in_array($filetype,array("summary"))) {
-                $event = new \EVFRanking\Models\Event($eid);                
+                $event = $this->loadModel("Event",$eid);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("accreditation", "view", array(
@@ -129,7 +129,7 @@ class API extends BaseLib {
                 }
             }
             else if(!empty($eid) && in_array($filetype,array("accreditation"))) {
-                $event = new \EVFRanking\Models\Event($eid);                
+                $event = $this->loadModel("Event",$eid);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("accreditation", "view", array(
@@ -143,7 +143,7 @@ class API extends BaseLib {
                 }
             }
             else if (!empty($sid) && in_array($filetype, array("cashier"))) {
-                $event = new \EVFRanking\Models\Event($sid);
+                $event = $this->loadModel("Event",$eid);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("registration", "list", array(
@@ -160,8 +160,8 @@ class API extends BaseLib {
                 }
             }
             else if (!empty($tid) && !empty($picture)) {
-                $event = new \EVFRanking\Models\Event($sid);
-                $template = new \EVFRanking\Models\AccreditationTemplate($tid);
+                $event = $this->loadModel("Event",$sid);
+                $template = $this->loadModel("AccreditationTemplate",$tid);
 
                 if ($event->exists() && $template->exists() && $template->event_id == $event->getKey()) {
                     $this->checkPolicy("templates", "save", array(
@@ -175,13 +175,13 @@ class API extends BaseLib {
                 }
             }
             else if (!empty($sid) && is_numeric($picture)) {
-                $event = new \EVFRanking\Models\Event($sid);
-                $fencer = new \EVFRanking\Models\Fencer($picture);
+                $event = $this->loadModel("Event",$sid);
+                $fencer = $this->loadModel("Fencer",$picture);
 
                 if ($event->exists() && $fencer->exists()) {
                     $sides = $event->sides();
                     if (!empty($sides)) {
-                        $sideevent = new \EVFRanking\Models\SideEvent($sides[0]); // pick any sideevent
+                        $sideevent = $this->loadModel("SideEvent",$sides[0]); // pick any sideevent
 
                         // check the policy to see if the user can retrieve a listing
                         $this->checkPolicy("registration", "list", array(
@@ -214,14 +214,14 @@ class API extends BaseLib {
         $retval=array("error"=>true);
 
         if (!empty($event) && $upload == "true")  {
-            $event = new \EVFRanking\Models\Event($event, true);
-            $fencer = new \EVFRanking\Models\Fencer($fencer, true);
-            $template = new \EVFRanking\Models\AccreditationTemplate($template,true);
+            $event = $this->loadModel("Event",$event);
+            $fencer = $this->loadModel("Fencer",$fencer);
+            $template = $this->loadModel("AccreditationTemplate",$template);
 
             if ($event->exists() && $fencer->exists()) {
                 $sides = $event->sides();
                 if(!empty($sides)) {
-                    $sideevent = new \EVFRanking\Models\SideEvent($sides[0]); // pick any sideevent
+                    $sideevent = $this->loadModel("SideEvent",$sides[0]); // pick any sideevent
                     // check the policy to see if the user can save a registration
                     $this->checkPolicy("registration", "save", array(
                         "model" => array(
@@ -258,7 +258,7 @@ class API extends BaseLib {
         return $retval;
     }
 
-    private function doPost($data) {
+    protected function doPost($data) {
         $this->checkNonce($data['nonce']);
 
         $modeldata = isset($data['model']) ? $data['model'] : array();
@@ -292,14 +292,14 @@ class API extends BaseLib {
             case "registrars":
             case 'templates':
                     switch($path[0]) {
-                    case 'fencers': $model = new \EVFRanking\Models\Fencer();break;
-                    case 'countries': $model = new \EVFRanking\Models\Country(); break;
-                    case 'results': $model = new \EVFRanking\Models\Result(); break;
-                    case 'events': $model = new \EVFRanking\Models\Event(); break;
-                    case 'roletypes': $model = new \EVFRanking\Models\RoleType(); break;
-                    case 'roles': $model = new \EVFRanking\Models\Role(); break;
-                    case 'registrars': $model = new \EVFRanking\Models\Registrar(); break;
-                    case 'templates': $model = new \EVFRanking\Models\AccreditationTemplate(); break;
+                    case 'fencers': $model = $this->loadModel("Fencer");break;
+                    case 'countries': $model = $this->loadModel("Country"); break;
+                    case 'results': $model = $this->loadModel("Result"); break;
+                    case 'events': $model = $this->loadModel("Event"); break;
+                    case 'roletypes': $model = $this->loadModel("RoleType"); break;
+                    case 'roles': $model = $this->loadModel("Role"); break;
+                    case 'registrars': $model = $this->loadModel("Registrar"); break;
+                    case 'templates': $model = $this->loadModel("AccreditationTemplate"); break;
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
@@ -313,43 +313,54 @@ class API extends BaseLib {
                 else if(isset($path[1]) && $path[1] == "view") {
                     // Get a specific event
                     $this->checkPolicy($path[0],"view", array("filter" => $filter, "model" => $modeldata));
-                    $item = $model->get($modeldata['id']);
+                    $item = $this->createModel($model, $modeldata);
                     $retval=array_merge($retval, array("item"=> ($item === null) ? $item : $item->export() ));
                 }
                 else if($path[0] == 'events' && isset($path[1]) && $path[1] == "competitions") {
                     // list all competitions of events (event special action)
                     $this->checkPolicy("competitions","list", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $this->listResults($model, $model->competitions($modeldata['id']), null, TRUE));
+                    $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
+                    $retval=array_merge($retval, $this->listResults($model, $model->competitions($id), null, TRUE));
                 }
                 else if($path[0] == 'events' && isset($path[1]) && $path[1] == "sides") {
                     // list all side events of events (event special action)
                     $this->checkPolicy("sides","list", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $this->listResults($model, $model->sides($modeldata['id']), null, TRUE));
+                    $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
+                    $retval=array_merge($retval, $this->listResults($model, $model->sides($id), null, TRUE));
                 }
                 else if($path[0] == 'events' && isset($path[1]) && $path[1] == "roles") {
                     // list all side events of events (event special action)
                     $this->checkPolicy("eventroles","list", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $this->listResults($model, $model->roles($modeldata['id']), null, TRUE));
+                    $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
+                    $retval=array_merge($retval, $this->listResults($model, $model->roles($id), null, TRUE));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "importcheck") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $model->doImportCheck($modeldata['ranking'], $modeldata["competition"]));
+                    $ranks=isset($modeldata["ranking"]) ? $modeldata["ranking"] : array();
+                    if(!is_array($ranks)) $ranks=array();
+                    $comp = isset($modeldata["competition"]) ? intval($modeldata["competition"]) : -1;
+                    $retval=array_merge($retval, $model->doImportCheck($ranks,$comp));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "import") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $model->doImport($modeldata['import']));
+                    $imp = isset($modeldata["import"]) ? $modeldata["import"] : array();
+                    $retval=array_merge($retval, $model->doImport($imp));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "recalculate") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $model->recalculate($modeldata['competition_id']));
+                    $comp = isset($modeldata["competition_id"]) ? intval($modeldata["competition_id"]) : -1;
+                    $retval=array_merge($retval, $model->recalculate($comp));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "clear") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $model->clear($modeldata['competition_id']));
+                    $comp = isset($modeldata["competition_id"]) ? intval($modeldata["competition_id"]) : -1;
+                    $retval=array_merge($retval, $model->clear($comp));
                 }
                 else if($path[0] == 'templates' && isset($path[1]) && $path[1] == "delpic") {
                     $this->checkPolicy("templates","delete", array("filter" => $filter, "model" => $modeldata));
-                    $model->deletePicture($modeldata['file_id'], $modeldata["template_id"]);
+                    $fid=isset($modeldata["file_id"]) ? $modeldata["file_id"] : '';
+                    $tid=isset($modeldata["template_id"]) ? intval($modeldata["template_id"]) : -1;
+                    $model->deletePicture($fid, $tid);
                 }
                 else if($path[0] == 'templates' && isset($path[1]) && $path[1] == "example") {
                     $this->checkPolicy("templates","save", array("filter" => $filter, "model" => $modeldata));
@@ -384,7 +395,7 @@ class API extends BaseLib {
             // LIST and UPDATE
             case "migrations":
                 switch($path[0]) {
-                    case 'migrations': $model = new \EVFRanking\Models\Migration(); break;
+                    case 'migrations': $model = $this->loadModel("Migration"); break;
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
@@ -404,12 +415,12 @@ class API extends BaseLib {
             case "posts":
             //case "audit":
                 switch($path[0]) {
-                    case 'weapons': $model = new \EVFRanking\Models\Weapon(); break;
-                    case 'categories': $model = new \EVFRanking\Models\Category(); break;
-                    case 'types': $model = new \EVFRanking\Models\EventType(); break; 
-                    case 'users': $model = new \EVFRanking\Models\User(); break;
-                    case 'posts': $model = new \EVFRanking\Models\Posts(); break;
-                    //case 'audit': $model = new \EVFRanking\Models\Audit(); break;
+                    case 'weapons': $model = $this->loadModel("Weapon"); break;
+                    case 'categories': $model = $this->loadModel("Category"); break;
+                    case 'types': $model = $this->loadModel("EventType"); break; 
+                    case 'users': $model = $this->loadModel("User"); break;
+                    case 'posts': $model = $this->loadModel("Posts"); break;
+                    //case 'audit': $model = $this->loadModel("Audit"); break;
                 }
                 $this->checkPolicy($path[0],"list", array("filter" => $filter, "model" => $modeldata));
                 $retval=array_merge($retval, $this->listAll($model,0,null,'','i',$special));
@@ -418,7 +429,7 @@ class API extends BaseLib {
             case 'ranking':
                 if(isset($path[1]) && $path[1] == "reset") {
                     $this->checkPolicy($path[0],"misc", array("filter" => $filter, "model" => $modeldata));
-                    $model = new \EVFRanking\Models\Ranking();
+                    $model = $this->loadModel("Ranking");
                     $total = $model->calculateRankings();
                     $retval=array(
                         "success" => TRUE,
@@ -427,12 +438,11 @@ class API extends BaseLib {
                 }
                 else if(isset($path[1]) && $path[1] == "list") {
                     $this->checkPolicy($path[0],"list", array("filter" => $filter, "model" => $modeldata));
-                    $model = new \EVFRanking\Models\Ranking();
+                    $model = $this->loadModel("Ranking");
                     $cid = intval(isset($modeldata['category_id']) ? $modeldata['category_id'] : "-1");
-                    $catmodel = new \EVFRanking\Models\Category($cid);
-                    $catmodel->load();
+                    $catmodel = $this->loadModel("Category",$cid);
                     $wid = intval(isset($modeldata['weapon_id']) ? $modeldata['weapon_id'] : "-1");
-                    if($cid > 0 && $wid > 0) {
+                    if($catmodel->exists() && $wid > 0) {
                         $results = $model->listResults($wid,$catmodel);
                         $retval=array(
                             "success" => TRUE,
@@ -445,21 +455,23 @@ class API extends BaseLib {
                 }
                 else if(isset($path[1]) && $path[1] == "detail") {
                     $this->checkPolicy($path[0],"view", array("filter" => $filter, "model" => $modeldata));
-                    $model = new \EVFRanking\Models\Ranking();
+                    $model = $this->loadModel("Ranking");
                     $cid = intval(isset($modeldata['category_id']) ? $modeldata['category_id'] : "-1");
                     $wid = intval(isset($modeldata['weapon_id']) ? $modeldata['weapon_id'] : "-1");
                     $fid = intval(isset($modeldata['id']) ? $modeldata['id'] : "-1");
                     if($cid > 0 && $wid > 0 && $fid>0) {
-                        error_log("listing detail for $fid");
                         $retval = $model->listDetail($wid,$cid,$fid);
                     }
                     else {
                         $retval=array("error"=>"No category or weapon selected");
                     }
                 }
+                else {
+                    $retval=array("error"=>"invalid action");
+                }
                 break;
             case "registration":
-                $model = new \EVFRanking\Models\Registration();
+                $model = $this->loadModel("Registration");
                 if (isset($path[1]) && $path[1] == "save") {
                     $this->checkPolicy($path[0], "save", array("filter" => $filter, "model" => $modeldata));
                     $retval = array_merge($retval, $this->save($model, $modeldata));
@@ -470,7 +482,8 @@ class API extends BaseLib {
                 }
                 else if (isset($path[1]) && $path[1] == "overview") {
                     $this->checkPolicy($path[0], "list", array("filter" => $filter, "model" => $modeldata));
-                    $retval = array_merge($retval, $model->overview($modeldata["event"]));
+                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
+                    $retval = array_merge($retval, $model->overview($ev));
                 }
                 else {
                     // we can list if we can administer the event belonging to the passed side-event
@@ -479,32 +492,43 @@ class API extends BaseLib {
                 }                   
                 break;
             case 'accreditation':
-                $model = new \EVFRanking\Models\Accreditation();
+                $model = $this->loadModel("Accreditation");
                 $this->checkPolicy($path[0], "view", array("filter" => $filter, "model" => $modeldata));
-                switch($path[1]) {
+                $subpath=sizeof($path)>1 ? $path[1]: "";
+                switch($subpath) {
                 case "overview":
                     // overview displayed for accreditors
-                    $retval = array_merge($retval, $model->overview($modeldata["event"]));
+                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
+                    $retval = array_merge($retval, $model->overview($ev));
                     break;
                 case "regenerate":
                     // regenerate all accreditations, from the accreditors tab
-                    $retval = array_merge($retval, $model->regenerate($modeldata["event"]));
+                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
+                    $retval = array_merge($retval, $model->regenerate($ev));
                     break;
                 case "check":
                     // check validity of summary documents, from the accreditors tab
-                    $retval = array_merge($retval, $model->checkSummaryDocuments($modeldata["event"]));
+                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
+                    $retval = array_merge($retval, $model->checkSummaryDocuments($ev));
                     break;
                 case "fencer":
                     // get all accreditations for this fencer, from fencerselect and the accreditation page
-                    $retval = array_merge($retval, $model->findAccreditations($modeldata["event"], $modeldata["fencer"]));
+                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
+                    $fid=isset($modeldata["fencer"]) ? intval($modeldata["fencer"]):-1;
+                    $retval = array_merge($retval, $model->findAccreditations($ev,$fid));
                     break;
                 case "generate":
                     // generate a summary document, from the accreditors tab
-                    $retval = array_merge($retval, $model->generate($modeldata["event"],$modeldata["type"],$modeldata["type_id"]));
+                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
+                    $tid=isset($modeldata["type"]) ? $modeldata["type"]:-1;
+                    $tyid=isset($modeldata["type_id"]) ? intval($modeldata["type_id"]):-1;
+                    $retval = array_merge($retval, $model->generate($ev,$tid,$tyid));
                     break;
                 case "generateone":
                     // generate accreditations for a specific fencer, from the fencerselect dialog
-                    $retval = array_merge($retval, $model->generateForFencer($modeldata["event"],$modeldata["fencer"]));
+                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
+                    $fid=isset($modeldata["fencer"]) ? intval($modeldata["fencer"]):-1;
+                    $retval = array_merge($retval, $model->generateForFencer($ev,$fid));
                     break;
                 default:
                     $retval=array("error"=>"invalid action");
@@ -515,16 +539,16 @@ class API extends BaseLib {
         return $retval;
     }
 
-    private function save($model, $data) {
+    protected function save($model, $data) {
         $retval=array();
         $event=null;
         if(isset($data["event"])) {
-            $event = new \EVFRanking\Models\Event($data["event"], true);
+            $event = $this->loadModel("Event",$data["event"]);
         }
         if(isset($data["sideevent"])) {
-            $se=new \EVFRanking\Models\SideEvent($data["sideevent"], true);
+            $se=$this->loadModel("SideEvent",$data["sideevent"]);
             if($se->exists()) {
-                $event = new \EVFRanking\Models\Event($se->event_id,true);
+                $event = $this->loadModel("Event",$se->event_id);
             }
         }
         $caps="none"; // no capabilities by default, unless we have an event to base it on
@@ -563,7 +587,7 @@ class API extends BaseLib {
         return $retval;
     }
 
-    private function delete($model, $data) {
+    protected function delete($model, $data) {
         $retval=array();
         $model=$model->get($data['id']);
         if(!empty($model) && $model->exists()) {
@@ -584,11 +608,20 @@ class API extends BaseLib {
         return $retval;
     }
 
-    private function listAll($model,$offset,$pagesize,$filter,$sort,$special) {
+    protected function listAll($model,$offset,$pagesize,$filter,$sort,$special) {
         return $this->listResults($model, $model->selectAll($offset,$pagesize,$filter,$sort,$special), $model->count($filter,$special));
     }
 
-    private function listResults($model, $lst,$total=null, $noexport=FALSE) {
+    protected function createModel($model, $data) {
+        return $model->get($data['id']);
+    }
+
+    protected function loadModel($modelname,$arg=null) {
+        $cname="\\EVFRanking\\Models\\$modelname";
+        return new $cname($arg,true);
+    }
+
+    protected function listResults($model, $lst,$total=null, $noexport=FALSE) {
         if($total === null) {
             $total = sizeof($lst);
         }
@@ -613,7 +646,7 @@ class API extends BaseLib {
         return $retval;
     }
 
-    private function checkPolicy($model,$action,$obj=null) {
+    protected function checkPolicy($model,$action,$obj=null) {
         $policy = new \EVFRanking\Lib\Policy();
         if(!$policy->check($model,$action,$obj)) {
             die(403);

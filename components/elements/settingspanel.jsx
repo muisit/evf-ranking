@@ -1,6 +1,7 @@
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
 import { RadioButton } from 'primereact/radiobutton';
+import { Checkbox } from 'primereact/checkbox';
 import { ColorPicker } from 'primereact/colorpicker';
 import { Dropdown } from 'primereact/dropdown';
 import cloneDeep from 'lodash.clonedeep';
@@ -50,6 +51,8 @@ export function SettingsPanel(props) {
         case 'name':
         case 'link':
         case 'side':
+        case 'onedateonly':
+            console.log('setting member ',member,value);
             itm[member]=value;
             break;
         }
@@ -200,6 +203,17 @@ export function SettingsPanel(props) {
                     <label>Print on Side</label>
                     <div className="input">
                         <Dropdown name='side' optionLabel="text" optionValue="id" value={value} options={options} onChange={(e) => set("side", e.target.value)} />
+                    </div>
+                </div>
+            </div>);
+        }
+        if(props.item && props.item.type == "dates") {
+            var value=props.item.onedateonly === true;
+            return (<div>
+                <div>
+                    <label>Earliest date</label>
+                    <div className="input">
+                        <Checkbox name='onedateonly' checked={value} onChange={(e) => set("onedateonly", e.checked)} />
                     </div>
                 </div>
             </div>);

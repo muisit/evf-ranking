@@ -186,7 +186,7 @@ class Policy extends BaseLib {
         return $this->hasCapa($base,$data);
     }
 
-    private function hasCapa($capa,$data) {        
+    protected function hasCapa($capa,$data) {        
         $userdata=$this->findUser();
         switch($capa) {
         // has manage_rankings capability, a super-user power

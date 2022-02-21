@@ -85,7 +85,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("297c2eb5f9fcdc25a66c14d4d4ce1a51", $fname);
+        $this->checkHash("0b6716341e0ab3409654a21b265e13ec", $fname);
     }
 
     public function test_case_20220216() {
@@ -284,7 +284,7 @@ class Test_PDF extends BaseTest {
         list($fencer, $event, $country, $accreditation, $template, $pdf, $fname) = $this->createModels();
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("667389c51b805e49da94676273eec8ae", $fname);
+        $this->checkHash("b4ef65185ba5e03e023e68f2afe70c24", $fname);
     }
 
     public function test_image4() {
@@ -312,7 +312,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("35b831d1ae2386ed42826002608656aa", $fname);
+        $this->checkHash("755981e7de0c028ba8a70ab611815001", $fname);
     }
 
 
@@ -352,7 +352,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("f9ff1ab0c6ac38c9af3ce52f9358c499", $fname);
+        $this->checkHash("7e607f8f1d71dc88c4250952157ac7d4", $fname);
     }
 
 
@@ -392,7 +392,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("d354d504998cafdc09f27ed26341ab2d", $fname);
+        $this->checkHash("3f2232c316f4256bbcabbd826e922e63", $fname);
     }
 
 
@@ -422,7 +422,7 @@ class Test_PDF extends BaseTest {
         ));
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("28d99c3e995bc12bfe6fdafd630012b4", $fname);
+        $this->checkHash("b69430705f92d56242ae54c09ef631bd", $fname);
     }
 
     public function test_text3() {
@@ -456,7 +456,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("31066d6aa7dd23902820633edd6e94ff", $fname);
+        $this->checkHash("2a9be03d9f70dbe8ad4f8bf0532e204a", $fname);
     }
 
     
@@ -484,7 +484,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("d9eb87c847315336f807b40ad85f7a11", $fname);
+        $this->checkHash("cd4cfd4839b2e0d3cf1a945602932999", $fname);
     }
 
     public function test_text() {
@@ -507,8 +507,108 @@ class Test_PDF extends BaseTest {
         ));
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("62139be125266dae9fc7470f9742ff1d", $fname);
+        $this->checkHash("f5234b1140d3b42b1095134a873f1437", $fname);
     }
+
+    public function test_fonts1() {
+        list($fencer, $event, $country, $accreditation, $template, $pdf, $fname) = $this->createModels();
+        $template->content = array(
+            "elements" => array()
+        );
+        $offset=20;
+        foreach(array(
+            "Courier", "Courier Bold", "Courier Italic","Courier Bold Italic",
+            "Helvetica","Helvetica Bold","Helvetica Italic","Helvetica Bold Italic",
+            "Times","Times Bold","Times Italic","Times Bold Italic",
+            "DejaVuSans","DejaVuSans Bold","DejaVuSans Italic","DejaVuSans Bold Italic",
+        ) as $fontname) {
+            $element =  array(
+                "type" => "text",
+                "text" => "This is a test in $fontname",
+                "style" => array(
+                    "left" => 20,
+                    "top" => $offset,
+                    "width" => 400,
+                    "height" => 100,
+                    "color" => "#1234ab",
+                    "fontSize"=>"10",
+                    "fontFamily" => $fontname
+                )
+            );
+            $template->content["elements"][]=$element;
+            $offset+=32;    
+        }
+        $template->content = json_encode($template->content);
+        $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
+        $this->checkHash("0c4995622c76036e3f82d444647a9b1f", $fname);
+    }
+
+    public function test_fonts2() {
+        list($fencer, $event, $country, $accreditation, $template, $pdf, $fname) = $this->createModels();
+        $template->content = array(
+            "elements" => array()
+        );
+        $offset=20;
+        foreach(array(
+            "DejaVuSans Condensed","DejaVuSans Condensed Bold","DejaVuSans Condensed Italic","DejaVuSans Condensed Bold Italic",
+            "DejaVuSans Mono","DejaVuSans Mono Bold","DejaVuSans Mono Italic","DejaVuSans Mono Bold Italic",
+            "FreeSans","FreeSans Bold","FreeSans Italic","FreeSans Bold Italic",
+            "FreeMono","FreeMono Bold","FreeMono Italic","FreeMono Bold Italic",
+        ) as $fontname) {
+            $element =  array(
+                "type" => "text",
+                "text" => "This is a test in $fontname",
+                "style" => array(
+                    "left" => 20,
+                    "top" => $offset,
+                    "width" => 400,
+                    "height" => 100,
+                    "color" => "#1234ab",
+                    "fontSize"=>"10",
+                    "fontFamily" => $fontname
+                )
+            );
+            $template->content["elements"][]=$element;
+            $offset+=32;    
+        }
+        $template->content = json_encode($template->content);
+        $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
+        $this->checkHash("b89cf0ff9fb88e6be93f593c7488588d", $fname);
+    }
+
+    public function test_fonts3() {
+        list($fencer, $event, $country, $accreditation, $template, $pdf, $fname) = $this->createModels();
+        $template->content = array(
+            "elements" => array()
+        );
+        $offset=20;
+        foreach(array(
+            "FreeSerif","FreeSerif Bold","FreeSerif Italic","FreeSerif Bold Italic",
+            "Eurofurence","Eurofurence Bold","Eurofurence Italic","Eurofurence Bold Italic",
+//            "Eurofurence Light","Eurofurence Light Italic",
+        ) as $fontname) {
+            $element =  array(
+                "type" => "text",
+                "text" => "This is a test in $fontname",
+                "style" => array(
+                    "left" => 20,
+                    "top" => $offset,
+                    "width" => 400,
+                    "height" => 100,
+                    "color" => "#1234ab",
+                    "fontSize"=>"10",
+                    "fontFamily" => $fontname
+                )
+            );
+            $template->content["elements"][]=$element;
+            $offset+=32;    
+        }
+        $template->content = json_encode($template->content);
+        $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
+        $this->checkHash("fddeb41513803f742b8abea19ce7526c", $fname);
+    }
+
+
 
     public function test_box2() {
         list($fencer, $event, $country, $accreditation, $template, $pdf, $fname) = $this->createModels();
@@ -530,7 +630,7 @@ class Test_PDF extends BaseTest {
         $template->content=json_encode($content);
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("a7f7c2e75c13894a123b85b3fcc0885d", $fname);
+        $this->checkHash("77da89e769fd1052eb85008b24632c8e", $fname);
     }
 
     public function test_box() {
@@ -581,7 +681,7 @@ class Test_PDF extends BaseTest {
         ));
 
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("8ba128430b7b1b770d91519fce1eff60",$fname);
+        $this->checkHash("e70cce114b412d99e29698536367bbdd",$fname);
     }
 }
 

@@ -12,6 +12,8 @@ export default class FEAccrTemplateTab extends React.Component  {
         this.state = {
             template: null,
             templates: [],
+            defaults: [],
+            fonts: [],
             displayDialog: false,
         };
     }
@@ -24,10 +26,20 @@ export default class FEAccrTemplateTab extends React.Component  {
                         this.setState({templates:cmp1.data.list});
                     }
                 });
+            this.getDefaults();
         }
     }
     componentWillUnmount = () => {
         abort_all_calls(this.abortType);
+    }
+
+    getDefaults = () => {
+        template("defaults",{})
+            .then((json) => {
+                if(json && json.data && json.data.templates && json.data.fonts) {
+                    this.setState({defaults: json.data.templates, fonts: json.data.fonts});
+                }
+            });
     }
 
     loadDefaults = () => {
@@ -95,12 +107,14 @@ export default class FEAccrTemplateTab extends React.Component  {
                 this.setState({ templates: tmpls });
                 break;
             case 'change':
+                console.log("tab change handler for template ",dt);
                 this.setState({template:dt});
                 break;
         }
     }
 
     render() {
+        console.log("tab rerendering for selected template ",this.state.template);
         return (
             <div className='row'>
                 <div className='col-12'>
@@ -119,7 +133,7 @@ export default class FEAccrTemplateTab extends React.Component  {
                     <span className='pi pi-plus-circle' onClick={() => this.onDialog('open')}>&nbsp;Create New</span><br/>
                     <span className='pi pi-undo' onClick={() => this.onDialog('defaults')}>&nbsp;Add Defaults</span>
                 </div>
-                <AccreditationTemplateDialog roles={this.props.basic.roles} event={this.props.basic.event} value={this.state.template} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} onDelete={(itm) => this.onDialog('delete',itm)}/>
+                <AccreditationTemplateDialog roles={this.props.basic.roles} event={this.props.basic.event} value={this.state.template} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} onDelete={(itm) => this.onDialog('delete',itm)} defaults={this.state.defaults} fonts={this.state.fonts} getDefaults={()=>this.getDefaults()}/>
             </div>
         );
     }

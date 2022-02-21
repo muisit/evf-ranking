@@ -18,8 +18,7 @@ export default class AccreditationTemplateDialog extends React.Component {
             imageHash: random_hash(),
             roletypes: [],
             selectedRoles: [],
-            showDefault: false,
-            defaults: []
+            showDefault: false
         };
         this.myRef = React.createRef();
         this.abortType="templates";
@@ -32,18 +31,9 @@ export default class AccreditationTemplateDialog extends React.Component {
                     this.setState({ roletypes: cmp1.data.list });
                 }
             });
-        this.getDefaults();
     }
     componentWillUnmount = () => {
         abort_all_calls(this.abortType);
-    }
-    getDefaults = () => {
-        template("defaults",{})
-            .then((json) => {
-                if(json && json.data && json.data.list) {
-                    this.setState({defaults: json.data.list});
-                }
-            });
     }
 
     close = () => {
@@ -132,7 +122,7 @@ export default class AccreditationTemplateDialog extends React.Component {
     removeAsDefault = () => {
         template('default', { id: this.props.value.id, 'unset': true })
             .then((json) => {
-                this.getDefaults();
+                this.props.getDefaults();
             })
             .catch((err) => parse_net_error(err));
     }
@@ -228,7 +218,7 @@ export default class AccreditationTemplateDialog extends React.Component {
         }
 
         var isDefault=false;
-        this.state.defaults.map((itm) => {
+        this.props.defaults.map((itm) => {
             if(this.props.value.id == parseInt(itm.id)) {
                 isDefault=true;
             }
@@ -276,7 +266,7 @@ export default class AccreditationTemplateDialog extends React.Component {
           </div>
       </div>
       <div className='clearfix'>
-        <TemplateDesigner template={this.props.value} event={this.props.event} onChange={this.onDialogChange} />
+        <TemplateDesigner template={this.props.value} event={this.props.event} onChange={this.onDialogChange} fonts={this.props.fonts} />
       </div>
       <DefaultTemplateDialog value={this.props.value} onClose={()=>this.onDefaultDialog("close")} onSave={()=>this.onDefaultDialog("save")} display={this.state.showDefault}/>
 </Dialog>

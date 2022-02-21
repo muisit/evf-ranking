@@ -17,13 +17,16 @@ wp-content/themes/twenty*/
 # ignore node dependency directories
 node_modules/
 
-# ignore log files and databases
+# ignore log files, databases and backups
 *.log
 *.sql
 *.sqlite
+*.old
 
 dist/
 deploy/
 assets/
 yarn.lock
+tests/expected_output_pdfs
+tests/coverage
 

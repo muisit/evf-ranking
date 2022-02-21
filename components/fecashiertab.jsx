@@ -734,7 +734,7 @@ export default class FECashierTab extends FEBase {
                     if (is_hod()) {
                         team.has_paid = team.has_paid && (reg.paid_hod == 'Y');
                         // mark payments that were received by the cashier
-                        team.has_paid_org = fenteamcer.has_paid_org && (reg.paid == 'Y');
+                        team.has_paid_org = team.has_paid_org && (reg.paid == 'Y');
                     }
                     else {
                         team.has_paid = team.has_paid && (reg.paid == 'Y');

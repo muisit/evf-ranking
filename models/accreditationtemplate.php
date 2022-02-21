@@ -265,7 +265,7 @@
         foreach($option["templates"] as $k=>$v) {
             $lst[]=array("id"=>$v, "name"=>$k);
         }
-        return array("list"=>$lst);
+        return array("templates"=>$lst, "fonts"=>array_keys(\EVFRanking\Util\PDFCreator::PDF_FONTS));
     }
 
     public function addDefaults($modeldata) {

@@ -20,6 +20,7 @@ export const TextElement = (props) => {
 
     var style = Object.assign({}, props.element.style);
     style.fontSize = style.fontSize + "pt";
+    style.fontFamily = "Sans"; // force sans to avoid font problems
     style.backgroundColor = "none";
     if (isDragging) {
         style.opacity = 0.5;

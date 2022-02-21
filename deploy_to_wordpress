@@ -117,6 +117,7 @@ then
     echo "mkdir -p $DEPLOYDIR/jobs"
     echo "mkdir -p $DEPLOYDIR/css"
     echo "mkdir -p $DEPLOYDIR/util"
+    echo "mkdir -p $DEPLOYDIR/util/fonts"
 else
     rm -rf $DEPLOYDIR
     mkdir -p $DEPLOYDIR/models
@@ -125,6 +126,7 @@ else
     mkdir -p $DEPLOYDIR/dist
     mkdir -p $DEPLOYDIR/css
     mkdir -p $DEPLOYDIR/util
+    mkdir -p $DEPLOYDIR/util/fonts
 fi
 
 for i in *.php LICENSE readme.txt
@@ -164,13 +166,22 @@ do
         cp -v $i $DEPLOYDIR/jobs
     fi
 done
-for i in `find ./ -type f -path ./util/\*`
+for i in `find ./util -maxdepth 1 -type f`
 do
     if [[ "x$DRY" = "x1" ]]
     then
         echo "cp -v $i $DEPLOYDIR/util"
     else
         cp -v $i $DEPLOYDIR/util
+    fi
+done
+for i in `find ./util/fonts -maxdepth 1 -type f`
+do
+    if [[ "x$DRY" = "x1" ]]
+    then
+        echo "cp -v $i $DEPLOYDIR/util/fonts"
+    else
+        cp -v $i $DEPLOYDIR/util/fonts
     fi
 done
 

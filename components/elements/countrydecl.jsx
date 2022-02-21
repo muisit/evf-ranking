@@ -19,6 +19,7 @@ export const CountryDecl = (props) => {
     var style = Object.assign({}, props.element.style);
     style.backgroundColor = "none";
     style.fontSize = style.fontSize + "pt";
+    style.fontFamily = "Sans"; // force sans to avoid font problems
     if(collectedProps.isDragging) {
         style.opacity=0.5;
     }

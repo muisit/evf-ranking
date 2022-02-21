@@ -48,6 +48,10 @@ export function SettingsPanel(props) {
                 itm.style.height=420 / parseFloat(itm.ratio);
             }
             break;
+        case 'fontFamily':
+            console.log('setting style member ',member,value);
+            itm.style[member]=value;
+            break;
         case 'name':
         case 'link':
         case 'side':
@@ -55,6 +59,8 @@ export function SettingsPanel(props) {
             console.log('setting member ',member,value);
             itm[member]=value;
             break;
+        default:
+            console.log("unknown entry ",member, value);
         }
         props.onChange(itm);
     }
@@ -147,12 +153,24 @@ export function SettingsPanel(props) {
         // maxsize = 420x594
         if (props.item.hasFontSize && !isNaN(parseFloat(props.item.style.fontSize))) {
             var val = props.item.style ? parseInt(props.item.style.fontSize) : 1;
+            var fnt = props.item.style && props.item.style.fontFamily ? props.item.style.fontFamily : 'Helvetica';
+            console.log("font is ",fnt);
+            var options=props.fonts.map((fntname) => {
+                return {text: fntname };
+            });
+            console.log("fonts is ",props.fonts);
             return (
                 <div>
                     <div>
                         <label>Font Size</label>
                         <div className="input">
                             <InputNumber useGrouping={false} className='inputint' min={1} max={400} value={val} onChange={(e) => set("fontSize", e.value)} />
+                        </div>
+                    </div>
+                    <div>
+                        <label>Font</label>
+                        <div className="input">
+                            <Dropdown name='fontFamily' optionLabel="text" optionValue="text" value={fnt} options={options} onChange={(e) => set("fontFamily", e.target.value)} />
                         </div>
                     </div>
                 </div>

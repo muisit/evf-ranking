@@ -79,3 +79,9 @@ foreach ($alltests as $key=>$model) {
 }
 
 echo "\r\nEnd of testing.\r\nTotal tests: $numtests\r\nSuccess: $success\r\nFails: $fails\r\n";
+if($fails>0) {
+    exit(1);
+}
+else {
+    exit(0);
+}

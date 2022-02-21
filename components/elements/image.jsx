@@ -22,7 +22,7 @@ export const Image = (props) => {
         style.opacity=0.5;
     }
     var style2={};
-    var url = evfranking.url + "&picture=" + props.element.file_id + "&template=" + props.template.id + "&nonce=" + evfranking.nonce + "&event=" + props.template.event + '&hash=' + Math.round(Math.random() * 1000000);
+    var url = evfranking.url + "&picture=" + props.element.file_id + "&template=" + props.template.id + "&nonce=" + evfranking.nonce + "&event=" + props.template.event + '&hash=' + props.imageHash;
     style2.backgroundImage = 'url(' + url + ')';
     delete style.backgroundImage;
 

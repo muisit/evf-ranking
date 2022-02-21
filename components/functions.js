@@ -4,7 +4,7 @@ export function pad(number) {
     if (number < 10) {
         return '0' + number;
     }
-    return number;
+    return ''+number;
 }
 export function format_currency(val) {
     return parseFloat(val).toFixed(2);
@@ -111,7 +111,7 @@ export function jsonOutput(json) {
 }
 
 export function is_valid(id) {
-    if(isNaN(id)) return false;
+    if(isNaN(id) || Array.isArray(id)) return false;
     id=parseInt(id);
     return !isNaN(id) && id>0;
 }

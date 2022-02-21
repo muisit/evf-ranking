@@ -64,7 +64,7 @@ function EditorCanvas(props) {
         case "dates": return (<Dates key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement} />);
         case "box": return (<BoxElement key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement} />);
         case 'qr': return (<QRCode key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement} />);
-        case "img": return (<Image key={key} element={itm} template={props.template} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement} />);
+        case "img": return (<Image key={key} element={itm} template={props.template} imageHash={props.imageHash} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement} />);
         }
     }
 
@@ -80,7 +80,8 @@ export default class TemplateDesigner extends React.Component {
     constructor(props, context) {
         super(props, context);
         this.state = {
-            selected: null
+            selected: null,
+            imageHash: Math.round(Math.random() * 1000000)
         };
     }
 
@@ -111,7 +112,7 @@ export default class TemplateDesigner extends React.Component {
         var element = {
             type: "name",
             text: "NOSUCHNAME, nosuchperson",
-            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Sans", zIndex:1, color: "#000000" },
+            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Helvetica", zIndex:1, color: "#000000" },
             hasFontSize: true,
             hasColour: true,
             resizeable: true
@@ -121,7 +122,7 @@ export default class TemplateDesigner extends React.Component {
     defaultAccID = () => {
         var element = {
             type: "accid",
-            style: { width: 210, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Sans", zIndex: 1, color: "#000000" },
+            style: { width: 210, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Helvetica", zIndex: 1, color: "#000000" },
             hasFontSize: true,
             hasColour: true,
             resizeable: true,
@@ -134,7 +135,7 @@ export default class TemplateDesigner extends React.Component {
         var element = {
             type: "country",
             text: "EUR",
-            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Sans", zIndex: 1, color: "#000000" },
+            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Helvetica", zIndex: 1, color: "#000000" },
             hasFontSize: true,
             hasColour: true,
             resizeable: true
@@ -154,7 +155,7 @@ export default class TemplateDesigner extends React.Component {
         var element = {
             type: "org",
             text: "ORG",
-            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Sans", zIndex: 1, color: "#000000" },
+            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Helvetica", zIndex: 1, color: "#000000" },
             hasFontSize: true,
             hasColour: true,
             resizeable: true
@@ -164,7 +165,7 @@ export default class TemplateDesigner extends React.Component {
     defaultRoles = () => {
         var element = {
             type: "roles",
-            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Sans", zIndex: 1, color: "#000000" },
+            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Helvetica", zIndex: 1, color: "#000000" },
             hasFontSize: true,
             hasColour: true,
             resizeable: true
@@ -174,7 +175,7 @@ export default class TemplateDesigner extends React.Component {
     defaultDates = () => {
         var element = {
             type: "dates",
-            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Sans", zIndex: 1, color: "#000000" },
+            style: { width: 420, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Helvetica", zIndex: 1, color: "#000000" },
             hasFontSize: true,
             hasColour: true,
             resizeable: true,
@@ -314,6 +315,7 @@ export default class TemplateDesigner extends React.Component {
         if (!itm.content) itm.content = {};
         if(!itm.content.pictures) itm.content.pictures=[];
         itm.content.pictures.push(data);
+        this.setState({imageHash: Math.round(Math.random() * 1000000)});
         this.change(itm);
     }
 
@@ -348,7 +350,7 @@ export default class TemplateDesigner extends React.Component {
         itm.content.elements = els;
         this.change(itm);
         if(this.state.selected && this.state.selected.index == data.index) {
-            this.setState({selected:null});
+            this.setState({selected:null, imageHash: Math.round(Math.random() * 1000000)});
         }
     }
 
@@ -364,10 +366,10 @@ export default class TemplateDesigner extends React.Component {
         });
         itm.content.elements = els;
         this.setState({selected:data},() => this.change(itm));
-
     }
 
     render() {
+        console.log("rendering template ",this.props.template);
         var pictures = (this.props.template.content && this.props.template.content.pictures) ? this.props.template.content.pictures : null;
         if(!pictures || !pictures.length) pictures=[];
 
@@ -380,8 +382,8 @@ export default class TemplateDesigner extends React.Component {
             <div className='toolbox'>
               <Toolbar template={this.props.template} images={pictures} onFileAdd={this.onFileAdd} onFileDelete={this.onFileDelete}/>
             </div>
-            <EditorCanvas template={this.props.template} elements={els} onDelete={this.onDelete} onSelect={this.onSelect} onChange={this.changeEditor} onDrop={this.changePos} />
-            <SettingsPanel item={this.state.selected} onChange={this.changeSettings}/>
+            <EditorCanvas template={this.props.template} elements={els} onDelete={this.onDelete} onSelect={this.onSelect} onChange={this.changeEditor} onDrop={this.changePos} imageHash={this.state.imageHash}/>
+            <SettingsPanel item={this.state.selected} onChange={this.changeSettings} fonts={this.props.fonts}/>
             <div className='debug'></div>
             </DndProvider>
         </div>

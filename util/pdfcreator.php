@@ -10,6 +10,7 @@ class PDFCreator {
     private $country;
     private $accrid;
     private $pageoption;
+    private $pdf;
 
     const APP_WIDTH=420.0; // 2x210, front-end canvas width
     const APP_HEIGHT=594.0; // 2x297, front end canvas height
@@ -17,7 +18,68 @@ class PDFCreator {
     const PDF_HEIGHT=148.5; // A6 portrait in mm
 
     //const PDF_PXTOPT=1.76; // for A4 reports
-    const PDF_PXTOPT=0.86;
+    const PDF_PXTOPT=1.01;
+    const PDF_FONTS=array(
+        "Courier" => "courier",
+        "Courier Italic" => "courierI",
+        "Courier Bold" => "courierB",
+        "Courier Bold Italic" => "courierBI",
+        "DejaVuSans" => "dejavusans",
+        "DejaVuSans Italic" => "dejavusansI",
+        "DejaVuSans Bold" => "dejavusansB",
+        "DejaVuSans Bold Italic" => "dejavusansBI",
+        "DejaVuSans Condensed" => "dejavusanscondensed",
+        "DejaVuSans Condensed Italic" => "dejavusanscondensedI",
+        "DejaVuSans Condensed Bold" => "dejavusanscondensedB",
+        "DejaVuSans Condensed Bold Italic" => "dejavusanscondensedBI",
+        "DejaVuSans Mono" => "dejavusansmono",
+        "DejaVuSans Mono Italic" => "dejavusansmonoI",
+        "DejaVuSans Mono Bold" => "dejavusansmonoB",
+        "DejaVuSans Mono Bold Italic" => "dejavusansmonoBI",
+        "Eurofurence" => "eurofurence",
+        "Eurofurence Italic" => "eurofurenceI",
+        "Eurofurence Bold" => "eurofurenceB",
+        "Eurofurence Bold Italic" => "eurofurenceBI",
+        // there seems to be a PDF problem with the regular Eurofurence Light, so it is disabled for now
+//        "Eurofurence Light" => "eurofurencelight",
+//        "Eurofurence Light Italic" => "eurofurencelightI",
+        "FreeMono" => "freemono",
+        "FreeMono Italic" => "freemonoI",
+        "FreeMono Bold" => "freemonoB",
+        "FreeMono Bold Italic" => "freemonoBI",
+        "FreeSans" => "freesans",
+        "FreeSans Italic" => "freesansI",
+        "FreeSans Bold" => "freesansB",
+        "FreeSans Bold Italic" => "freesansBI",
+        "FreeSerif" => "freeserif",
+        "FreeSerif Italic" => "freeserifI",
+        "FreeSerif Bold" => "freeserifB",
+        "FreeSerif Bold Italic" => "freeserifBI",
+        "Helvetica" => "helvetica",
+        "Helvetica Italic" => "helveticaI",
+        "Helvetica Bold" => "helveticaB",
+        "Helvetica Bold Italic" => "helveticaBI",
+        "Times" => "times",
+        "Times Italic" => "timesI",
+        "Times Bold" => "timesB",
+        "Times Bold Italic" => "timesBI",
+    );
+    /*
+    const PDF_FONTS2=[
+        "AlArabiya","Furat","cid0cs","cid0ct","cid0jp","cid0kr",
+        "Courier-BoldOblique","Courier-Bold","Courier-Oblique","Courier","DejaVuSans-BoldOblique","DejaVuSans-Bold",
+        "DejaVuSansCondensed-BoldOblique","DejaVuSansCondensed-Bold","DejaVuSansCondensed-Oblique","DejaVuSansCondensed","DejaVuSans-ExtraLight","DejaVuSans-Oblique",
+        "DejaVuSansMono-BoldOblique","DejaVuSansMono-Bold","DejaVuSansMono-Oblique","DejaVuSansMono","DejaVuSans","DejaVuSerif-BoldItalic",
+        "DejaVuSerif-Bold","DejaVuSerifCondensed-BoldItalic","DejaVuSerifCondensed-Bold","DejaVuSerifCondensed-Italic","DejaVuSerifCondensed","DejaVuSerif-Italic",
+        "DejaVuSerif","FreeMonoBoldOblique","FreeMonoBold","FreeMonoOblique","FreeMono","FreeSansBoldOblique",
+        "FreeSansBold","FreeSansOblique","FreeSans","FreeSerifBoldItalic","FreeSerifBold","FreeSerifItalic",
+        "FreeSerif","Helvetica-BoldOblique","Helvetica-Bold","Helvetica-Oblique","Helvetica","HYSMyeongJoStd-Medium-Acro",
+        "KozGoPro-Medium-Acro","KozMinPro-Regular-Acro","MSungStd-Light-Acro","PDFACourierBoldOblique","PDFACourierBold","PDFACourierOblique",
+        "PDFACourier","PDFAHelveticaBoldOblique","PDFAHelveticaBold","PDFAHelveticaOblique","PDFAHelvetica","PDFASymbol",
+        "PDFATimesBoldItalic","PDFATimesBold","PDFATimesItalic","PDFATimes","PDFAZapfdingbats","STSongStd-Light-Acro",
+        "core","Times-BoldItalic","Times-Bold","Times-Italic","Times-Roman","ZapfDingbats"
+    ];
+    */
 
     public function create($fencer,$event,$template, $country, $accreditation, $filename) {
         $this->fencer=$fencer;
@@ -39,14 +101,14 @@ class PDFCreator {
         $evflogger->log("creating PDF from accreditation");
         do_action('extlibraries_hookup', 'tcpdf');
 
-        $pdf = $this->createBasePDF();
+        $this->pdf = $this->createBasePDF();
 
-        $pdf->AddPage();
+        $this->pdf->AddPage();
         // create a template A6 format (105mm wide, 148.5mm high)
-        $template_id = $pdf->startTemplate(PDFCreator::PDF_WIDTH, PDFCreator::PDF_HEIGHT, true);
+        $template_id = $this->pdf->startTemplate(PDFCreator::PDF_WIDTH, PDFCreator::PDF_HEIGHT, true);
         $evflogger->log("applying accreditation template");
-        $pdf=$this->applyTemplate($pdf);
-        $pdf->endTemplate();
+        $this->pdf=$this->applyTemplate();
+        $this->pdf->endTemplate();
 
         // additional offset for landscape printing starting at 297 - (2x105) = 87/2=43
         $landscapeoffsetX = 43;
@@ -56,38 +118,36 @@ class PDFCreator {
         default:
         case 'a4portrait':
             // paste the template twice at the top
-            $pdf->printTemplate($template_id, $x = 0, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
-            $pdf->printTemplate($template_id, $x = PDFCreator::PDF_WIDTH, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
+            $this->pdf->printTemplate($template_id, $x = 0, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
+            $this->pdf->printTemplate($template_id, $x = PDFCreator::PDF_WIDTH, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
             break;
         case 'a4landscape':
             // print the template twice over the centre of the page
-            $pdf->printTemplate($template_id, $x = $landscapeoffsetX, $y=$landscapeoffsetY, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
-            $pdf->printTemplate($template_id, $x = $landscapeoffsetX+PDFCreator::PDF_WIDTH, $y = $landscapeoffsetY, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
+            $this->pdf->printTemplate($template_id, $x = $landscapeoffsetX, $y=$landscapeoffsetY, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
+            $this->pdf->printTemplate($template_id, $x = $landscapeoffsetX+PDFCreator::PDF_WIDTH, $y = $landscapeoffsetY, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
             break;
         case 'a4portrait2':
             // print the template once at the top
-            $pdf->printTemplate($template_id, $x = 0, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
+            $this->pdf->printTemplate($template_id, $x = 0, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
             break;
         case 'a4landscape2':
             // print the template once over the centre of the page
-            $pdf->printTemplate($template_id, $x=$landscapeoffsetX, $y=$landscapeoffsetY, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
+            $this->pdf->printTemplate($template_id, $x=$landscapeoffsetX, $y=$landscapeoffsetY, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
             break;
         case 'a5landscape':
             // print the template twice over the width
-            $pdf->printTemplate($template_id, $x=0, $y=0, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
-            $pdf->printTemplate($template_id, $x = PDFCreator::PDF_WIDTH, $y = 0, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
+            $this->pdf->printTemplate($template_id, $x=0, $y=0, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
+            $this->pdf->printTemplate($template_id, $x = PDFCreator::PDF_WIDTH, $y = 0, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
             break;
         case 'a5landscape2':
             // print the template once over the width
-            $pdf->printTemplate($template_id, $x=0, $y=0, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
+            $this->pdf->printTemplate($template_id, $x=0, $y=0, $w=PDFCreator::PDF_WIDTH, $h=PDFCreator::PDF_HEIGHT, $align='', $palign='', $fitonpage=false);
             break;
         case 'a6portrait':
             // print the template once at the top
-            $pdf->printTemplate($template_id, $x = 0, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
+            $this->pdf->printTemplate($template_id, $x = 0, $y = 0, $w = PDFCreator::PDF_WIDTH, $h = PDFCreator::PDF_HEIGHT, $align = '', $palign = '', $fitonpage = false);
             break;
         }
-        
-
 
         // put the Accreditation ID either on both sides, only left or only right
         if(is_array($this->accrid)) {
@@ -129,16 +189,16 @@ class PDFCreator {
             if($this->accrid["side"] == "both" || $this->accrid["side"] == "left") {
                 $evflogger->log("placing accreditation ID on left page");
                 $options["offset"]=$offset1;
-                $this->putAccIDAt($pdf, $this->accrid["text"], $options);
+                $this->putAccIDAt($this->accrid["text"], $options);
             }
             if (!empty($offset2) && ($this->accrid["side"] == "both" || $this->accrid["side"] == "right")) {
                 $evflogger->log("placing accreditation ID on right page");
                 $options["offset"] = $offset2;
-                $this->putAccIDAt($pdf, $this->accrid["text"], $options);
+                $this->putAccIDAt($this->accrid["text"], $options);
             }
         }
 
-        $this->saveFile($pdf,$filename);
+        $this->saveFile($filename);
     }
 
     protected function instantiatePDF() {
@@ -166,7 +226,8 @@ class PDFCreator {
             $page='A6';
             break;
         }
-        return new \TCPDF($orientation, "mm", $page, true, 'UTF-8', false);
+        /* last parameter: pdfa mode 3 */
+        return new \TCPDF($orientation, "mm", $page, true, 'UTF-8', false,3 ); 
     }
 
     protected function createBasePDF() {
@@ -183,25 +244,98 @@ class PDFCreator {
         $pdf->setImageScale(1.25);
         $pdf->setFontSubsetting(true);
         $pdf->SetDefaultMonospacedFont('courier');
-        $pdf->SetFont('dejavusans', '', 14, '', true);
+        // set to helvetica, always loaded
+        $pdf->SetFont('helvetica', '', 14, '', true);
         return $pdf;
     }
 
-    private function saveFile($pdf, $path) {
+    private function addFont($fontname) {
+        if(isset(PDFCreator::PDF_FONTS[$fontname])) {
+            $fontkey = PDFCreator::PDF_FONTS[$fontname];
+            global $evflogger;
+            $evflogger->log("adding font $fontname with key $fontkey");
+            switch($fontkey) {
+            // our fonts
+            case 'eurofurence': $this->pdf->AddFont("Eurofurence","",__DIR__."/fonts/eurof55.php",true); break;
+            case 'eurofurenceI':$this->pdf->AddFont("Eurofurence","I",__DIR__."/fonts/eurof56.php",true);
+            case 'eurofurenceB':$this->pdf->AddFont("Eurofurence","B",__DIR__."/fonts/eurof75.php",true);
+            case 'eurofurenceBI':$this->pdf->AddFont("Eurofurence","BI",__DIR__."/fonts/eurof76.php",true); break;
+            case 'eurofurencelight':$this->pdf->AddFont("Eurofurencelight","",__DIR__."/fonts/eurof35.php",true); break;
+            case 'eurofurencelightI':$this->pdf->AddFont("Eurofurencelight","I",__DIR__."/fonts/eurof36.php",true); break;
+
+            // core fonts
+            case "courier":
+            case "courierB":
+            case "courierI":
+            case "courierBI":
+            case "helvetica":
+            case "helveticaB":
+            case "helveticaI":
+            case "helveticaBI":
+            case "times":
+            case "timesB":
+            case "timesI":
+            case "timesBI":
+            case "symbol":
+            case "zapfdingbats":
+            
+            // other fonts also available in the TCPDF font folder
+            case "dejavusans":
+            case "dejavusansI":
+            case "dejavusansB":
+            case "dejavusansBI":
+            case "dejavusanscondensed":
+            case "dejavusanscondensedI":
+            case "dejavusanscondensedB":
+            case "dejavusanscondensedBI":
+            case "dejavusansmono":
+            case "dejavusansmonoI":
+            case "dejavusansmonoB":
+            case "dejavusansmonoBI":
+            case "freemono":
+            case "freemonoI":
+            case "freemonoB":
+            case "freemonoBI":
+            case "freesans":
+            case "freesansI":
+            case "freesansB":
+            case "freesansBI":
+            case "freeserif":
+            case "freeserifI":
+            case "freeserifB":
+            case "freeserifBI":
+                $this->pdf->AddFont($fontkey,"","",true);
+                break;
+            default:
+                global $evflogger;
+                $evflogger->log("Font set, but not configured: $fontkey / $fontname");
+                $this->pdf->SetFont("helvetica");
+                return;
+            }
+            $evflogger->log("setting font to $fontkey");
+            $this->pdf->SetFont($fontkey);
+        }
+        else {
+            global $evflogger;
+            $evflogger->log("No such font $fontname");
+        }
+    }
+
+    private function saveFile($path) {
         $dirname = dirname($path);
         @mkdir($dirname,0755, true);
 
-        $pdf->Output($path, 'F');
+        $this->pdf->Output($path, 'F');
     }
 
-    private function applyTemplate($pdf) {
+    private function applyTemplate() {
         global $evflogger;
         $data=json_decode($this->accreditation->data, true);
 
         // for testing purposes, we need to be able to set the time/date
         //$evflogger->log("setting timestamps based on ".json_encode($data));
-        $pdf->setDocCreationTimestamp(isset($data["created"]) ? $data["created"] : time());
-        $pdf->setDocModificationTimestamp(isset($data["modified"]) ? $data["modified"] : time());
+        $this->pdf->setDocCreationTimestamp(isset($data["created"]) ? $data["created"] : time());
+        $this->pdf->setDocModificationTimestamp(isset($data["modified"]) ? $data["modified"] : time());
         $content = json_decode($this->template->content, true);
         $layers=array();
         //$evflogger->log("template content is ".json_encode($content));
@@ -232,25 +366,25 @@ class PDFCreator {
             foreach($layers[$key] as $el) {
                 $evflogger->log("layer $key, element ".$el["type"]);
                 switch($el["type"]) {
-                case "photo":   $this->addPhoto($pdf,$el, $content,$data); break;
-                case "text":    $this->addText($pdf,$el,$content, $data); break;
-                case "name":    $this->addName($pdf,$el, $content, $data); break;
-                case "accid":   $this->addID($pdf,$el, $content, $data); break;
-                case "country": $this->addCountry($pdf,$el, $content,$data); break;
-                case "cntflag": $this->addCountryFlag($pdf,$el, $content,$data); break;
-                case "org":     $this->addOrg($pdf,$el,$content, $data); break;
-                case "roles":   $this->addRoles($pdf,$el,$content, $data); break;
-                case "dates":   $this->addDates($pdf,$el,$content, $data); break;
-                case "box":     $this->addBox($pdf,$el,$content, $data); break;
-                case "img":     $this->addImage($pdf,$el,$content, $data, $pictures); break;
-                case 'qr':      $this->addQRCode($pdf,$el,$content,$data); break;
+                case "photo":   $this->addPhoto($el, $content,$data); break;
+                case "text":    $this->addText($el,$content, $data); break;
+                case "name":    $this->addName($el, $content, $data); break;
+                case "accid":   $this->addID($el, $content, $data); break;
+                case "country": $this->addCountry($el, $content,$data); break;
+                case "cntflag": $this->addCountryFlag($el, $content,$data); break;
+                case "org":     $this->addOrg($el,$content, $data); break;
+                case "roles":   $this->addRoles($el,$content, $data); break;
+                case "dates":   $this->addDates($el,$content, $data); break;
+                case "box":     $this->addBox($el,$content, $data); break;
+                case "img":     $this->addImage($el,$content, $data, $pictures); break;
+                case 'qr':      $this->addQRCode($el,$content,$data); break;
                 }
             }
         }
-        return $pdf;
+        return $this->pdf;
     }
 
-    private function addPhoto($pdf, $element,$content, $data) {
+    private function addPhoto($element,$content, $data) {
         global $evflogger;
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
@@ -282,29 +416,35 @@ class PDFCreator {
         if (file_exists($path)) {
             $path = $this->createWatermark($path);
             if(!empty($path) && file_exists($path)) {
-                $this->putImageAt($pdf, $path, array("offset"=>$offset,"size"=>$size));
+                $this->putImageAt($path, array("offset"=>$offset,"size"=>$size));
                 @unlink($path);
             }
         }
     }
 
-    private function addText($pdf, $element,$content, $data) {
+    private function addText($element,$content, $data) {
         $colour=$this->getColour($element);
         $offset=$this->getOffset($element);
-        $size=$this->getSize($element);
+        $size=$this->getSize($element); // text has no settable size
         $fsize=$this->getFontSize($element);
+        $ffamily=$this->getFontFamily($element);
         $txt = isset($element["text"]) ? $element["text"] : "";
         if(strlen(trim($txt))) {
-            $this->putTextAt($pdf, $txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "colour" => $colour));
+            $options=array("offset" => $offset, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour);
+            if($size !== null) {
+                $options["box"]=$size;
+            }
+            $this->putTextAt($txt, $options);
         }
     }
 
-    private function addName($pdf, $element,$content, $data) {
+    private function addName($element,$content, $data) {
         global $evflogger;
         $colour = $this->getColour($element);
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
+        $ffamily=$this->getFontFamily($element);
         $fname = isset($data["firstname"]) ? $data["firstname"] : "";
         $lname = isset($data["lastname"]) ? $data["lastname"] : "";
         $txt=$lname.", ".$fname;
@@ -316,36 +456,38 @@ class PDFCreator {
         }
         if (strlen(trim($txt))) {
             $evflogger->log("putting text '$txt' at ".json_encode($offset)." x ".json_encode($size)." font size $fsize");
-            $this->putTextAt($pdf, $txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "colour" => $colour));
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
         }
     }
 
-    private function addID($pdf, $element,$content, $data) {
+    private function addID($element,$content, $data) {
         global $evflogger;
         $evflogger->log("putting accreditation id");
         $colour = $this->getColour($element);
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
+        $ffamily = $this->getFontFamily($element);
         $txt = isset($this->accreditation->fe_id) ? $this->accreditation->fe_id : "";
         $side = isset($element["side"]) ? $element["side"] : "both";
 
-        $this->accrid=array("text"=>$txt, "side"=>$side,"options" => array("offset" => $offset, "box" => $size, "size"=>$size, "fontsize" => $fsize, "colour" => $colour));
+        $this->accrid=array("text"=>$txt, "side"=>$side,"options" => array("offset" => $offset, "box" => $size, "size"=>$size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
     }
 
 
-    private function addCountry($pdf, $element,$content, $data) {
+    private function addCountry($element,$content, $data) {
         $colour = $this->getColour($element);
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
+        $ffamily=$this->getFontFamily($element);
         $txt = isset($data["country"]) ? $data["country"] : "";
         if (strlen(trim($txt))) {
-            $this->putTextAt($pdf, $txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "colour" => $colour));
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
         }
     }
 
-    private function addCountryFlag($pdf, $element,$content, $data) {
+    private function addCountryFlag($element,$content, $data) {
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $fpath = isset($data["country_flag"]) ? $data["country_flag"] : "";
@@ -370,55 +512,58 @@ class PDFCreator {
             }
         }
 
-        $this->putImageAt($pdf,$fpath, array("offset"=>$offset,"size"=>$size));
+        $this->putImageAt($fpath, array("offset"=>$offset,"size"=>$size));
     }
 
-    private function addOrg($pdf, $element,$content, $data) {
+    private function addOrg($element,$content, $data) {
         $colour = $this->getColour($element);
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
+        $ffamily=$this->getFontFamily($element);
         $txt = isset($data["organisation"]) ? $data["organisation"] : "";
         if (strlen(trim($txt))) {
-            $this->putTextAt($pdf, $txt, array("offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "colour"=>$colour));
+            $this->putTextAt($txt, array("offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "font"=>$ffamily, "colour"=>$colour));
         }
     }
-    private function addRoles($pdf, $element,$content, $data) {
+    private function addRoles($element,$content, $data) {
         $colour = $this->getColour($element);
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
+        $ffamily=$this->getFontFamily($element);
         $txt = isset($data["roles"]) ? $data["roles"] : array();
         $txt = implode(", ",$txt);
         if (strlen(trim($txt))) {
-            $this->putTextAt($pdf, $txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "colour" => $colour));
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
         }
     }
-    private function addDates($pdf, $element,$content, $data) {
+    private function addDates($element,$content, $data) {
         $colour = $this->getColour($element);
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
+        $ffamily=$this->getFontFamily($element);
         $txt = isset($data["dates"]) ? $data["dates"] : array();
         if(isset($element["onedateonly"]) && $element["onedateonly"]===true) {
             $txt=array($txt[0]);
         }
         $txt = implode("\n", str_replace(" ","~",$txt));
         if (strlen(trim($txt))) {
-            $this->putTextAt($pdf, $txt, array("replaceTilde"=>true, "offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "colour"=>$colour));
+            $this->putTextAt($txt, array("replaceTilde"=>true, "offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "font"=>$ffamily, "colour"=>$colour));
         }
     }
-    private function addBox($pdf, $element,$content, $data) {
+    private function addBox($element,$content, $data) {
         global $evflogger;
         $evflogger->log("adding box");
         $colour = $this->getColour($element);
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $evflogger->log("offset ".json_encode($offset)." size ".json_encode($size)." colour ".json_encode($colour));
-        $this->putBoxAt($pdf,$offset,$size,$colour);
+        $this->putBoxAt($offset,$size,$colour);
     }
 
-    private function addQRCode($pdf, $element, $content, $data) {
+    private function addQRCode($element, $content, $data) {
         global $evflogger;
         $evflogger->log("adding qr code");
         $offset = $this->getOffset($element);
@@ -426,11 +571,11 @@ class PDFCreator {
         $link = isset($element["link"]) ? $element["link"] : "";
         if(strlen(trim($link))) {
             $evflogger->log("offset " . json_encode($offset) . " size " . json_encode($size));
-            $this->putQRCodeAt($pdf, $link, array("offset"=>$offset, "size"=>$size));
+            $this->putQRCodeAt($link, array("offset"=>$offset, "size"=>$size));
         }
     }
 
-    private function addImage($pdf, $element,$content, $data, $pictures) {
+    private function addImage($element,$content, $data, $pictures) {
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
         $imageid = isset($element["file_id"]) ? $element["file_id"]:"";
@@ -469,12 +614,12 @@ class PDFCreator {
             }
 
             if(file_exists($path)) {
-                $this->putImageAt($pdf,$path, array("offset"=>$offset,"size"=>$size));
+                $this->putImageAt($path, array("offset"=>$offset,"size"=>$size));
             }
         }
     }
 
-    private function putAccIDAt($pdf, $text, $options) {
+    private function putAccIDAt($text, $options) {
         // the accreditation ID consists of a QR code and the AccID underneath it
         $style = array(
             'border' => 2,
@@ -488,14 +633,14 @@ class PDFCreator {
 
         $link=get_site_url(null, "/accreditation/$text","https");
         // QRCODE,H : QR-CODE Best error correction
-        $pdf->write2DBarcode($link, 'QRCODE,H', $options["offset"][0], $options["offset"][1], $options["size"][0], $options["size"][1], $style, 'N');
+        $this->pdf->write2DBarcode($link, 'QRCODE,H', $options["offset"][0], $options["offset"][1], $options["size"][0], $options["size"][1], $style, 'N');
 
         // put the text below, 2mm margin
         $options["offset"][1]=$options["offset"][1] + $options["size"][1];
-        $this->putTextAt($pdf,$text,$options);
+        $this->putTextAt($text,$options);
     }
 
-    private function putQRCodeAt($pdf, $link, $options) {
+    private function putQRCodeAt($link, $options) {
         $style = array(
             'border' => 2,
             'vpadding' => 'auto',
@@ -507,17 +652,17 @@ class PDFCreator {
         );
 
         // QRCODE,H : QR-CODE Best error correction
-        $pdf->write2DBarcode($link, 'QRCODE,H', $options["offset"][0], $options["offset"][1], $options["size"][0], $options["size"][1], $style, 'N');
+        $this->pdf->write2DBarcode($link, 'QRCODE,H', $options["offset"][0], $options["offset"][1], $options["size"][0], $options["size"][1], $style, 'N');
     }
 
-    private function putTextAt($pdf, $text, $options) {
+    private function putTextAt($text, $options) {
         global $evflogger;
         $evflogger->log("putting text '$text' at ".json_encode($options));
         if(isset($options["colour"])) {
             $evflogger->log("setting fill colour to ".json_encode($options["colour"]));
-            $pdf->SetTextColorArray($options["colour"]);
+            $this->pdf->SetTextColorArray($options["colour"]);
         }
-        $pdf->setTextRenderingMode($stroke = 0, $fill = true, $clip = false);
+        $this->pdf->setTextRenderingMode($stroke = 0, $fill = true, $clip = false);
         $x=0;
         $y=0;
         $width=PDFCreator::PDF_WIDTH;
@@ -539,11 +684,20 @@ class PDFCreator {
                 $height=$sheight;
             }
         }
-        $pdf->SetFontSize(isset($options["fontsize"]) ? intval(round($options["fontsize"] * PDFCreator::PDF_PXTOPT)) : "20" );
 
-        $lines = $this->breakText($pdf, $text, $width);
+        $font = isset($options["font"]) ? $options["font"] : "Helvetica";
+        if($font!= "Helvetica") {
+            $this->addFont($font);
+        }
+        $fontsize = $this->determineFontSize($text, isset($options["fontsize"]) ? $options["fontsize"] : 20, $font);
+        $this->addFont($font);
+        $this->pdf->SetFontSize($fontsize * PDFCreator::PDF_PXTOPT);
+        $lineheight = $this->pdf->getCellHeight($this->pdf->GetFontSize());
+        $fontwidth = $this->getTextWidth($text);
+        //$this->pdf->Rect($x, $y - 0.5, $fontwidth,$lineheight, "B",array("all"=>0.5),array(128,0,128));
+
+        $lines = $this->breakText($text, $width);
         $evflogger->log("lines is ".json_encode($lines));
-        $lineheight = $pdf->getCellHeight($pdf->GetFontSize());
         $maxlines = intval(floor($height / $lineheight))+1; // allow the last line to overflow (a bit)
 
         // Print at least 1 line, even if it overflows. 
@@ -555,34 +709,80 @@ class PDFCreator {
             $lines = array_slice($lines,0,$maxlines);
         }
 
-        $offset = 0;
+        $offset = -0.5;
         foreach($lines as $line) {
-            $pdf->SetXY($x,$y+$offset);
+            $this->pdf->SetXY($x,$y+$offset);
             $offset+=$lineheight;
             if(isset($options["replaceTilde"]) && $options["replaceTilde"]) {
                 $line = str_replace("~"," ",$line); // a cheap version of non-breaking-spaces
             }
-            $pdf->Cell($width, $lineheight, $txt=$line, $border=0, $ln=0, $align='', $fill=false, $link='', $stretch=0, $ignore_min_height=false, $calign='T', $valign='B');
+            $this->pdf->Cell($width, $lineheight, $txt=$line, $border=0, $ln=0, $align='', $fill=false, $link='', $stretch=0, $ignore_min_height=false, $calign='T', $valign='T');
         }
     }
 
-    private function breakText($pdf, $text, $width) {
+    private function determineFontSize($text, $size, $font) {
+        // because fontsize is concerned with the height of the font and we want to 
+        // steer on the width of the font, we need to convert the actual text
+        // to a font-size that matches the expected width as configured for the
+        // default Helvetica font
+        if($font == "Helvetica") return $size;
+
+        $this->pdf->SetFontSize($size);
+        $this->pdf->SetFont("helvetica");
+        $textwidthhelvetica = $this->getTextWidth($text);
+
+        $newsize = $size;
+        $this->addFont($font);
+        global $evflogger;
+        while(true) {
+            $evflogger->log("determining font size using $newsize");
+            $this->pdf->SetFontSize($newsize);
+            $this->addFont($font);
+            $fontwidth = $this->getTextWidth($text);
+            $evflogger->log("text says $fontwidth vs $textwidthhelvetica");
+
+            if(abs($fontwidth - $textwidthhelvetica) < 1) {
+                $evflogger->log("returning $newsize");
+                return $newsize;
+            }
+
+            $widthratio = $textwidthhelvetica/$fontwidth;            
+            $newsize = $newsize * $widthratio;
+            $evflogger->log("retrying using $newsize");
+        }
+        return $newsize;
+    }
+
+    private function getTextWidth($txt) {
+        $characters = preg_split('//u', $txt, null, PREG_SPLIT_NO_EMPTY);
+        $width=0.0;
+        global $evflogger;
+        foreach($characters as $c) {
+            $w=floatval($this->pdf->GetCharWidth(ord($c)));
+            $width += $w;
+            $evflogger->log("character $c has width $w / $width");
+        }
+        return $width;
+    }
+
+    private function breakText($text, $width) {
         //global $evflogger;
         //$evflogger->log("breaking text '$text' based on width $width");
         // break the text into pieces based on whitespace, comma, dot and hyphen separation
         $tokens=$this->breakTextIntoTokens($text);
         //$evflogger->log("tokens is ".json_encode($tokens));
+        $pdf=$this->pdf;
         $sizes = array_map(function($item) use ($pdf) {
             $letters=preg_split('//u', $item, null, PREG_SPLIT_NO_EMPTY);
             $size=0;
             for($i=0;$i<sizeof($letters);$i++) {
-                $size+=$pdf->GetCharWidth($letters[$i]);
+                $size+=$pdf->GetCharWidth(ord($letters[$i]));
             }
             return $size;
         }, $tokens);
         //$evflogger->log("sizes are ".json_encode($sizes));
 
-        $lws=$pdf->GetCharWidth(" ");
+        $lws=$this->pdf->GetCharWidth(" ");
         $lines=array();
         $current=0;
         $line="";
@@ -678,11 +878,11 @@ class PDFCreator {
     }
 
 
-    private function putBoxAt($pdf, $offset, $size, $colour) {
-        $pdf->Rect($offset[0], $offset[1], $size[0],$size[1], "F",array("all"=>0),$colour);
+    private function putBoxAt($offset, $size, $colour) {
+        $this->pdf->Rect($offset[0], $offset[1], $size[0],$size[1], "F",array("all"=>0),$colour);
     }
 
-    private function putImageAt($pdf, $path, $options) {
+    private function putImageAt($path, $options) {
         global $evflogger;
         $evflogger->log("putting image at $path");
 
@@ -709,8 +909,8 @@ class PDFCreator {
             }
         }
         $evflogger->log("width $width, height $height");
-        $pdf->setJPEGQuality(90);
-        $pdf->Image($path,$x, $y, $width, $height, $type='', $link='', $align='', $resize=true, $dpi=600, $palign='', $ismask=false, $imgmask=false, $border=0, $fitbox=false, $hidden=false, $fitonpage=false, $alt=false, $altimgs=array());
+        $this->pdf->setJPEGQuality(90);
+        $this->pdf->Image($path,$x, $y, $width, $height, $type='', $link='', $align='', $resize=true, $dpi=600, $palign='', $ismask=false, $imgmask=false, $border=0, $fitbox=false, $hidden=false, $fitonpage=false, $alt=false, $altimgs=array());
     }
 
     private function getColour($element) {
@@ -759,6 +959,7 @@ class PDFCreator {
             if (isset($element["style"]["height"])) $y = floatval($element["style"]["height"]);
             if (isset($element["style"]["width"])) $x = floatval($element["style"]["width"]);
         }
+        if($x === 0 && $y === 0) return null;
 
         if(isset($element["ratio"])) {
             $ratio = floatval($element["ratio"]);
@@ -799,6 +1000,26 @@ class PDFCreator {
         return 20;
     }    
 
+    private function getFontFamily($element) {
+        $family="Helvetica";
+        if(isset($element["style"]) && isset($element["style"]["fontFamily"])) {
+            $family = $element["style"]["fontFamily"];
+            if(!in_array($family, array_keys(PDFCreator::PDF_FONTS))) {
+                $family="Helvetica";
+            }
+        }
+        return $family;
+    }    
+
+    private function getFontFile($family) {
+        $ffile = __DIR__."/$family.ttf";
+        if(!file_exists($ffile)) {
+            $ffile = __DIR__."/arial.ttf";
+        }
+        return $ffile;
+    }
+
+
     private function createWatermark($path) {
         global $evflogger;
         $evflogger->log("loading image from path $path to create watermark");
@@ -820,7 +1041,7 @@ class PDFCreator {
         if(file_exists($fname)) {
             $evflogger->log("allocating colour");
             $text_color = imagecolorallocate($img, 196,196,196);
-            $ffile=__DIR__."/arial.ttf";
+            $ffile=$this->getFontFile("arial");
             $evflogger->log("writing text ".$this->event->event_name);
             $fsize = 19; // we start with a font size decrement
             $rotation = 0;

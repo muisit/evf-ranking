@@ -273,8 +273,8 @@
         $event = new Event($eid,true);
         if($event->exists()) {
             $defaults = $this->listDefaults();
-            if(isset($defaults["list"])) {
-                foreach($defaults["list"] as $dat) {
+            if(isset($defaults["templates"])) {
+                foreach($defaults["templates"] as $dat) {
                     $tid = isset($dat["id"]) ? $dat["id"] : -1;
                     $template = new AccreditationTemplate($tid,true);
                     if($template->exists()) {
@@ -306,7 +306,7 @@
             "organisation" => $country->country_name,
             "country" => $country->country_abbr,
             "roles"=> array("Athlete WS4", "Team Armourer", "Head of Delegation", "Referee"),
-            "dates" => array("SAT 12","SUN 21"),
+            "dates" => array("07 WED","21 SUN"),
             "accid" => "783-242",
             "created" => 1000,
             "modified" => 2000

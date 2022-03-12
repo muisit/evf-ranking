@@ -39,14 +39,14 @@ export function random_hash() {
 export function parse_float(val, def) {
     if(def === undefined) def=0.0;
     var retval=parseFloat(val);
-    if(isNaN(val)) retval=def;
+    if(isNaN(retval)) retval=def;
     return retval;
 }
 
 export function parse_int(val, def) {
     if(def === undefined) def=0;
     var retval=parseInt(val);
-    if(isNaN(val)) retval=def;
+    if(isNaN(retval)) retval=def;
     return retval;
 }
 
@@ -178,7 +178,7 @@ export function create_abbr(se) {
     if(se.competition) {
         var wpn = se.competition.weapon ? se.competition.weapon : {abbr:'??'};
         var cat = se.competition.category ? se.competition.category : {abbr: '??'};
-        abbr = wpn.abbr + cat.abbr;
+        abbr = ''+wpn.abbr + cat.abbr;
     }
     else {
         var words=se.title.split(' ');

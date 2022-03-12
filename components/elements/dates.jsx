@@ -35,7 +35,7 @@ export const Dates = (props) => {
     var onedateonly = props.element.onedateonly === true;
     return (<div onClick={clicked} className='elementwrapper' style={style}>
         <span className="pi pi-trash cright" onClick={deleteMe}></span>
-        <div ref={dragRef} className='element roles'>SAT 01{!onedateonly && (<br/>)}{!onedateonly && "SUN 02"}</div>
+        <div ref={dragRef} className='element roles'>07 WED{!onedateonly && (<br/>)}{!onedateonly && "21 SUN"}</div>
     </div>);
 }
 

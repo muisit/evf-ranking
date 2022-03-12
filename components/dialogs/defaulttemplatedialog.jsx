@@ -4,6 +4,7 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
+import { parse_net_error } from '../functions';
 
 export default class DefaultTemplateDialog extends React.Component {
     constructor(props, context) {

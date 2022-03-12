@@ -284,7 +284,7 @@ class Test_PDF extends BaseTest {
         list($fencer, $event, $country, $accreditation, $template, $pdf, $fname) = $this->createModels();
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("b4ef65185ba5e03e023e68f2afe70c24", $fname);
+        $this->checkHash("6cd59003869772babbfb8273a047863f", $fname);
     }
 
     public function test_image4() {

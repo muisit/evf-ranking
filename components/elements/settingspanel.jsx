@@ -49,7 +49,8 @@ export function SettingsPanel(props) {
             }
             break;
         case 'fontFamily':
-            console.log('setting style member ',member,value);
+        case 'textAlign':
+                console.log('setting style member ',member,value);
             itm.style[member]=value;
             break;
         case 'name':
@@ -154,11 +155,13 @@ export function SettingsPanel(props) {
         if (props.item.hasFontSize && !isNaN(parseFloat(props.item.style.fontSize))) {
             var val = props.item.style ? parseInt(props.item.style.fontSize) : 1;
             var fnt = props.item.style && props.item.style.fontFamily ? props.item.style.fontFamily : 'Helvetica';
-            console.log("font is ",fnt);
+            var align = props.item.style && props.item.style.textAlign ? props.item.style.textAlign : 'left';
+            //console.log("font is ",fnt);
             var options=props.fonts.map((fntname) => {
                 return {text: fntname };
             });
-            console.log("fonts is ",props.fonts);
+            //console.log("fonts is ",props.fonts);
+            var options2=[{text: 'left'},{text:'center'},{text:'right'}];
             return (
                 <div>
                     <div>
@@ -171,6 +174,12 @@ export function SettingsPanel(props) {
                         <label>Font</label>
                         <div className="input">
                             <Dropdown name='fontFamily' optionLabel="text" optionValue="text" value={fnt} options={options} onChange={(e) => set("fontFamily", e.target.value)} />
+                        </div>
+                    </div>
+                    <div>
+                        <label>Align</label>
+                        <div className="input">
+                            <Dropdown name='align' optionLabel="text" optionValue="text" value={align} options={options2} onChange={(e) => set("textAlign", e.target.value)} />
                         </div>
                     </div>
                 </div>

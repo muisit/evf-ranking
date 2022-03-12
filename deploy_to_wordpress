@@ -83,6 +83,28 @@ fi
 
 echo "Version ${MAJ}.${MIN}.${MICR}"
 
+echo "Running tests"
+npm run --silent test -- --silent >/dev/null 2>&1
+if [[ ! "x$?" = "x0" ]]
+then
+    echo "Javascript tests fail, please run tests yourself"
+    exit 1
+else 
+    echo "Javascript tests succeed"
+fi
+
+cd tests
+php ./run.php > /dev/null 2>&1
+if [[ ! "x$?" = "x0" ]]
+then
+    echo "PHP tests fail, please run tests yourself"
+    exit 1
+else
+    echo "PHP tests succeed"
+fi
+cd ..
+
+
 if [[ "x$DRY" = "x1" ]]
 then
     echo "cat \"$PROJECT.php\" | sed \"s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/\" > tmp.$$"

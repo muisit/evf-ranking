@@ -15,7 +15,8 @@ export default class FEAccreditorTab extends FEBase {
             fencer_object: { id: -1 },
             displayDialog: false,
             loadedAllFencers:false,
-            summary: {}
+            summary: {},
+            loadid: null
         });
 
     }
@@ -30,22 +31,24 @@ export default class FEAccreditorTab extends FEBase {
         window.clearTimeout(this.timeout);
     }
 
-    getSummary = (firsttime) => {
+    getSummary = (firsttime,loadid) => {
         if(firsttime) this.props.onload("overview","Loading summary overview",this.props.basic.event.id);
-        accreditation("overview", { event: this.props.basic.event.id })
-            .then((json) => {
-                this.setState({ summary: json.data });
-                if(firsttime) {
-                    this.props.unload("overview",this.props.basic.event.id);
-                    this.startRegularRefresh();
-                }
-            })
-            .catch((err) => parse_net_error(err));
+        if(!this.state.loadid) {
+            this.setState({loadid: loadid});
+            accreditation("overview", { event: this.props.basic.event.id })
+                .then((json) => {
+                    this.setState({ summary: json.data,loadid: null });
+                    if(firsttime) {
+                        this.props.unload("overview",this.props.basic.event.id);
+                        window.setInterval(()=> this.regularRefresh(), 5000)
+                    }
+                })
+                .catch((err) => parse_net_error(err));
+        }
     }
 
-    startRegularRefresh = () => {
-        this.timeout = window.setTimeout(()=> this.startRegularRefresh(), 5000);
-        this.getSummary(false);
+    regularRefresh = () => {
+        this.getSummary(false,Math.random()*1000000);
     }
 
     countryHeader = () => {

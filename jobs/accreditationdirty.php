@@ -250,10 +250,12 @@ class AccreditationDirty extends BaseJob {
                         $role->role_id=0;
                         $role->role_name = $sideevent->competition->abbreviation();
 
-                        $cat = new \EVFranking\Models\Category($sideevent->competition->competition_category, true);  
-                        if($cat->exists() && $cat->category_type == 'T' && strlen($r->registration_team)) {
-                            $role->role_name.= " (" .$r->registration_team. ")";
-                        }
+                        // adding the team name causes too much flutter in the Role box. We can add it again
+                        // if the general layout for accreditations is adjusted
+                        //$cat = new \EVFranking\Models\Category($sideevent->competition->competition_category, true);  
+                        //if($cat->exists() && $cat->category_type == 'T' && strlen($r->registration_team)) {
+                        //    $role->role_name.= " (" .$r->registration_team. ")";
+                        //}
 
                         if(!isset($dates[$date])) {
                             $dates[$date]=array("sideevents"=>array($sideevent), "roles"=>array());
@@ -379,7 +381,7 @@ class AccreditationDirty extends BaseJob {
         foreach($dates as $k) {
             if($k != "ALL") {
                 $time = strtotime($k);
-                $entry = str_replace('  ', ' ', strtoupper(strftime('%a %e', $time)));
+                $entry = str_replace('  ', ' ', strtoupper(strftime('%e %a', $time)));
                 $accr["dates"][]=$entry;
             }
             else {

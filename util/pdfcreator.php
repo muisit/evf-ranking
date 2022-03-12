@@ -41,8 +41,8 @@ class PDFCreator {
         "Eurofurence Bold" => "eurofurenceB",
         "Eurofurence Bold Italic" => "eurofurenceBI",
         // there seems to be a PDF problem with the regular Eurofurence Light, so it is disabled for now
-//        "Eurofurence Light" => "eurofurencelight",
-//        "Eurofurence Light Italic" => "eurofurencelightI",
+        "Eurofurence Light" => "eurofurencelight",
+        "Eurofurence Light Italic" => "eurofurencelightI",
         "FreeMono" => "freemono",
         "FreeMono Italic" => "freemonoI",
         "FreeMono Bold" => "freemonoB",
@@ -153,6 +153,7 @@ class PDFCreator {
         if(is_array($this->accrid)) {
             $evflogger->log("placing accreditation ID after general rendering");
             $options=$this->accrid["options"];
+            $options['align']='C';
 
             $offset1 = array($options["offset"][0], $options["offset"][1]);
             $offset2 = array($options["offset"][0], $options["offset"][1]);
@@ -428,9 +429,10 @@ class PDFCreator {
         $size=$this->getSize($element); // text has no settable size
         $fsize=$this->getFontSize($element);
         $ffamily=$this->getFontFamily($element);
+        $align=$this->getAlign($element);
         $txt = isset($element["text"]) ? $element["text"] : "";
         if(strlen(trim($txt))) {
-            $options=array("offset" => $offset, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour);
+            $options=array("offset" => $offset, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour, "align"=>$align);
             if($size !== null) {
                 $options["box"]=$size;
             }
@@ -445,6 +447,7 @@ class PDFCreator {
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
         $ffamily=$this->getFontFamily($element);
+        $align=$this->getAlign($element);
         $fname = isset($data["firstname"]) ? $data["firstname"] : "";
         $lname = isset($data["lastname"]) ? $data["lastname"] : "";
         $txt=$lname.", ".$fname;
@@ -456,7 +459,7 @@ class PDFCreator {
         }
         if (strlen(trim($txt))) {
             $evflogger->log("putting text '$txt' at ".json_encode($offset)." x ".json_encode($size)." font size $fsize");
-            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour,"align"=>$align));
         }
     }
 
@@ -468,10 +471,11 @@ class PDFCreator {
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
         $ffamily = $this->getFontFamily($element);
+        $align=$this->getAlign($element);
         $txt = isset($this->accreditation->fe_id) ? $this->accreditation->fe_id : "";
         $side = isset($element["side"]) ? $element["side"] : "both";
 
-        $this->accrid=array("text"=>$txt, "side"=>$side,"options" => array("offset" => $offset, "box" => $size, "size"=>$size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
+        $this->accrid=array("text"=>$txt, "side"=>$side,"options" => array("offset" => $offset, "box" => $size, "size"=>$size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour, "align"=>$align));
     }
 
 
@@ -481,9 +485,10 @@ class PDFCreator {
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
         $ffamily=$this->getFontFamily($element);
+        $align=$this->getAlign($element);
         $txt = isset($data["country"]) ? $data["country"] : "";
         if (strlen(trim($txt))) {
-            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour, "align"=>$align));
         }
     }
 
@@ -521,9 +526,10 @@ class PDFCreator {
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
         $ffamily=$this->getFontFamily($element);
+        $align=$this->getAlign($element);
         $txt = isset($data["organisation"]) ? $data["organisation"] : "";
         if (strlen(trim($txt))) {
-            $this->putTextAt($txt, array("offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "font"=>$ffamily, "colour"=>$colour));
+            $this->putTextAt($txt, array("offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "font"=>$ffamily, "colour"=>$colour,"align"=>$align));
         }
     }
     private function addRoles($element,$content, $data) {
@@ -532,10 +538,11 @@ class PDFCreator {
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
         $ffamily=$this->getFontFamily($element);
+        $align=$this->getAlign($element);
         $txt = isset($data["roles"]) ? $data["roles"] : array();
         $txt = implode(", ",$txt);
         if (strlen(trim($txt))) {
-            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour));
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour,"align"=>$align));
         }
     }
     private function addDates($element,$content, $data) {
@@ -544,13 +551,16 @@ class PDFCreator {
         $size = $this->getSize($element);
         $fsize = $this->getFontSize($element);
         $ffamily=$this->getFontFamily($element);
+        $align=$this->getAlign($element);
         $txt = isset($data["dates"]) ? $data["dates"] : array();
         if(isset($element["onedateonly"]) && $element["onedateonly"]===true) {
             $txt=array($txt[0]);
         }
-        $txt = implode("\n", str_replace(" ","~",$txt));
+        $txt = implode("\n", $txt);
+        // we used to make sure date/day were always on one line
+        //$txt = implode("\n", str_replace(" ","~",$txt));
         if (strlen(trim($txt))) {
-            $this->putTextAt($txt, array("replaceTilde"=>true, "offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "font"=>$ffamily, "colour"=>$colour));
+            $this->putTextAt($txt, array("replaceTilde"=>true, "offset"=>$offset, "box"=>$size, "fontsize"=>$fsize, "font"=>$ffamily, "colour"=>$colour,"align"=>$align));
         }
     }
     private function addBox($element,$content, $data) {
@@ -694,6 +704,7 @@ class PDFCreator {
         $this->pdf->SetFontSize($fontsize * PDFCreator::PDF_PXTOPT);
         $lineheight = $this->pdf->getCellHeight($this->pdf->GetFontSize());
         $fontwidth = $this->getTextWidth($text);
+        $align=isset($options["align"]) ? $options["align"]: '';
         //$this->pdf->Rect($x, $y - 0.5, $fontwidth,$lineheight, "B",array("all"=>0.5),array(128,0,128));
 
         $lines = $this->breakText($text, $width);
@@ -716,7 +727,7 @@ class PDFCreator {
             if(isset($options["replaceTilde"]) && $options["replaceTilde"]) {
                 $line = str_replace("~"," ",$line); // a cheap version of non-breaking-spaces
             }
-            $this->pdf->Cell($width, $lineheight, $txt=$line, $border=0, $ln=0, $align='', $fill=false, $link='', $stretch=0, $ignore_min_height=false, $calign='T', $valign='T');
+            $this->pdf->Cell($width, $lineheight, $txt=$line, $border=0, $ln=0, $align, $fill=false, $link='', $stretch=0, $ignore_min_height=false, $calign='T', $valign='T');
         }
     }
 
@@ -1010,6 +1021,20 @@ class PDFCreator {
         }
         return $family;
     }    
+
+    private function getAlign($element) {
+        $align='';
+        if(isset($element["style"]) && isset($element["style"]['textAlign'])) {
+            $ta = $element["style"]['textAlign'];
+            switch($ta) {
+            case 'center': $align='C'; break;
+            case 'right': $align='R'; break;
+            case 'justify': $align='J'; break;
+            default: $align=''; break;
+            }
+        }
+        return $align;
+    }
 
     private function getFontFile($family) {
         $ffile = __DIR__."/$family.ttf";

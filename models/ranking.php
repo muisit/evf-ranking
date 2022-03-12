@@ -139,11 +139,20 @@
         // determine the minimal and maximal year-of-birth values for the indicated category
         $ages=$this->calculateCategoryAges($category);
 
-        $sql = "select fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr, sum(result_total_points) as total_points".
-        " from VW_Ranking where (year(fencer_dob) > '".$ages[0]."' and year(fencer_dob) <= '".$ages[1]."') and weapon_id='$wid' and result_in_ranking='Y' ".
-        " group by fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr ".
-        " order by total_points DESC, fencer_surname, fencer_firstname, fencer_id";
-        $results = $wpdb->get_results($sql);
+        $results = $this->select("fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr, sum(result_total_points) as total_points")
+            ->from("VW_Ranking")
+            ->where("(year(fencer_dob) > '".$ages[0]."' and year(fencer_dob) <= '".$ages[1]."')")
+            ->where("weapon_id",$wid)
+            ->where('result_in_ranking','Y')
+            ->where('fencer_country_registered','Y')
+            ->groupBy("fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr")
+            ->orderBy("total_points DESC, fencer_surname, fencer_firstname, fencer_id")->get();
+
+        //$sql = "select fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr, sum(result_total_points) as total_points".
+        //" from VW_Ranking where (year(fencer_dob) > '".$ages[0]."' and year(fencer_dob) <= '".$ages[1]."') and weapon_id='$wid' and result_in_ranking='Y' ".
+        //" group by fencer_id, fencer_surname, fencer_firstname, fencer_country_abbr ".
+        //" order by total_points DESC, fencer_surname, fencer_firstname, fencer_id";
+        //$results = $wpdb->get_results($sql);
 
         $retval=array();
         $pos=1;

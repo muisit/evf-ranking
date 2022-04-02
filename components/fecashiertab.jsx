@@ -44,7 +44,7 @@ export default class FECashierTab extends FEBase {
                 // we need a callback to get the latest registration data instead of reusing the current state-of-affairs
                 changePendingSituation(this.state.registered, fencer, itm, "saved", 
                     () => {return this.state.registered; }, 
-                    (lst) => { console.log("setting registered to ",lst); this.setState({ registered: lst }) }, 
+                    (lst) => { this.setState({ registered: lst }) }, 
                     2000, "");
             })
             .catch((err) => {
@@ -135,13 +135,10 @@ export default class FECashierTab extends FEBase {
         case 'allpaid':
             // if there are any payments unchecked, check them all. Else uncheck them
             var allchecked=true;
-            console.log("allpaid for ",fid);
             forRegistrations(this.state.registered, fid, (fencer,reg) => {
-                console.log("checking ",fencer,reg,allchecked);
                 if (is_hod() && reg.paid_hod != 'Y') allchecked = false;
                 if (!is_hod() && reg.paid != 'Y') allchecked = false;
             });
-            console.log("allchecked is ",allchecked);
             // mark all registrations as paid
             forRegistrations(this.state.registered, fid, (fencer,reg) => {
                 var changed=false;
@@ -169,10 +166,8 @@ export default class FECashierTab extends FEBase {
                     }
                 }
                 if(changed) {
-                    console.log("saving registration ",reg);
                     this.saveRegistration(fencer, reg);
                 }
-                else console.log("did not find a registration");
             });
             break;
         case 'allpaidteam':

@@ -272,6 +272,7 @@ export default class FEAccreditorTab extends FEBase {
                               <td>{event.title}</td>
                               <td className='textcenter'>
                                     <i className='pi pi-list' onClick={() => this.redirectList(event, "participants")}></i>
+                                    <i className='pi pi-file-excel' onClick={() => this.redirectList(event, "participantsxml")}></i>
                               </td>
                             </tr>
                         ))}

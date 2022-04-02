@@ -50,14 +50,12 @@ export function SettingsPanel(props) {
             break;
         case 'fontFamily':
         case 'textAlign':
-                console.log('setting style member ',member,value);
             itm.style[member]=value;
             break;
         case 'name':
         case 'link':
         case 'side':
         case 'onedateonly':
-            console.log('setting member ',member,value);
             itm[member]=value;
             break;
         default:

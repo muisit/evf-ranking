@@ -107,14 +107,12 @@ export default class FEAccrTemplateTab extends React.Component  {
                 this.setState({ templates: tmpls });
                 break;
             case 'change':
-                console.log("tab change handler for template ",dt);
                 this.setState({template:dt});
                 break;
         }
     }
 
     render() {
-        console.log("tab rerendering for selected template ",this.state.template);
         return (
             <div className='row'>
                 <div className='col-12'>

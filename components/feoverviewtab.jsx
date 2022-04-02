@@ -1,9 +1,7 @@
 import React from 'react';
 import FEBase from './febase';
-import { Button } from 'primereact/button';
-import { Tooltip } from 'primereact/tooltip';
 import { registration } from './api';
-import {parse_net_error, create_abbr, create_cmpById, create_roleById, create_wpnById, create_catById } from "./functions";
+import {parse_net_error, is_organisation } from "./functions";
 
 export default class FEOverviewTab extends FEBase {
     constructor(props, context) {
@@ -45,18 +43,18 @@ export default class FEOverviewTab extends FEBase {
         var eventAbbrsSide = [];
         this.props.basic.sideevents.map((se) => {
             if(se.competition) {
-                eventAbbrsComps.push(se.abbreviation);
+                eventAbbrsComps.push({"abbr":se.abbreviation,"key":"s"+se.id});
             }
             else {
-                eventAbbrsSide.push(se.abbreviation);
+                eventAbbrsSide.push({"abbr": se.abbreviation,"key":"s"+se.id});
             }
         });
-        eventAbbrsComps = eventAbbrsComps.sort();
-        eventAbbrsSide = eventAbbrsSide.sort();
+        eventAbbrsComps = eventAbbrsComps.sort(function(a1,a2) { return a1.abbr > a2.abbr; });
+        eventAbbrsSide = eventAbbrsSide.sort(function(a1,a2) { return a1.abbr > a2.abbr; });
 
         // put the support roles after the competitions, but before the side events
         eventById["sorg"] = { abbr: 'Support' };
-        eventAbbrsComps.push("Support");
+        eventAbbrsComps.push({abbr: "Support", key: "sorg"});
         var eventAbbrs = eventAbbrsComps.concat(eventAbbrsSide);
 
         var cntoverview=[];
@@ -101,7 +99,7 @@ export default class FEOverviewTab extends FEBase {
                     var tot = sides[s];
 
                     if (eventById[s]) {
-                        obj[eventById[s].abbreviation] = tot;
+                        obj[s] = tot;
                     }
                 }
                 cntoverview.push(obj);
@@ -116,9 +114,9 @@ export default class FEOverviewTab extends FEBase {
         return (<div>
             {this.renderCountry(cntoverview, eventAbbrs)}
             {/* requirement 7.1.4: show number of participants for roles for organiser roles */}
-            {this.renderOrganisation(orgoverview, "Organisers")}
+            {is_organisation() && this.renderOrganisation(orgoverview, "Organisers")}
             {/* requirement 7.1.5: show number of participants for roles for official roles */}
-            {this.renderOrganisation(offoverview, "Officials")}
+            {is_organisation() && this.renderOrganisation(offoverview, "Officials")}
         </div>);
     }
 
@@ -132,27 +130,28 @@ export default class FEOverviewTab extends FEBase {
                 <tr>
                     <th>Country</th>
                     {abbrs.map((a,idx) => (
-                        <th key={idx} className='textright'>{a}</th>
+                        <th key={idx} className='textright'>{a.abbr}</th>
                     ))}
                 </tr>
             </thead>
             <tbody>
                 {cnts.map((c,idx) => {
+                    // c is an object containing the country settings and totals-per-sideevent-key
                     return (
                         <tr key={'c'+idx}>
                             <td className='textleft'>{c.country.name}</td>
                             {abbrs.map((a,idx2) => {
+                                var skey = a.key;
                                 // requirement 7.1.2: a total is shown for each side event
-                                var abbr=abbrs[idx2];
-                                if(!totalsPerEvent[abbr]) totalsPerEvent[abbr]=0;
-                                if(c[a] && c[a]>0) totalsPerEvent[abbr]+=c[a];
-                                if(c[a] && c[a][0] && c[a].length==2) totalsPerEvent[abbr]+=c[a][1];
+                                if(!totalsPerEvent[skey]) totalsPerEvent[skey]=0;
+                                if(c[skey] && c[skey]>0) totalsPerEvent[skey]+=c[skey];
+                                if(c[skey] && c[skey][0] && c[skey].length==2) totalsPerEvent[skey]+=c[skey][1];
                                 return (
                             <td key={'c'+idx+'_t'+idx2} className='textright'>
                                 {/* requirement 7.1.1: show number of participants per country per side event */}
-                                {c[a] && (c[a] > 0) && c[a]}
+                                {c[skey] && (c[skey] > 0) && c[skey]}
                                 {/* requirement 7.1.3: show total number of teams and number of individuals */}
-                                {c[a] && c[a][0] && c[a].length==2 && (<span>{c[a][1]} ({c[a][0]})</span>)}
+                                {c[skey] && c[skey][0] && c[skey].length==2 && (<span>{c[skey][1]} ({c[skey][0]})</span>)}
                             </td>
                             )})}
                         </tr>
@@ -165,7 +164,7 @@ export default class FEOverviewTab extends FEBase {
                     {abbrs.map((a,idx) => {
                         // requirement 7.1.2: show line of totals
                         return (
-                        <td key={idx} className='textright'>{totalsPerEvent[a]}</td>
+                        <td key={idx} className='textright'>{totalsPerEvent[a.key]}</td>
                     )})}
                 </tr>
             </tbody>

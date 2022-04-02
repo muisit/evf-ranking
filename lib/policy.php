@@ -85,7 +85,7 @@ class Policy extends BaseLib {
             if (empty($sid) && isset($data["filter"])) {
                 $sid = isset($data["filter"]["sideevent"]) ? $data["filter"]["sideevent"] : null;
             }
-            $evflogger->log("sideevent is $sid");
+            $evflogger->log("sideevent is ".json_encode($sid));
 
             $eid = isset($data["model"]["event"]) ? $data["model"]["event"] : null;
             if (empty($eid) && isset($data["filter"])) {

@@ -5,7 +5,6 @@ export const team_rule_veterans = (data) => {
     // with at least 1 fencer from age category 50-59
     // and up to 2 reserves (5 total)    
     if(data.competition && data.competition.category && data.competition.category.abbr == 'T') {
-        //console.log("checking veteran team event rule for ",data);
         var team=[];
         var teamname=data.registration.team;
 
@@ -24,23 +23,19 @@ export const team_rule_veterans = (data) => {
         });
 
         if(team.length < 3 || team.length>5) {
-            //console.log("team is incomplete ",team);
             return true;
         }
         var has_a_cat2_fencer=false;
         var has_no_cat345_fencer=true;
         team.map((f) => {
             if(f.category_num == 2) {
-                //console.log("team has a cat2 fencer");
                 has_a_cat2_fencer=true;
             }
             if(f.category_num > 2) {
-                //console.log("team has a cat 345-fencer (false)",team);
                 has_no_cat345_fencer=false;
             }
         });
         // return true on error
-        //console.log(has_a_cat2_fencer,has_no_cat345_fencer);
         return !(has_a_cat2_fencer && has_no_cat345_fencer);
     }
     return false;

@@ -369,7 +369,6 @@ export default class TemplateDesigner extends React.Component {
     }
 
     render() {
-        console.log("rendering template ",this.props.template);
         var pictures = (this.props.template.content && this.props.template.content.pictures) ? this.props.template.content.pictures : null;
         if(!pictures || !pictures.length) pictures=[];
 

@@ -93,7 +93,7 @@ class API extends BaseLib {
             $tid = $this->fromGet("template");
             //error_log("filetype $filetype, sid $sid, eid $eid, picture $picture, tid $tid");
 
-            if ((!empty($sid) || !empty($eid)) && in_array($filetype, array("participants"))) {
+            if ((!empty($sid) || !empty($eid)) && in_array($filetype, array("participants","participantsxml"))) {
                 $sideevent = $this->loadModel("SideEvent",$sid);
                 $event = $this->loadModel("Event",$eid);
                 if(empty($eid) && $sideevent->exists()) {
@@ -110,7 +110,12 @@ class API extends BaseLib {
                         )
                     ));
 
-                    $em = new ExportManager();
+                    if($filetype == "participantsxml") {
+                        $em = new XMLManager();                        
+                    }
+                    else {
+                        $em = new ExportManager();
+                    }
                     $em->export($filetype,$sideevent,$event);
                 }
             }

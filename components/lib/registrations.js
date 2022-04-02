@@ -12,7 +12,7 @@ export const parse = (fencers,lst, doclear, event) => {
             if (doclear) {
                 fencers = {};
             }
-            console.log("looping over ",lst);
+
             lst.map((itm) => {
                 var fid = itm.fencer;
                 var key = "k" + fid;
@@ -95,7 +95,6 @@ export const changePendingSituation = (fencers, fencer, reg, newstate, cb1, cb, 
             setTimeout(() => { 
                 if(reg.pending == newstate) {
                     var fencers = cb1();
-                    console.log("registered fencers is ",fencers);
                     changePendingSituation(fencers,fencer,reg,replacestate);
                     cb(fencers);
                 }

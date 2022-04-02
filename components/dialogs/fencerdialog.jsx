@@ -60,7 +60,18 @@ export default class FencerDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        var obj = Object.assign({},this.props.value, this.props.apidata ? this.props.apidata : {});
+        // create a new object containing only the data we want to store
+        var obj = {
+            birthday: this.props.value.birthday,
+            country: this.props.value.country,
+            firstname: this.props.value.firstname,
+            gender: this.props.value.gender,
+            name: this.props.value.name,
+            id: this.props.value.id
+        };
+        // include the additional API data (e.g.: event, country)
+        var obj = Object.assign(obj,this.props.apidata ? this.props.apidata : {});
+
         if(obj.gender != 'M' && obj.gender != 'F') {
             alert('Please select the proper gender');
             return;

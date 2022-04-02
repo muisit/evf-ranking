@@ -9,7 +9,7 @@ export function ParticipantList(props) {
         return (<div></div>);
     }
 
-    var showErrors=true; // debug setting
+    var showErrors=false; // debug setting
     // requirement 1.4.3: for specific team events, show the team name instead of the fencer category
     var showTeam = false;
 
@@ -91,31 +91,36 @@ export function ParticipantList(props) {
                 }
             }
 
-            var ruleobject = {
-                event: props.event,
-                competition: comp,
-                fencer: fencer,
-                registration: reg,
-                fencers: props.fencers
-            };
+            // if we're not showing roles, this is the search-result. Do not display errors for search results
+            // because the fencers in the search results do no necessarily make up a complete team, but they 
+            // might already be selected
+            if(!props.noErrors) {
+                var ruleobject = {
+                    event: props.event,
+                    competition: comp,
+                    fencer: fencer,
+                    registration: reg,
+                    fencers: props.fencers
+                };
 
-            // Requirement 1.1.6: events with a mismatch in category are marked
-            fencer.error='';
-            if(wrong_category(ruleobject)) {
-                fencer.incorrect_cat=true;
-                fencer.error="(C)";
-            }
-            if (wrong_gender(ruleobject)) {
-                fencer.incorrect_cat = true;
-                fencer.error = "(S)";
-            }
-            if(team_rule_veterans(ruleobject)) {
-                fencer.incorrect_cat=true;
-                fencer.error="(V)";
-            }
-            if(team_rule_grandveterans(ruleobject)) {
-                fencer.incorrect_cat=true;
-                fencer.error="(G)";
+                // Requirement 1.1.6: events with a mismatch in category are marked
+                fencer.error='';
+                if(wrong_category(ruleobject)) {
+                    fencer.incorrect_cat=true;
+                    fencer.error="(C)";
+                }
+                if (wrong_gender(ruleobject)) {
+                    fencer.incorrect_cat = true;
+                    fencer.error = "(S)";
+                }
+                if(team_rule_veterans(ruleobject)) {
+                    fencer.incorrect_cat=true;
+                    fencer.error="(V)";
+                }
+                if(team_rule_grandveterans(ruleobject)) {
+                    fencer.incorrect_cat=true;
+                    fencer.error="(G)";
+                }
             }
 
             // Requirement 1.4.1: sort by team name

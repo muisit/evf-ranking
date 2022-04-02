@@ -11,7 +11,7 @@ import { Loading } from './elements/loading';
 import { countries, singleevent, weapons, categories, roles, competitions, sideevents } from "./api.js";
 import { parse_date, is_hod, is_organiser, is_sysop, is_organisation, is_registrar, is_accreditor, is_cashier,
         create_abbr,
-        create_countryById, create_roleById, create_cmpById, create_wpnById, create_catById, create_sideeventById  } from "./functions";
+        create_countryById, create_roleById, create_cmpById, create_wpnById, create_catById, create_sideeventById, is_valid  } from "./functions";
 
 export default class RegistrationPage extends React.Component {
     constructor(props, context) {
@@ -39,20 +39,16 @@ export default class RegistrationPage extends React.Component {
     }
 
     unload = (key, value) => {
-        console.log("unloading",key);
         this.setState((state) => {
             if (state.loading[key] && state.loading[key].value == value) {
                 state.loading[key].state = true;
             }
-            console.log("setting unload state for ",key);
             return { loading: state.loading };
         });
     }
 
     onload = (key, label, value) => {
-        console.log("loading ",key);
         this.setState((state) => {
-            console.log("setting load state for ",key);
             state.loading[key] = { label: label, state: false, value: value };
             return { loading: state.loading };
         });
@@ -74,7 +70,6 @@ export default class RegistrationPage extends React.Component {
             "rolesBI": this.state.rolesById
         };
 
-        console.log("merging ",type,lst);
         switch(type) {
         case 'competitions': data.competitions=lst; break;
         case 'events': data.events=lst;break;
@@ -89,38 +84,32 @@ export default class RegistrationPage extends React.Component {
     sortAllInOrder(type,lst) {
         var data = this.mergeParams(type,lst);
         if(Object.keys(this.state.countriesById).length == 0 && type=="countries") {
-            console.log("sorting countries");
             data.countries=lst;
             data.countriesBI = create_countryById(data.countries);
             this.setState({ countries: data.countries, countriesById: data.countriesBI });
         }
         if(Object.keys(this.state.categoriesById).length == 0 && type=="categories") {
-            console.log("sorting categories");
             data.categories=lst;
             data.categoriesBI = create_catById(data.categories);
             this.setState({ categories: data.categories, categoriesById: data.categoriesBI });
         }
         if(Object.keys(this.state.rolesById).length == 0 && type=="roles") {
-            console.log("sorting roles");
             data.roles=lst;
             data.rolesBI = create_roleById(data.roles);
             this.setState({ roles: data.roles, rolesById: data.rolesBI });
         }
         if(Object.keys(this.state.weaponsById).length == 0 && type=="weapons") {
-            console.log("sorting weapons");
             data.weapons=lst;
             data.weaponsBI = create_wpnById(data.weapons);
             this.setState({ weapons: data.weapons, weaponsById: data.weaponsBI });
         }
 
         if(type == "competitions") {
-            console.log("setting competitions");
             data.competitions=lst;
             this.setState({ competitions: data.competitions });
         }
 
         if(type == "events") {
-            console.log("setting events");
             data.events=lst;
             this.setState({ sideevents: data.events });
         }
@@ -129,7 +118,6 @@ export default class RegistrationPage extends React.Component {
           && Object.keys(data.categoriesBI).length > 0
           && Object.keys(data.competitionsBI).length == 0 
           && data.competitions.length > 0) {
-            console.log("sorting competitions");
             data.competitionsBI = this.sortCompetitions(data);
             this.setState({competitionsById: data.competitionsBI});
         }
@@ -137,7 +125,6 @@ export default class RegistrationPage extends React.Component {
         if(  Object.keys(data.competitionsBI).length > 0
           && Object.keys(data.eventsBI).length == 0 
           && data.events.length > 0) {
-              console.log("sorting events");
               var retval = this.sortSideEvents(data);
               this.setState({sideeventsById: retval.byId, sideevents: retval.sorted, competitionsById: retval.competitions});
               data.events=retval.sorted;
@@ -161,7 +148,11 @@ export default class RegistrationPage extends React.Component {
     sortSideEvents = (data) => {
         if ( data.events && data.events.length>0 
             && Object.keys(data.competitionsBI).length > 0) {
-            var sortedevents = data.events.slice();
+            var sortedevents = data.events.slice().sort(function(e1,e2) {
+                if(is_valid(e1.competition) && !is_valid(e2.competition)) return -1;
+                if(!is_valid(e1.competition) && is_valid(e2.competition)) return 1;
+                return e1.title > e2.title;
+            });
 
             // link the competition object and create abbreviations
             sortedevents = sortedevents.map((ev) => {
@@ -198,7 +189,6 @@ export default class RegistrationPage extends React.Component {
     }
 
     createBasicData = (data) => {
-        console.log(data);
         // if sideevents and competitions are set, event is also set        
         if(   data.events.length 
            && data.competitions.length 
@@ -213,7 +203,6 @@ export default class RegistrationPage extends React.Component {
            && Object.keys(data.categoriesBI).length > 0
            && Object.keys(data.countriesBI).length > 0
            ) {
-            console.log("creating basic data");
             var obj = {
                 event: this.state.event,
                 sideevents: data.events,
@@ -229,16 +218,7 @@ export default class RegistrationPage extends React.Component {
                 countries: data.countries,
                 countriesById: data.countriesBI
             };
-            console.log("basic data set to ",obj);
             this.setState({basicdata: obj, initializing: false });
-        }
-        else {
-            console.log("missing data: se ", Object.keys(data.eventsBI).length, 
-                " comps ",Object.keys(data.competitionsBI).length, 
-                " roles ",Object.keys(data.rolesBI).length,
-                " weapons ", Object.keys(data.weaponsBI).length, 
-                " categories ",Object.keys(data.categoriesBI).length,
-                " countries ",Object.keys(data.countriesBI).length);
         }
     }
 

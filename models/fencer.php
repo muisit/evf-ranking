@@ -58,6 +58,19 @@
         $this->rules["fencer_dob"]["rule"]="date|lt=".strftime('%F',strtotime(time() - 20*365*24*60*60));
     }
 
+    public function delete($id=null) {
+        if($id === null) $id = $this->getKey();
+
+        $cnt = $this->query()->from("TD_Result")->where("result_fencer",$id)->count();
+
+        if(intval($cnt) == 0) {
+            $this->query()->from("TD_Accreditation")->where("fencer_id",$id)->delete();
+            $this->query()->from("TD_Registration")->where("registration_fencer",$id)->delete();
+            $this->query()->from("TD_Result")->where("result_fencer",$id)->delete();
+            parent::delete($id);
+        }
+    }
+
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";
         $orderBy=array();
@@ -168,7 +181,7 @@
             );
         }
         // system and registrars can save all fencer data
-        else if(in_array($caps, array("system", "organiser", "registrar","hod"))) {
+        else if(in_array($caps, array("system", "organiser", "registrar","hod","hod-view"))) {
             $retval=$data;
         }
         return parent::filterData($retval,$caps);
@@ -217,6 +230,20 @@
         $this->query()->from("TD_Accreditation")->set("fencer_id",$model1->getKey())->set('is_dirty',strftime('%F %T'))->where("fencer_id",$model2->getKey())->update();
         $this->query()->from("TD_Registration")->set("registration_fencer",$model1->getKey())->where("registration_fencer",$model2->getKey())->update();
         $this->query()->from("TD_Result")->set("result_fencer",$model1->getKey())->where("result_fencer",$model2->getKey())->update();
+
+        if(file_exists($model1->getPath())) {
+            if(file_exists($model2->getPath())) {
+                if(intval($model1->getKey()) < intval($model2->getKey())) {
+                    // keep the one linked to the newest entry
+                    @rename($model2->getPath(),$model1->getPath());
+                }
+            }
+            // else don't do anything, the file for model1 is kept
+        }
+        else if(file_exists($model2->getPath())) {
+            @rename($model2->getPath(),$model1->getPath());
+        }
+
         $this->query()->from("TD_Fencer")->where("fencer_id",$model2->getKey())->delete();
         return array("messages"=>array("Fencers merged successfully"));
     }

@@ -1,4 +1,4 @@
-import { create_abbr, is_valid, create_wpnById, create_catById, create_cmpById, create_roleById  } from '../functions';
+import { is_hod_view } from '../functions';
 import { wrong_category } from '../rules/wrong_category';
 import { wrong_gender } from '../rules/wrong_gender';
 import { team_rule_grandveterans } from '../rules/team_rule_grandveterans';
@@ -204,7 +204,7 @@ export function ParticipantList(props) {
                     {props.showRoles && (<th>Role</th>)}
                     {props.camera && (<th></th>)}
                     <th></th>
-                    <th></th>
+                    {!is_hod_view() && (<th></th>)}
                 </tr>
             </thead>
             <tbody>
@@ -227,7 +227,7 @@ export function ParticipantList(props) {
                                 {!['Y','A','R'].includes(fencer.picture) && (<span className='pi pi-times red'></span>)}
                             </td>)}
                             <td><a onClick={(e) => props.onEdit(fencer)}><i className='pi pi-pencil'></i></a></td>
-                            <td><a onClick={(e) => props.onSelect(fencer)}><i className='pi pi-chevron-circle-right'></i></a></td>
+                            {!is_hod_view() && (<td><a onClick={(e) => props.onSelect(fencer)}><i className='pi pi-chevron-circle-right'></i></a></td>)}
                         </tr>
                     ))}
             </tbody>

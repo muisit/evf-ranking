@@ -185,8 +185,8 @@ table tr.notcounting { background-color: #ff9999; color: #003366; }
 #evfregistration-frontend-root .payment-details { font-size: 1.1rem; line-height: 1.2rem; width: auto;}
 #evfregistration-frontend-root .payment-details .label { font-weight: bold; }
 
-#evfregistration-frontend-root .accreditation { width: 100% ; }
-#evfregistration-frontend-root .accreditation img { width: 413px; margin: 0 auto 0 auto; display: block;}
+.accreditation { width: 100% ; }
+.accreditation img { width: 413px; margin: 0 auto 0 auto; display: block; max-width: 400;  }
 
 .templateeditor span.pi { font-size: 8pt; }
 .templateeditor .canvas span.pi {z-index: 1000; display: block; margin-right: -10px; float: right;}
@@ -290,3 +290,6 @@ table tr.notcounting { background-color: #ff9999; color: #003366; }
 
 .overlay-panel .progress-panel .p-progressbar { height: 2rem;}
 .overlay-panel .progress-panel .p-progressbar-label { line-height: 2rem; }
+
+
+img.photoid { max-width: 400; min-width:200; }

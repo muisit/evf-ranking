@@ -83,28 +83,21 @@ export default class FEAccreditorTab extends FEBase {
         var startfound=false;
         var prevfencer=null;
         var nextfencer=null;
-        var selectedfencer=null;
 
         if(!startwith) startfound=true;
 
+        console.log("looping over all fencers, looking in direction ",direction," starting with ",startwith);
         Object.keys(this.state.registered).map((key) => {
             var fencer=this.state.registered[key];
-            if(fencer.picture == 'Y' || fencer.picture=='R') {
-                if(startfound) {
-                    if(selectedfencer === null) {
-                        selectedfencer = fencer;
-                    }
-                    else if(nextfencer === null) {
-                        nextfencer=fencer;
-                    }
+            if(startwith && startwith.id == fencer.id) {
+                startfound=true;
+            }
+            else if(fencer.picture == 'Y' || fencer.picture=='R') {
+                if(!startfound) {
+                    prevfencer=fencer;
                 }
-                else {
-                    if(startwith && startwith.id == fencer.id) {
-                        startfound=true;
-                    }
-                    else if(!startfound) {
-                        prevfencer=fencer;
-                    }
+                else if(nextfencer === null) {
+                    nextfencer = fencer;
                 }
             }
         });
@@ -113,7 +106,7 @@ export default class FEAccreditorTab extends FEBase {
             return prevfencer;
         }
         else {
-            return selectedfencer;
+            return nextfencer;
         }
     }
 
@@ -288,7 +281,7 @@ export default class FEAccreditorTab extends FEBase {
                 )}
                 <div className='col-12'>
                     <div className='textcenter'>
-                        <span className='pi pi-search' onClick={() => this.onDialog('open')}>&nbsp;Inspect Photo's</span>
+                        <span className='pi pi-search' onClick={() => this.onDialog('open')}>&nbsp;Inspect Photos</span>
                     </div>
                 </div>
                 <AccreditationDialog event={this.props.basic.event} value={this.state.fencer_object} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} goTo={(itm) => this.onDialog('goto',itm)} />

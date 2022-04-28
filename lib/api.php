@@ -183,26 +183,25 @@ class API extends BaseLib {
                 $event = $this->loadModel("Event",$sid);
                 $fencer = $this->loadModel("Fencer",$picture);
 
-                if ($event->exists() && $fencer->exists()) {
-                    $sides = $event->sides();
-                    if (!empty($sides)) {
-                        $sideevent = $this->loadModel("SideEvent",$sides[0]); // pick any sideevent
-
-                        // check the policy to see if the user can retrieve a listing
-                        $this->checkPolicy("registration", "list", array(
-                            "model" => array(
-                                "sideevent" => $sideevent->getKey(),
-                                "event" => $sideevent->event_id,
-                            ),
-                            "filter" => array(
-                                "event" => $sideevent->event_id,
-                                "country" => $fencer->fencer_country
-                            )
-                        ));
-
-                        $pm = new PictureManager();
-                        $pm->display($fencer);
+                if($fencer->exists()) {
+                    $sideevent=new \EVFRanking\Models\SideEvent();
+                    if ($event->exists()) {
+                        $sides = $event->sides();
+                        if (!empty($sides)) {
+                            $sideevent = $this->loadModel("SideEvent",$sides[0]); // pick any sideevent
+                        }
                     }
+
+                    // check the policy to see if the user can retrieve a listing
+                    $this->checkPolicy("picture", "view", array(
+                        "model" => array(
+                            "fencer" => $fencer->getKey(),
+                            "event" => $sideevent->event_id,
+                        )
+                    ));
+
+                    $pm = new PictureManager();
+                    $pm->display($fencer);
                 }
             }
         }
@@ -223,25 +222,20 @@ class API extends BaseLib {
             $fencer = $this->loadModel("Fencer",$fencer);
             $template = $this->loadModel("AccreditationTemplate",$template);
 
-            if ($event->exists() && $fencer->exists()) {
-                $sides = $event->sides();
-                if(!empty($sides)) {
-                    $sideevent = $this->loadModel("SideEvent",$sides[0]); // pick any sideevent
-                    // check the policy to see if the user can save a registration
-                    $this->checkPolicy("registration", "save", array(
-                        "model" => array(
-                            "sideevent" => $sideevent->getKey(),
-                            "event" => $sideevent->event_id,
-                            "fencer" => $fencer
-                        )
-                    ));
+            if ($fencer->exists()) {
+                // check the policy to see if the user can save a picture
+                $this->checkPolicy("picture", "save", array(
+                    "model" => array(
+                        "event" => $event->getKey(),
+                        "fencer" => $fencer
+                    )
+                ));
 
-                    $pm = new PictureManager();
-                    $retval=$pm->import($fencer);
-                    if (!isset($retval["error"])) {
-                        $retval["success"] = true;
-                        $retval["model"]=$fencer->export();
-                    }
+                $pm = new PictureManager();
+                $retval=$pm->import($fencer);
+                if (!isset($retval["error"])) {
+                    $retval["success"] = true;
+                    $retval["model"]=$fencer->export();
                 }
             }
             else if ($event->exists() && $template->exists()) {

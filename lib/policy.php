@@ -147,6 +147,7 @@ class Policy extends BaseLib {
             "templates" => array(    "eaccr", "eaccr",    "eaccr",           "eaccr",    "reg"      ),
             "registration" => array( "rlist", "rlist",    "rsave",           "rdel",     "noone"    ),
             "accreditation" => array("vaccr", "vaccr",    "noone",           "noone",    "noone"    ),
+            "picture" => array(      "pview", "pview",    "psave",           "noone",    "noone"    ),
 
             # base tables
             "weapons"=>array(        "any",   "rank",     "rank",            "rank",     "noone"    ),
@@ -194,23 +195,27 @@ class Policy extends BaseLib {
         // has manage_registration capability, a super-user power
         case "reg": return ($userdata["rankings"] === true || $userdata["registration"] === true);
         // is allowed to edit accreditation templates
-        case "eaccr": return $this->hasCapaEaccr($data); 
+        case "eaccr": return $this->hasCapaEaccr($userdata, $data); 
         // is allowed to view and generate accreditations
-        case 'vaccr': return $this->hasCapaVaccr($data);
+        case 'vaccr': return $this->hasCapaVaccr($userdata, $data);
         //
         // the registration capa's also check on additional supplied data
         // and restrict the fields that can be changed/deleted/updated
         //
         // can see a listing of registrations (HoD, registrar)
-        case 'rlist': return $this->hasCapaListRegs($data);
+        case 'rlist': return $this->hasCapaListRegs($userdata, $data);
         // can view an individual registration (HoD, registrar)
-        case 'rview': return $this->hasCapaViewRegs($data);
+        case 'rview': return $this->hasCapaViewRegs($userdata, $data);
         // can update registrations (HoD, registrar)
-        case 'rsave': return $this->hasCapaSaveRegs($data);
+        case 'rsave': return $this->hasCapaSaveRegs($userdata, $data);
         // can remove registrations (HoD, registrar)
-        case 'rdel': return $this->hasCapaDelRegs($data);
+        case 'rdel': return $this->hasCapaDelRegs($userdata, $data);
         // special capa for saving fencers, which is restricted to registrars 
         case 'fsave': return $this->hasCapaSaveFencer($userdata, $data);
+        // special capa for viewing fencer pictures, which is restricted to registrars
+        case 'pview': return $this->hasCapaViewPicture($userdata, $data);
+        // special capa for uploading pictures, which can be done after registration closes
+        case 'psave': return $this->hasCapaSavePicture($userdata, $data);
         default: break;
         }
 
@@ -270,21 +275,63 @@ class Policy extends BaseLib {
 
         $caps = $event->eventCaps();
         $isorganiser = in_array($caps, array("system", "organiser", "registrar", "accreditation"));
+        $ishod = in_array($caps, array("hod","hod-view"));
 
         if ($isorganiser) {
             $evflogger->log("organiser/registrar/accreditor is allowed");
             return true;
         }
 
-        if($this->isValidHod($country->getKey())) {
-            $evflogger->log("HoD for this country is allowed");
-            return true;
-        }
-        $evflogger->log("not a HoD, not an organiser, no registration-capa: not allowed to save fencer");
-        return false;
+        if(!$ishod) {
+            $evflogger->log("not a HoD, not an organiser, no registration-capa: not allowed to save fencer");
+            return false;
+        }                
+        return $this->isValidHod($country->getKey());
     }
 
-    private function hasCapaEaccr($data)
+    private function hasCapaSavePicture($userdata, $data) {
+        global $evflogger;
+        // if the user has registration capabilities, always allow
+        if ($userdata["rankings"] === true || $userdata["registration"] === true) {
+            $evflogger->log("user has rankings or registration rights, psave allowed");
+            return true;
+        }
+
+        // else we allow saving new fencers for registrars
+        // and update the accreditation photo for accreditors
+        list($sideevent, $event, $fencer1, $fencer2) = $this->loadModelsForPolicy($data, "Fencer");
+
+        // the sideevent and fencer2 settings are bogus, event should be valid
+        if(empty($event) || !$event->exists())  {
+            $evflogger->log("invalid event, but event was expected");
+            return false;
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "registrar", "accreditation"));
+        $ishod = in_array($caps, array("hod","hod-view"));
+
+        if ($isorganiser) {
+            $evflogger->log("organiser/registrar/accreditor is allowed");
+            return true;
+        }
+
+        if(!$ishod) {
+            $evflogger->log("not a HoD, not an organiser, no registration-capa: not allowed to save fencer");
+            return false;
+        }
+        $cid=-1;
+        if(!empty($fencer1) && $fencer1->exists()) {
+            $cid = $fencer1->fencer_country;
+        }
+        if(!empty($fencer2) && $fencer2->exists()) {
+            $cid = $fencer2->fencer_country;
+        }
+        return $this->isValidHod($cid);
+    }
+
+
+    private function hasCapaEaccr($userdata, $data)
     {
         global $evflogger;
         list($sideevent, $event, $template, $fencer) = $this->loadModelsForPolicy($data,"AccreditationTemplate");
@@ -321,7 +368,7 @@ class Policy extends BaseLib {
         return true;
     }
 
-    private function hasCapaVaccr($data) {
+    private function hasCapaVaccr($userdata, $data) {
         global $evflogger;
         list($sideevent, $event, $accreditation, $fencer) = $this->loadModelsForPolicy($data, "Accreditation");
 
@@ -357,7 +404,10 @@ class Policy extends BaseLib {
         return true;
     }
 
-    private function hasCapaListRegs($data) {
+    private function hasCapaListRegs($userdata, $data) {
+        // quick check to avoid having to pass a correct event-id: if this is a system admin, always true
+        if($userdata["rankings"] === true) return true;
+
         global $evflogger;
         list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data,"Registration");
 
@@ -365,7 +415,7 @@ class Policy extends BaseLib {
             $evflogger->log("no event specified (1)");
             return false;
         }
-        if(!empty($sideevent)) $evflogger->log("testing ".$sideevent->event_id." vs ".$event->getKey());
+        //if(!empty($sideevent)) $evflogger->log("testing ".$sideevent->event_id." vs ".$event->getKey());
         if (!empty($sideevent) && $sideevent->event_id != $event->getKey()) {
             $evflogger->log("sideevent does not match event (2)");
             return false;
@@ -373,7 +423,7 @@ class Policy extends BaseLib {
 
         $caps = $event->eventCaps();
         $isorganiser = in_array($caps, array("system", "organiser", "accreditation", "cashier", "registrar"));
-        $ishod = $caps == "hod";
+        $ishod = in_array($caps, array("hod","hod-view"));
 
         if (!$isorganiser && !$ishod) {
             $evflogger->log("no organiser and no hod ($caps) (3)");
@@ -397,8 +447,11 @@ class Policy extends BaseLib {
         return $this->isValidHod($cid);
     }
 
-    private function hasCapaViewRegs($data)
+    private function hasCapaViewRegs($userdata, $data)
     {
+        // quick check to avoid having to pass a correct event-id: if this is a system admin, always true
+        if($userdata["rankings"] === true) return true;
+
         // same as ListRegs, except no requirement on filter
         global $evflogger;
         list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data, "Registration");
@@ -414,7 +467,7 @@ class Policy extends BaseLib {
 
         $caps = $event->eventCaps();
         $isorganiser = in_array($caps, array("system", "organiser", "accreditation", "cashier", "registrar"));
-        $ishod = $caps == "hod";
+        $ishod = in_array($caps, array("hod","hod-view"));
 
         if (!$isorganiser && !$ishod) {
             $evflogger->log("no organiser and no hod ($caps) (3)");
@@ -429,8 +482,55 @@ class Policy extends BaseLib {
         return $this->isValidHod($cid);
     }
 
-    private function hasCapaSaveRegs($data)
+    private function hasCapaViewPicture($userdata, $data)
     {
+        // quick check to avoid having to pass a correct event-id: if this is a system admin, always true
+        $userdata=$this->findUser();
+        if($userdata["rankings"] === true) return true;
+
+        // for non system admin, we need at least an event or side-event, so we can establish rights
+        global $evflogger;
+        list($sideevent, $event, $fencer1, $fencer2) = $this->loadModelsForPolicy($data, "Fencer");
+
+        if (empty($event) || !$event->exists()) {
+            if(!empty($sideevent) && $sideevent->exists()) {
+                $event = new \EVFRanking\Models\Event($sideevent->event_id);
+            }
+        }
+
+        if(empty($event) || !$event->exists()) {
+            $evflogger->log("no event specified (1)");
+            return false;
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "accreditation", "cashier", "registrar"));
+        $ishod = in_array($caps, array("hod","hod-view"));
+
+        if (!$isorganiser && !$ishod) {
+            $evflogger->log("no organiser and no hod ($caps) (3)");
+            return false;
+        }
+
+        if ($isorganiser) {
+            $evflogger->log("is organiser, listing allowed (6)");
+            return true;
+        }
+        $cid=-1;
+        if(!empty($fencer1) && $fencer1->exists()) {
+            $cid = $fencer1->fencer_country;
+        }
+        if(!empty($fencer2) && $fencer2->exists()) {
+            $cid = $fencer2->fencer_country;
+        }
+        return $this->isValidHod($cid);
+    }
+
+    private function hasCapaSaveRegs($userdata, $data)
+    {
+        // quick check to avoid having to pass a correct event-id: if this is a system admin, always true
+        if($userdata["rankings"] === true) return true;
+
         global $evflogger;
         list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data, "Registration");
 
@@ -473,7 +573,7 @@ class Policy extends BaseLib {
         return $this->isValidHod($fencer->fencer_country);
     }
 
-    private function hasCapaDelRegs($data) {
+    private function hasCapaDelRegs($userdata, $data) {
         global $evflogger;
         list($sideevent, $event, $registration, $fencer) = $this->loadModelsForPolicy($data, "Registration");
 

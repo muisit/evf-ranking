@@ -1,10 +1,10 @@
 import React from 'react';
-import { registration, fencer, upload_file, accreditation } from "../api.js";
+import { registration, accreditation } from "../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Checkbox } from 'primereact/checkbox';
-import { parse_team_for_number, random_hash, format_date_fe_short, is_valid, date_to_category, parse_net_error, 
+import { parse_team_for_number, format_date_fe_short, is_valid, date_to_category, parse_net_error, 
         is_hod, is_organisation, is_sysop, is_organiser, is_accreditor, create_roleById } from "../functions";
 
 // the fencer-select-dialog displays all events a fencer can be a part of.
@@ -30,8 +30,7 @@ export default class FencerSelectDialog extends React.Component {
         }
 
         this.state = {
-            paysIndividual: paysIndividual,
-            imageHash: random_hash()
+            paysIndividual: paysIndividual
         }
     }
 
@@ -231,37 +230,6 @@ export default class FencerSelectDialog extends React.Component {
         }
     }
 
-    saveFencer = (item) => {
-        fencer('save', {
-            id: item.id,
-            picture: item.picture
-        })
-            .then((json) => {
-                var itm = Object.assign({}, this.props.value);
-                if (json.data.model) {
-                    itm = Object.assign({}, itm, json.data.model);
-                }
-                this.save(itm);
-            })
-            .catch ((err) => parse_net_error(err));
-    }
-
-    onFileChange = (event) => {
-        var selectedFile=event.target.files[0];
-        upload_file("events",selectedFile,{
-            fencer: this.props.value.id,
-            event: this.props.basic.event.id})
-        .then((json) => {
-            var itm = Object.assign({}, this.props.value);
-            if (json.data.model) {
-                itm = Object.assign({}, itm, json.data.model);
-            }
-            this.save(itm);
-            this.setState({imageHash: random_hash()});
-        })
-        .catch((err) => parse_net_error(err));
-    }
-
     onCloseDialog = (event) => {
         // registration selection is done as the checkboxes are marked
         this.close();
@@ -283,25 +251,6 @@ export default class FencerSelectDialog extends React.Component {
     onCancelDialog = (event) => {
         this.close();
     }    
-
-    onChangeFencer = (event) => {
-        if (!event.target) return;
-        var name = event.target.name;
-        var value = event.value;
-        switch (name) {
-        case 'picture':
-            // allow changes from Y->A, Y->R, A->R, R->A
-            var oldstate=this.props.value.picture;
-            if(  (oldstate=='Y' && (value=='A' || value=='R'))
-              || (oldstate == 'A' && value=='R')
-              || (oldstate == 'R' && value=='A')) {
-                this.props.value.picture=value;
-                this.saveFencer(this.props.value);
-                this.save(this.props.value);
-            }
-            break;
-        }
-    }
 
     onChangeEl = (event) => {
         if(!event.target) return;
@@ -532,7 +481,6 @@ export default class FencerSelectDialog extends React.Component {
     {this.renderEvents(selectedevents, validteams, allow_more_teams)}
     {this.renderRoles(overallroles, roles, roleById, allRolesById)}
     {this.renderAccreditation()}
-    {this.renderPicture()}
 </Dialog>
 );
     }
@@ -678,47 +626,6 @@ export default class FencerSelectDialog extends React.Component {
             </table>
         </div>
     </div>);
-    }
-
-    renderPicture () {
-        // display the accreditation photo
-        // anyone that can view this dialog can upload a better image
-        var canapprove=["accreditor","organiser"].includes(evfranking.eventcap) && this.props.value.picture!='N';
-        var approvestates=[{
-            name: "Newly uploaded",
-            id: "Y"
-        },{
-            name: "Approved",
-            id: "A"
-        },{
-            name: "Request replacement",
-            id: "R"
-        },{
-            name: "None available",
-            id: "N"
-        }];
-        var picstate = this.props.value.picture;
-        if(!['Y','N','R','A'].includes(picstate)) {
-            picstate='N';
-        }
-        return (<div className='clearfix'>
-            <label className='header'>Accreditation Photo</label>
-            <div>
-            {['Y','A','R'].includes(this.props.value.picture) && (
-                <div className='accreditation'>
-                  <img src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + "&event=" + this.props.basic.event.id + '&hash='+this.state.imageHash}></img>
-                </div>
-            )}
-            <div className='textcenter'>
-              <input type="file" onChange={this.onFileChange} />
-            </div>
-            {canapprove && (
-                <div>
-                  <Dropdown name={'picture'} appendTo={document.body} optionLabel="name" optionValue="id" value={picstate} options={approvestates} onChange={this.onChangeFencer} />
-                </div>
-            )}
-            </div>
-        </div>);
     }
 
     renderAccreditation() {

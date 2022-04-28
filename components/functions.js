@@ -136,7 +136,11 @@ export function parse_net_error(err) {
 
 // convenience functions to check on the event-related capabilities
 export function is_hod() {
-    return evfranking.eventcap == "hod";
+    return evfranking.eventcap == "hod" || evfranking.eventcap=="hod-view";
+}
+
+export function is_hod_view() {
+    return evfranking.eventcap=="hod-view";
 }
 
 export function is_organisation() {

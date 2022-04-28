@@ -161,7 +161,9 @@ export default class ResultsTab extends PagedTab {
 
     onImport = (tp, itm) => {
         if(tp==='open') {
-            this.setState({importObject: {'text':"","object":{ranking:[], competition_id: this.state.competition.id }}, importDialog:true});
+            var evname=this.state.events.filter((e) => e.id == this.state.event_id).map((e)=> e.name);
+            var comptitle=''+evname +' ' + this.state.competition.weapon_name + " " + this.state.competition.category_name;
+            this.setState({importObject: {'text':"","object":{ranking:[], competition_id: this.state.competition.id },title: comptitle}, importDialog:true});
         }
         else if(tp === 'clear') {
             result("clear",{competition_id: this.state.competition.id})
@@ -257,7 +259,12 @@ export default class ResultsTab extends PagedTab {
     }
 
     renderResultTable(pager) {
-        return (<DataTable
+        var evname=this.state.events.filter((e) => e.id == this.state.event_id).map((e)=> e.name);
+        var comptitle=''+evname +' ' + this.state.competition.weapon_name + " " + this.state.competition.category_name;
+
+        return (<div>
+            <h4>{comptitle}</h4>
+            <DataTable
             ref={this.dt}
             value={this.state.items}
             paginator={false}
@@ -274,7 +281,8 @@ export default class ResultsTab extends PagedTab {
             <Column field="country" header="Country" sortable={true} />
             <Column field="points" header="Points" sortable={true} />
             <Column field="total_points" header="Total" sortable={true} />
-        </DataTable>);
+        </DataTable>
+        </div>);
     }
 
     selectComp = (event) => {

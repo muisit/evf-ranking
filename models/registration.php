@@ -267,9 +267,11 @@
                 ->where("registration_mainevent",$event->getKey())
                 ->groupBy("registration_event, registration_role, fencer_country,registration_team")
                 ->get();
+
             foreach($res as $row) {
                 $c = $row->fencer_country;
                 $ckey="c".$c;
+                error_log("ckey is $ckey");
                 if(!isset($retval[$ckey])) $retval[$ckey]=array();
 
                 $se=$row->registration_event;                
@@ -313,7 +315,6 @@
                     }
                     // else: no role and no side event... this would be an error, but treat it as
                     // a generic country-organiser
-                        
                     $retval[$ckey][$skey] = (isset($retval[$ckey][$skey]) ? $retval[$ckey][$skey] : 0) + $tot;
                 }
             }

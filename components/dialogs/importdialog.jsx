@@ -414,9 +414,10 @@ export default class ImportDialog extends React.Component {
         {!this.props.value.converted && convertbutton}
         {closebutton}
 </div>);
+        var title="Import Results for " + this.props.value.title;
 
         var content = this.props.value.converted ? this.renderImport() : this.renderConvert();
-        return (<Dialog header="Import Results" position="center" visible={this.props.display} style={{ width: '75vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+        return (<Dialog header={title} position="center" visible={this.props.display} style={{ width: '75vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
             {content}
         </Dialog>);
     }

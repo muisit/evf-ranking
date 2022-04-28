@@ -3,7 +3,7 @@ import { Accordion, AccordionTab } from 'primereact/accordion';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { parse_date, format_date, is_valid,
-         is_organisation, is_sysop, is_hod, is_accreditor, is_organiser } from './functions';
+         is_organisation, is_sysop, is_hod, is_accreditor, is_organiser, is_hod_view } from './functions';
 import React from 'react';
 import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
@@ -290,24 +290,23 @@ export default class FERegistrationTab extends FEBase {
 
         return (
             <div className='row topmargin'>
-                <div className='col-4 vertcenter'>Search fencers:</div>
-                <div className='col-8'>
+                {!is_hod_view() && (<div className='col-4 vertcenter'>Search fencers:</div>)}
+                {!is_hod_view() && (<div className='col-8'>
                     <span className="p-input-icon-right">
                         <i className="pi pi-times-circle" onClick={(e)=>this.clearSearch()}/>
                         <InputText value={this.state.fencer} onChange={(e) => this.autocomplete(e)} />
                     </span>
-                </div>
-                <div className='col-12'>
+                </div>)}
+                {!is_hod_view() && (<div className='col-12'>
                     {this.state.suggestions.length ==0 && (
                         <div className='subtitle center'>No fencers found</div>
                     )}
                     {this.state.suggestions.length > 0 && (
                         <ParticipantList noErrors basic={this.props.basic} fencers={this.state.suggestions} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
                     )}
-                    <Button label="Add New Fencer" icon="pi pi-check" className="p-button-raised cright" onClick={this.addFencer} />
-                    <FencerDialog apidata={{event: this.props.basic.event.id, country: this.state.country }} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
+                    <Button label="Add New Fencer" icon="pi pi-check" className="p-button-raised cright" onClick={this.addFencer} />                    
                     <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} basic={this.props.basic} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}/>
-                </div>
+                </div>)}
                 <div className='col-12'>
                     {(is_valid(this.state.country_item.id)) && (
                     <Accordion id="evfrankingacc" activeIndex={0}>
@@ -325,8 +324,9 @@ export default class FERegistrationTab extends FEBase {
                             <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
                                 <ParticipantList basic={this.props.basic} country={this.state.country_item} showCountry showRoles camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} onEdit={this.onFencerEdit}/>
                             </AccordionTab>
-                    </Accordion>)}
+                    </Accordion>)}                    
                 </div>
+                <FencerDialog apidata={{event: this.props.basic.event.id, country: this.state.country }} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
             </div>
         );
     }

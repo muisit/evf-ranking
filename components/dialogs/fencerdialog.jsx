@@ -1,12 +1,12 @@
 import React from 'react';
-import { fencer } from "../api.js";
+import { fencer, upload_file } from "../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputMask } from 'primereact/inputmask';
 import DuplicateFencer from './duplicatefencer';
-import { parse_net_error, get_yob, format_date } from '../functions';
+import { parse_net_error, get_yob, format_date, random_hash } from '../functions';
 
 export default class FencerDialog extends React.Component {
     constructor(props, context) {
@@ -15,7 +15,8 @@ export default class FencerDialog extends React.Component {
             old_status:-1,
             suggestiondialog: false,
             suggestions: null,
-            pendingSave: null
+            pendingSave: null,
+            imageHash: random_hash()
         }
     }
 
@@ -39,6 +40,23 @@ export default class FencerDialog extends React.Component {
             if(this.props.onDelete) this.props.onDelete(item);
         }
         this.close();
+    }
+
+    onFileChange = (event) => {
+        var selectedFile=event.target.files[0];
+        upload_file("events",selectedFile,{
+            fencer: this.props.value.id,
+            event: this.props.apidata ? this.props.apidata.event : -1})
+        .then((json) => {
+            var itm = Object.assign({}, this.props.value);
+            if (json.data.model) {
+                itm = Object.assign({}, itm, json.data.model);
+            }
+            console.log("saving fencer ",itm);
+            if(this.props.onSave) this.props.onSave(itm);
+            this.setState({imageHash: random_hash()});
+        })
+        .catch((err) => parse_net_error(err));
     }
 
     actualSave = (obj) => {
@@ -67,7 +85,8 @@ export default class FencerDialog extends React.Component {
             firstname: this.props.value.firstname,
             gender: this.props.value.gender,
             name: this.props.value.name,
-            id: this.props.value.id
+            id: this.props.value.id,
+            picture: this.props.value.picture
         };
         // include the additional API data (e.g.: event, country)
         var obj = Object.assign(obj,this.props.apidata ? this.props.apidata : {});
@@ -104,7 +123,7 @@ export default class FencerDialog extends React.Component {
     }    
 
     onChangeEl = (event) => {
-        if(!event.target || !event.target.value) return;
+        if(!event.target || (!event.target.value && !event.value)) return;
         var item=this.props.value;
         switch(event.target.name) {
         case 'firstname':
@@ -112,6 +131,16 @@ export default class FencerDialog extends React.Component {
         case 'country':
         case 'birthday':
         case 'gender':item[event.target.name] = event.target.value; break;
+        case 'picture':
+            var value=event.value;
+            // allow changes from Y->A, Y->R, A->R, R->A
+            var oldstate=this.props.value.picture;
+            if(  (oldstate=='Y' && (value=='A' || value=='R'))
+              || (oldstate == 'A' && value=='R')
+              || (oldstate == 'R' && value=='A')) {
+                item.picture=value;
+            }
+            break;
         }
         if (this.props.onChange) this.props.onChange(item);
     }
@@ -140,9 +169,56 @@ export default class FencerDialog extends React.Component {
         }
     }
 
+    renderPicture () {
+        // display the accreditation photo
+        // anyone that can view this dialog can upload a better image
+        console.log("rendering picture for ",this.props.value);
+        var canapprove=this.props.value.picture != 'N';
+        if(evfranking && evfranking.eventcap) {
+            canapprove=["accreditor","organiser","system"].includes(evfranking.eventcap) && this.props.value.picture!='N';
+        }
+
+        var approvestates=[{
+            name: "Newly uploaded",
+            id: "Y"
+        },{
+            name: "Approved",
+            id: "A"
+        },{
+            name: "Request replacement",
+            id: "R"
+        },{
+            name: "None available",
+            id: "N"
+        }];
+        var picstate = this.props.value.picture;
+        if(!['Y','N','R','A'].includes(picstate)) {
+            picstate='N';
+        }
+        var eventid=this.props.apidata ? this.props.apidata.event : -1;
+        return (<div className='p-col-12'>
+            <label className='header'>Accreditation Photo</label>
+            <div>
+            {['Y','A','R'].includes(this.props.value.picture) && (
+                <div className='accreditation'>
+                  <img className='photoid' src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + "&event=" + eventid + '&hash='+this.state.imageHash}></img>
+                </div>
+            )}
+            <div className='textcenter'>
+              <input type="file" onChange={this.onFileChange} />
+            </div>
+            {canapprove && (
+                <div>
+                  <Dropdown name={'picture'} appendTo={document.body} optionLabel="name" optionValue="id" value={picstate} options={approvestates} onChange={this.onChangeEl} />
+                </div>
+            )}
+            </div>
+        </div>);
+    }    
+
     renderResults() {
         if(!this.props.value.results) return (null);
-        return (<div className="ranking-results">
+        return (<div className="p-col-12 ranking-results">
             <table className='list'>
                 <thead>
                     <tr>
@@ -225,6 +301,7 @@ export default class FencerDialog extends React.Component {
         </div>
       </div>
       { this.renderResults() }
+      {this.renderPicture()}
     </div>
     <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.actualSave(this.state.pendingSave)} onClose={()=>this.close()} />
 </Dialog>

@@ -369,6 +369,12 @@
         return $now >= $opens && $now < $closes;
     }
 
+    public function isOpenForView() {
+        $now = time();
+        $closes = strtotime($this->event_registration_close);
+        return $now >= $closes;
+    }
+
     public function findOpenEvents() {
         // allow events one day ahead and 2 days behind
         $opens=strftime('%F', time()+24*60*60);
@@ -415,17 +421,30 @@
             }
         }
 
-        if($retval === "closed" && $this->isOpen()) {
-            // open for registration, so at least return "open" to allow HoD registration
-            $retval="open";
+        // see if the current user is by accident a generic registrar
+        $model=new Registrar();
+        $registrar = $model->findByUser($id);
+        if($registrar != null) {
+            $retval="hod";
+        }
 
-            // see if the current user is by accident a generic registrar
-            $model=new Registrar();
-            $registrar = $model->findByUser($id);
-            if($registrar != null) {
-                $retval="hod";
+        if($this->isOpen()) {
+            if($retval == "closed") {
+                $retval="open"; // allow the register button
+            }
+            // else the user is logged in and is a HoD
+        }
+        else if($this->isOpenForView()) {
+            if($retval == "hod") {
+                // user is logged in, this is view-only
+                $retval="hod-view";
+            }
+            else if($retval=="closed") {
+                // allow the register button after registration closes
+                $retval="open";
             }
         }
+
         return $retval;
     }
 

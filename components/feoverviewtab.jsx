@@ -68,9 +68,9 @@ export default class FEOverviewTab extends FEBase {
                 for(var s in sides) {
                     var tot=sides[s];
 
-                    if(this.props.data.rolesById[s]) {
+                    if(this.props.basic.rolesById[s]) {
                         var obj={
-                            role: this.props.data.rolesById[s],
+                            role: this.props.basic.rolesById[s],
                             total: tot
                         };
                         orgoverview.push(obj);

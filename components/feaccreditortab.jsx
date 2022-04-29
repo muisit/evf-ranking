@@ -16,7 +16,8 @@ export default class FEAccreditorTab extends FEBase {
             displayDialog: false,
             loadedAllFencers:false,
             summary: {},
-            loadid: null
+            loadid: null,
+            timeout:null
         });
 
     }
@@ -28,7 +29,7 @@ export default class FEAccreditorTab extends FEBase {
 
     componentWillUnmount = () => {
         // still leaves a state-update-on-unmounted-component-error
-        window.clearTimeout(this.timeout);
+        window.clearInterval(this.state.timeout);
     }
 
     getSummary = (firsttime,loadid) => {
@@ -40,7 +41,7 @@ export default class FEAccreditorTab extends FEBase {
                     this.setState({ summary: json.data,loadid: null });
                     if(firsttime) {
                         this.props.unload("overview",this.props.basic.event.id);
-                        window.setInterval(()=> this.regularRefresh(), 5000)
+                        this.setState({timeout: window.setInterval(()=> this.regularRefresh(), 5000)});
                     }
                 })
                 .catch((err) => parse_net_error(err));
@@ -251,6 +252,11 @@ export default class FEAccreditorTab extends FEBase {
     renderParticipants() {
         return (
             <div className='row'>
+                <div className='col-12'>
+                    <span className='small right'>
+                    Queue status: {this.state.summary.queue}
+                    </span>
+                </div>
                 <div className='col-12'>
                     <table className='cashier style-stripes-body'>
                         <thead>

@@ -66,7 +66,7 @@
         if(intval($cnt) == 0) {
             $this->query()->from("TD_Accreditation")->where("fencer_id",$id)->delete();
             $this->query()->from("TD_Registration")->where("registration_fencer",$id)->delete();
-            $this->query()->from("TD_Result")->where("result_fencer",$id)->delete();
+            //$this->query()->from("TD_Result")->where("result_fencer",$id)->delete();
             parent::delete($id);
         }
     }

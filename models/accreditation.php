@@ -477,6 +477,10 @@ class Accreditation extends Base {
             }
             $retval["jobs"]=$jobs;
             update_option(\EVFRanking\Jobs\CreateSummary::QUEUENAME,$activequeue);
+
+            // also provide a queue indication
+            $queue=new Queue();
+            $retval["queue"]=$queue->count(null,["waiting"=>true]);
         }
         return $retval;
     }

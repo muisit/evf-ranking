@@ -1060,6 +1060,30 @@ class PDFCreator {
         }
         $w=imagesx($img);
         $h=imagesy($img);
+
+        // if the ratio is not okay, we need to crop the image a bit
+        // This should not happen (anymore), as we crop and scale the image at upload
+        // But there are some older images available...
+        // The ideal ratio is 0.7777777777777777... (width is 77% of height)
+        $goldenratio = 413.0/531.0;
+        $ratio = floatval($w) / $h;
+        if($ratio > 0.78) {
+            // image is too wide, crop it sideways
+            $newwidth = round($h * $goldenratio);
+            $offx = round((floatval($w) - $newwidth)/2);
+            $img2 = imagecrop($img, ['x'=>$offx, 'y'=>0,'width'=>$newwidth,'height'=>$h]);
+            imagedestroy($img);
+            $img=$img2;
+        }
+        else if($ratio < 0.77) {
+            // image is too high, crop in the height
+            $newheight = round($w / $goldenratio);
+            $offy = round((floatval($h) - $newheight)/2);
+            $img2 = imagecrop($img, ['x'=>0, 'y'=>$offy,'width'=>$w,'height'=>$newheight]);
+            imagedestroy($img);
+            $img=$img2;
+        }
+
         $evflogger->log("width/height $w,$h");
         $fname= tempnam(null,"phid");
         $evflogger->log("output file is $fname");

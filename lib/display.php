@@ -219,7 +219,7 @@ HEREDOC;
             if(in_array($caps, array("system","organiser","cashier","accreditation"))) {
                 echo "<a href='$location'><div class='evfranking-manage'></div><a/>";
             }
-            else if (in_array($caps, array("open","registrar","hod"))) {
+            else if (in_array($caps, array("open","registrar","hod","hod-view"))) {
                 echo "<a href='$location'><div class='evfranking-register'></div></a>";
             }
 

@@ -90,9 +90,10 @@
         return $qb->get();
     }
 
-    public static function ListAll($event) {
-        $model=new AccreditationTemplate();
-        return $model->selectAll(0,100000,array("event",$event->getKey()),"i");
+    public static function ListAll($event)
+    {
+        $model = new AccreditationTemplate();
+        return $model->selectAll(0, 100000, array("event" => $event->getKey()), "i");
     }
 
     public function count($filter,$special=null) {
@@ -367,26 +368,31 @@
         return $retval;
     }
 
-    public static function TemplateIdsByRole($event) {
-        $templs= AccreditationTemplate::ListAll($event);
-        $model=new AccreditationTemplate();
-        $templateByType = array("r0"=>array());
-        foreach($templs as $t) {
+    public static function TemplateIdsByRole($event)
+    {
+        $templs = AccreditationTemplate::ListAll($event);
+        $model = new AccreditationTemplate();
+        $templateByType = array(
+            "r0" => array()
+        );
+        foreach ($templs as $t) {
             $model->read($t);
             $roles = $model->forRoles();
 
-            foreach($roles as $rid) {
-                $key="r".$rid;
-                if(!isset($templateByType[$key])) $templateByType[$key]=array();
-                $templateByType[$key][]=$model->getKey();
+            foreach ($roles as $rid) {
+                $key = "r" . $rid;
+                if (!isset($templateByType[$key])) {
+                    $templateByType[$key] = array();
+                }
+                $templateByType[$key][] = $model->getKey();
             }
         }
         return $templateByType;
     }
 
 
-    public static function TemplateIdsByRoleType($event, $roleById=null) {
-        if($roleById === null) {
+    public static function TemplateIdsByRoleType($event, $roleById = null) {
+        if ($roleById === null) {
             $roles = Role::ListAll();
             $roleById = array();
             foreach ($roles as $r) {
@@ -394,25 +400,30 @@
             }
         }
 
-        $templs= AccreditationTemplate::ListAll($event);
-        $model=new AccreditationTemplate();
-        $templateByType = array("r0"=>array());
-        foreach($templs as $t) {
+        error_log('listing all for event '.$event->getKey());
+        $templs = AccreditationTemplate::ListAll($event);
+        $model = new AccreditationTemplate();
+        $templateByType = array(
+            "r0" => array()
+        );
+        foreach ($templs as $t) {
             $model->read($t);
             $roles = $model->forRoles();
 
-            foreach($roles as $rid) {
-                if(intval($rid) == 0) {
+            foreach ($roles as $rid) {
+                if (intval($rid) == 0) {
                     // athlete or participant role. There can only ever be 1 template for
                     // the same role, or else we'll have an optimisation problem determining
                     // the right template to use
                     $templateByType["r0"] = array($model->getKey());
                 }
-                if(isset($roleById["r".$rid])) {
+                if (isset($roleById["r" . $rid])) {
                     // see if this is a federative/country role
-                    $key="r".$roleById["r".$rid]->role_type;
-                    if(!isset($templateByType[$key])) $templateByType[$key]=array();
-                    $templateByType[$key][]= $model->getKey();
+                    $key = "r" . $roleById["r" . $rid]->role_type;
+                    if (!isset($templateByType[$key])) {
+                        $templateByType[$key] = array();
+                    }
+                    $templateByType[$key][] = $model->getKey();
                 }
             }
         }

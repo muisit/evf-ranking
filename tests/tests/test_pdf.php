@@ -85,7 +85,7 @@ class Test_PDF extends BaseTest {
 
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("0b6716341e0ab3409654a21b265e13ec", $fname);
+        $this->checkHash("44da3279cfbc3c5f9b226e2d67ae5f27", $fname);
     }
 
     public function test_case_20220216() {
@@ -284,7 +284,7 @@ class Test_PDF extends BaseTest {
         list($fencer, $event, $country, $accreditation, $template, $pdf, $fname) = $this->createModels();
         $template->content = json_encode($content);
         $pdf->create($fencer, $event, $template, $country, $accreditation, $fname);
-        $this->checkHash("6cd59003869772babbfb8273a047863f", $fname);
+        $this->checkHash("a2979d9e469723458b6215db6a6b3217", $fname);
     }
 
     public function test_image4() {

@@ -24,10 +24,13 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:disable PSR12.Classes.ClassInstantiation
+// phpcs:disable DONOT:Squiz.ControlStructures.ControlSignature
+
 namespace EVFRanking\Jobs;
 
-class AccreditationDirty extends BaseJob {
-
+class AccreditationDirty extends BaseJob
+{
     private $fencer;
     private $country;
     private $event;
@@ -37,26 +40,26 @@ class AccreditationDirty extends BaseJob {
     private $templates;
 
     // first argument is a fencer ID
-    public function create() {
-        $args= func_get_args();
+    public function create()
+    {
+        $args = func_get_args();
         $fencer_id = sizeof($args) > 0 ? $args[0] : -1;
-        $event_id = sizeof($args) > 1 ? $args[1] : -1;
-        $this->queue->setData("fencer_id",$fencer_id);
-        $this->queue->setData("event_id", $event_id);
+        $this->queue->setData("fencer_id", $fencer_id);
         parent::create();
     }
 
-    public function run() {
+    public function run()
+    {
+        $this->log("running AccreditationDirty job");
         parent::run();
 
-        $this->event = new \EVFRanking\Models\Event($this->queue->getData("event_id"));
+        $this->event = new \EVFRanking\Models\Event($this->queue->event_id);
         $this->fencer = new \EVFRanking\Models\Fencer($this->queue->getData("fencer_id"));
         $this->accreditation = new \EVFRanking\Models\Accreditation();
 
-        if($this->event->exists() && $this->fencer->exists()) {
-            $this->country=new \EVFRanking\Models\Country($this->fencer->fencer_country);
+        if ($this->event->exists() && $this->fencer->exists()) {
+            $this->country = new \EVFRanking\Models\Country($this->fencer->fencer_country);
             $this->country->load();
-
 
             $existing_accreditations = $this->accreditation->selectRecordsByFencer($this->fencer->getKey(), $this->event->getKey());
 
@@ -66,71 +69,75 @@ class AccreditationDirty extends BaseJob {
             $this->matchAccreditations($existing_accreditations, $new_accreditations);
         }
         else {
-            // no such event, perhaps the accreditation is in error. We can safely delete all accreditations for 
+            // no such event, perhaps the accreditation is in error. We can safely delete all accreditations for
             // this event and fencer
-            $this->accreditation->cleanForFencer($this->fencer->getKey(),$this->event->getKey());
+            $this->accreditation->cleanForFencer($this->fencer->getKey(), $this->event->getKey());
         }
+        $this->log("end of AccreditationDirty job");
     }
 
     private function matchAccreditations($existing, $newones) {
-        $lst=array();
-        foreach($existing as $a) $lst[] = new \EVFRanking\Models\Accreditation($a);
-        $existing=$lst;
+        $lst = array();
+        foreach ($existing as $a) {
+            $lst[] = new \EVFRanking\Models\Accreditation($a);
+        }
+        $existing = $lst;
 
-        $found=array();
-        $addthese=array();
-        $missing=array();
-        foreach($newones as $a1) {
-            $foundThis=false;
-            foreach($existing as $a2) {
-                if($a2->similar($a1["data"])) {
-                    $found[]=$a2->getKey();
-                    $foundThis=true;
+        $found = array();
+        $addthese = array();
+        $missing = array();
+        foreach ($newones as $a1) {
+            $foundThis = false;
+            foreach ($existing as $a2) {
+                if ($a2->similar($a1["data"])) {
+                    $found[] = $a2->getKey();
+                    $foundThis = true;
                     break; // only match the first accreditation if we happen to have duplicates
                 }
             }
-            if(!$foundThis) {
-                $addthese[]=$a1;
+            if (!$foundThis) {
+                $addthese[] = $a1;
             }
         }
 
         // find out which accreditations we need to dump and which we can keep
-        $actualfound=array();
-        foreach($existing as $a1) {
-            if(!in_array($a1->getKey(),$found)) {
-                $missing[]=$a1;
+        $actualfound = array();
+        foreach ($existing as $a1) {
+            if (!in_array($a1->getKey(), $found)) {
+                $missing[] = $a1;
             }
             else {
-                $actualfound[]=$a1;
+                $actualfound[] = $a1;
             }
         }
 
         // the missing accreditations can be removed.
         // This will remove the file as well
-        foreach($missing as $a) {
+        foreach ($missing as $a) {
             $a->delete();
         }
 
         // the found accreditations need to update their dirty value
-        foreach($actualfound as $a) {
+        foreach ($actualfound as $a) {
             // check that the file actually exists and that we have an accreditation ID set
-            $path=$a->getPath();
-            if(!file_exists($path) || empty($a->fe_id)) {
+            $path = $a->getPath();
+            if (!file_exists($path) || empty($a->fe_id)) {
                 $job = new \EVFRanking\Jobs\AccreditationCreate();
-                if(empty($a->fe_id)) {
+                if (empty($a->fe_id)) {
                     $a->createID();
                     $a->save();
                 }
+                $job->queue->event_id = $this->event->getKey();
                 $job->create($a);
             }
             else {
-                $a->unsetDirty();                
+                $a->unsetDirty();
             }
         }
 
         // the addthese accreditations need to be (re)generated, so we create
         // new versions of them and queue them up
-        foreach($addthese as $a) {
+        foreach ($addthese as $a) {
             $accr = new \EVFRanking\Models\Accreditation();
             $accr->import($a["data"]);
             $accr->fencer_id = $this->fencer->getKey();
@@ -141,43 +148,43 @@ class AccreditationDirty extends BaseJob {
 
             $job = new \EVFRanking\Jobs\AccreditationCreate();
             $job->queue->queue = $this->queue->queue; // make sure we stay in the same queue
+            $job->queue->event_id = $this->event->getKey();
             $job->create($accr);
         }
     }
 
     private function createAccreditations($registrations) {
-        $accreditations=array();
+        $accreditations = array();
         $this->setupData();
         $dates = $this->checkRolesAndDates($registrations);
 
         // for each template, extract the dates and roles and create the template
-        foreach($this->templates as $t) {
+        foreach ($this->templates as $t) {
             $content = json_decode($t->content, true);
-            $roleids = isset($content["roles"]) ? $content["roles"]: array();
+            $roleids = isset($content["roles"]) ? $content["roles"] : array();
             $assignedRoles = $this->findAssignedRoles($dates, $roleids);
 
             // if any of the roles for this template was assigned, create an accreditation
-            if(sizeof($assignedRoles) > 0) {
-
+            if (sizeof($assignedRoles) > 0) {
                 // see if any of these roles appears in the ALL list. In that case, we
                 // assign all the roles managed by this accreditation for ALL dates
-                $foundall=false;
-                foreach($dates["all"]["roles"] as $role) {
-                    if(in_array(strval($role->getKey()),$roleids)) {
-                        $accreditations[]= array("template" => $t, "data" => $this->createTemplate($t, $assignedRoles, array("ALL")));
-                        $foundall=true;
+                $foundall = false;
+                foreach ($dates["all"]["roles"] as $role) {
+                    if (in_array(strval($role->getKey()), $roleids)) {
+                        $accreditations[] = array("template" => $t, "data" => $this->createTemplate($t, $assignedRoles, array("ALL")));
+                        $foundall = true;
                         break;
                     }
                 }
 
-                if(!$foundall) {
+                if (!$foundall) {
                     // loop over all dates, find all assigned roles for each date
-                    $founddates=array();
-                    foreach($dates as $dt=>$spec) {
-                        if($dt != "all") {
-                            foreach($spec["roles"] as $rl) {
-                                if(in_array(strval($rl->getKey()),$roleids)) {
-                                    $founddates[]=$dt;
+                    $founddates = array();
+                    foreach ($dates as $dt => $spec) {
+                        if ($dt != "all") {
+                            foreach ($spec["roles"] as $rl) {
+                                if (in_array(strval($rl->getKey()), $roleids)) {
+                                    $founddates[] = $dt;
                                     break;
                                 }
                             }
@@ -187,8 +194,8 @@ class AccreditationDirty extends BaseJob {
                     // if we find a role in each of the dates, assign roles for all dates
                     // anyway
                     // (compare with sizeof()-1 because the 'all' entry is included in $dates)
-                    if(sizeof($founddates) >= (sizeof(array_keys($dates)) -1)) {
-                        $accreditations[] = array("template"=>$t, "data"=>$this->createTemplate($t, $assignedRoles, array("ALL")));
+                    if (sizeof($founddates) >= (sizeof(array_keys($dates)) - 1)) {
+                        $accreditations[] = array("template" => $t, "data" => $this->createTemplate($t, $assignedRoles, array("ALL")));
                     }
                     else {
                         $accreditations[] = array("template" => $t, "data" => $this->createTemplate($t, $assignedRoles, $founddates));
@@ -199,18 +206,21 @@ class AccreditationDirty extends BaseJob {
         return $accreditations;
     }
 
-    private function findAssignedRoles($dates, $roleids) {
-        $roles=array();
-        $alreadyfound=array();
-        foreach($dates as $dt=>$datespec) {
-            foreach($datespec["roles"] as $role) {
+    private function findAssignedRoles($dates, $roleids)
+    {
+        $roles = array();
+        $alreadyfound = array();
+        foreach ($dates as $dt => $datespec) {
+            foreach ($datespec["roles"] as $role) {
                 // add roles that are in the list of roles of this template
                 // if role=0 is in the template, add all the roles (which are
                 // individual competition events)
-                if(   in_array(strval($role->getKey()), $roleids) 
-                   && (!in_array($role->getKey(),$alreadyfound) || $role->getKey() == 0)) {
-                    $roles[]=$role;
-                    $alreadyfound[]=$role->getKey(); // make sure there are no duplicates
+                if (
+                       in_array(strval($role->getKey()), $roleids)
+                    && (!in_array($role->getKey(), $alreadyfound) || $role->getKey() == 0)
+                ) {
+                    $roles[] = $role;
+                    $alreadyfound[] = $role->getKey(); // make sure there are no duplicates
                 }
             }
         }
@@ -245,43 +255,45 @@ class AccreditationDirty extends BaseJob {
                     // accredit for other side events
                     if ($sideevent->competition->exists()) {
                         $date = strftime('%F', strtotime($sideevent->competition->competition_weapon_check));
-                        // requirement 6.1.1: For team events, display the team name as well 
-                        $role= new \EVFRanking\Models\Role();
-                        $role->role_id=0;
+                        // requirement 6.1.1: For team events, display the team name as well
+                        $role = new \EVFRanking\Models\Role();
+                        $role->role_id = 0;
                         $role->role_name = $sideevent->competition->abbreviation();
 
                         // adding the team name causes too much flutter in the Role box. We can add it again
                         // if the general layout for accreditations is adjusted
-                        //$cat = new \EVFranking\Models\Category($sideevent->competition->competition_category, true);  
+                        //$cat = new \EVFranking\Models\Category($sideevent->competition->competition_category, true);
                         //if($cat->exists() && $cat->category_type == 'T' && strlen($r->registration_team)) {
                         //    $role->role_name.= " (" .$r->registration_team. ")";
                         //}
 
-                        if(!isset($dates[$date])) {
-                            $dates[$date]=array("sideevents"=>array($sideevent), "roles"=>array());
+                        if (!isset($dates[$date])) {
+                            $dates[$date] = array("sideevents" => array($sideevent), "roles" => array());
                         }
-                        $dates[$date]["roles"][]=$role;
+                        $dates[$date]["roles"][] = $role;
                     }
-                } else {
+                }
+                else {
                     if (!isset($dates[$date])) {
                         $dates[$date] = array("sideevents" => array($sideevent), "roles" => array());
                     }
                     $dates[$date]["roles"][] = $role;
                 }
-            } else if (!empty($role)) {
+            }
+            else if (!empty($role)) {
                 // event-wide role
                 $dates["all"]["roles"][] = $role;
             }
         }
 
         // check to see if some roles are given for all dates anyway
-        foreach ($this->rolesById as $k=>$r) {
+        foreach ($this->rolesById as $k => $r) {
             $foralldates = true;
             foreach ($dates as $k => $v) {
                 if ($k != "all") {
                     $found = false;
                     foreach ($v["roles"] as $r2) {
-                        if ($r2->getKey() == $r->getKey() && $r2->getKey()!=0) {
+                        if ($r2->getKey() == $r->getKey() && $r2->getKey() != 0) {
                             $found = true;
                             break;
                         }
@@ -315,7 +327,8 @@ class AccreditationDirty extends BaseJob {
         return $dates;
     }
 
-    private function setupData() {
+    private function setupData()
+    {
         // sides returns objects
         $sides = $this->event->sides(null, true);
         $this->sidesById = array();
@@ -343,10 +356,10 @@ class AccreditationDirty extends BaseJob {
 
         $rtype = new \EVFRanking\Models\RoleType();
         $this->roletypes = array();
-        $types=$rtype->selectAll(0,10000,null,"i");
-        foreach($types as $rt) {
-            $roletype=new \EVFRanking\Models\RoleType($rt);
-            $this->roletypes["t".$roletype->getKey()]=$roletype;
+        $types = $rtype->selectAll(0, 10000, null, "i");
+        foreach ($types as $rt) {
+            $roletype = new \EVFRanking\Models\RoleType($rt);
+            $this->roletypes["t".$roletype->getKey()] = $roletype;
         }
     }
 
@@ -364,48 +377,48 @@ class AccreditationDirty extends BaseJob {
 
         // make sure we change the accreditation when the fencer photo ID changes
         $path = $this->fencer->getPath();
-        if(file_exists($path)) {
-            $accr["photo_hash"] = hash_file("sha256",$path);
+        if (file_exists($path)) {
+            $accr["photo_hash"] = hash_file("sha256", $path);
         }
         else {
             // add a value to indicate the file is non-existant
-            $accr["photo_hash"]="---";
+            $accr["photo_hash"] = "---";
         }
 
         // make sure we change the accreditation if the template configuration changes
         // we hash the template content JSON string, assuming if it changes, it's content
         // will have changed as well
-        $accr["template_hash"] = hash('sha256',$template->content,false);
+        $accr["template_hash"] = hash('sha256', $template->content, false);
 
         // convert dates to a 'SAT 1' kind of display
-        foreach($dates as $k) {
-            if($k != "ALL") {
+        foreach ($dates as $k) {
+            if ($k != "ALL") {
                 $time = strtotime($k);
                 $entry = str_replace('  ', ' ', strtoupper(strftime('%e %a', $time)));
-                $accr["dates"][]=$entry;
+                $accr["dates"][] = $entry;
             }
             else {
-                $accr["dates"][]=$k;
+                $accr["dates"][] = $k;
             }
         }
 
         // convert all roles to their role name
-        foreach($assignedRoles as $role) {
-            $accr["roles"][]=$role->role_name;
+        foreach ($assignedRoles as $role) {
+            $accr["roles"][] = $role->role_name;
 
             // depending on the role types, set the organisation
-            $rtid=$role->role_type_id;
-            if(isset($this->roletypes["t".$rtid])) {
-                $orgdecl=$this->roletypes["t".$rtid]->org_declaration;
+            $rtid = $role->role_type_id;
+            if (isset($this->roletypes["t" . $rtid])) {
+                $orgdecl = $this->roletypes["t" . $rtid]->org_declaration;
 
-                if($orgdecl == "Country" && strlen($accr["organisation"])==0) {
-                    $accr["organisation"]=$accr["country"];
+                if ($orgdecl == "Country" && strlen($accr["organisation"]) == 0) {
+                    $accr["organisation"] = $accr["country"];
                 }
-                else if($orgdecl=="Org" && $accr["organisation"] != "EVF") {
-                    $accr["organisation"]="ORG";
+                else if ($orgdecl == "Org" && $accr["organisation"] != "EVF") {
+                    $accr["organisation"] = "ORG";
                 }
-                else if($orgdecl == "EVF") {
-                    $accr["organisation"]="EVF";
+                else if ($orgdecl == "EVF") {
+                    $accr["organisation"] = "EVF";
                 }
             }
         }

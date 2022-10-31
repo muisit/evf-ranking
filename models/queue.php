@@ -24,95 +24,153 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Models;
 
- namespace EVFRanking\Models;
+class YieldException extends \Exception
+{
+}
 
-class YieldException extends \Exception {}
-class FailException extends \Exception {}
+// phpcs:disable PSR1.Classes.ClassDeclaration
+class FailException extends \Exception
+{
+}
 
-class Queue extends Base {
+class Queue extends Base
+{
     public $table = "TD_Queue";
-    public $pk="id";
-    public $fields=array("id","state","payload","attempts","started_at","finished_at","created_at","available_at","queue");
-    public $fieldToExport=array(
-        "id"=>"id",
-        "state"=>"state",
+    public $pk = "id";
+    public $fields = array("id", "state", "payload", "attempts", "started_at", 
+        "finished_at", "created_at", "available_at", "queue", 'event_id', 'model');
+    public $fieldToExport = array(
+        "id" => "id",
+        "state" => "state",
         "payload" => "payload",
         "attempts" => "attempts",
         "started_at" => "started_at",
         "finished_at" => "finished_at",
         "created_at" => "created_at",
         "available_at" => "available_at",
-        "queue" => "queue"
+        "queue" => "queue",
+        "event_id" => "event",
+        "model" => "model"
     );
-    public $rules=array(
+    public $rules = array(
         "id" => "skip",
-        "state"=> "required|trim|lte=20",
+        "state" => "required|trim|lte=20",
         "payload" => "trim",
         "attempts" => "int|default=0",
         "started_at" => "datetime",
         "finished_at" => "datetime",
         "created_at" => "datetime",
         "available_at" => "datetime",
-        "queue" => "required|trim|lte=20"
+        "queue" => "required|trim|lte=20",
+        "event_id" => array("rules" => "model=Event", "message" => "Please select a valid event"),
+        "model" => "trim"
     );
 
-    private $_cache_data=false;
+    private $_cache_data = false;
 
-    private function sortToOrder($sort) {
-        if(empty($sort)) $sort="i";
-        $orderBy=array();
-        for($i=0;$i<strlen($sort);$i++) {
-            $c=$sort[$i];
-            switch($c) {
-            default:
-            case 'i': $orderBy[]="id asc"; break;
-            case 'I': $orderBy[]="id desc"; break;
-            case 'q': $orderBy[]="queue asc"; break;
-            case 'Q': $orderBy[]="queue desc"; break;
-            case 'a': $orderBy[]="attempts asc"; break;
-            case 'A': $orderBy[]="attempts desc"; break;
-            case 's': $orderBy[]="started_at asc"; break;
-            case 'S': $orderBy[]="started_at desc"; break;
-            case 'f': $orderBy[]="finished_at asc"; break;
-            case 'F': $orderBy[]="finished_at desc"; break;
-            case 'r': $orderBy[]="available_at asc"; break;
-            case 'R': $orderBy[]="available_at desc"; break;
+    private function sortToOrder($sort)
+    {
+        if (empty($sort)) {
+            $sort = "i";
+        }
+        $orderBy = array();
+        for ($i = 0; $i < strlen($sort); $i++) {
+            $c = $sort[$i];
+            switch ($c) {
+                default:
+                case 'i':
+                    $orderBy[] = "id asc";
+                    break;
+                case 'I':
+                    $orderBy[] = "id desc";
+                    break;
+                case 'q':
+                    $orderBy[] = "queue asc";
+                    break;
+                case 'Q':
+                    $orderBy[] = "queue desc";
+                    break;
+                case 'a':
+                    $orderBy[] = "attempts asc";
+                    break;
+                case 'A':
+                    $orderBy[] = "attempts desc";
+                    break;
+                case 's':
+                    $orderBy[] = "started_at asc";
+                    break;
+                case 'S':
+                    $orderBy[] = "started_at desc";
+                    break;
+                case 'f':
+                    $orderBy[] = "finished_at asc";
+                    break;
+                case 'F':
+                    $orderBy[] = "finished_at desc";
+                    break;
+                case 'r':
+                    $orderBy[] = "available_at asc";
+                    break;
+                case 'R':
+                    $orderBy[] = "available_at desc";
+                    break;
             }
         }
         return $orderBy;
     }
 
-    private function addFilter($qb, $filter,$special) {
+    private function addFilter($qb, $filter, $special) {
         //if (is_string($filter)) $filter = json_decode($filter, true);
-        if (is_string($special)) $special = json_decode($special, true);
+        if (is_string($special)) {
+            $special = json_decode($special, true);
+        }
 
-        //if (!empty($filter)) {
-        //}
+        if (!empty($filter)) {
+            if (is_string($filter)) {
+                $filter = array("name" => $filter);
+            }
+            if (is_object($filter)) {
+                $filter = (array)$filter;
+            }
+            if (isset($filter["event"]) && !empty(trim($filter["event"]))) {
+                $qb->where("event_id", $filter["event"]);
+            }
+            if (isset($filter["queue"]) && !empty(trim($filter["queue"]))) {
+                $qb->where("queue", $filter["queue"]);
+            }
+            if (isset($filter["model"]) && !empty(trim($filter["model"]))) {
+                $qb->where("model", $filter["model"]);
+            }
+        }
 
-        if(!empty($special)) {
-            if(isset($special["open"])) {
-                $qb->where("state","new");
-                $qb->where("available_at",">",strftime('%Y-%m-%d %H:%M:%S'));
+        if (!empty($special)) {
+            if (isset($special["open"])) {
+                $qb->where("state", "new");
+                $qb->where("available_at", ">", strftime('%Y-%m-%d %H:%M:%S'));
             }
             if (isset($special["waiting"])) {
                 $qb->where("state", "new");
                 $qb->where("available_at", "<", strftime('%Y-%m-%d %H:%M:%S'));
             }
             if (isset($special["running"])) {
-                $qb->where("state","running");
+                $qb->where("state", "running");
             }
             if (isset($special["error"])) {
-                $qb->where("state","error");
+                $qb->where("state", "error");
             }
             if (isset($special["finished"])) {
-                $qb->where("state","finished");
+                $qb->where("state", "finished");
+            }
+            if (isset($special["pending"])) {
+                $qb->where("state", "in", array("new", "running"));
             }
         }
     }
 
-    public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
-        $qb=$this->select('*')->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
+    public function selectAll($offset, $pagesize, $filter, $sort, $special = null) {
+        $qb = $this->select('*')->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb, $filter, $special);
         return $qb->get();
     }
@@ -142,56 +200,56 @@ class Queue extends Base {
 
     public function run($timelimit) {
         $is_available = empty($this->available_at) || (strtotime($this->available_at) <= time());
-        if($this->state == "new" && $is_available) {
-            $self=$this;
-            set_exception_handler(function($ex) use($self) {
-                error_log("exception caught ".$ex->getMessage());
-                $self->state="error";
+        if ($this->state == "new" && $is_available) {
+            $self = $this;
+            set_exception_handler(function ($ex) use ($self) {
+                error_log("exception caught " . $ex->getMessage());
+                $self->state = "error";
                 $self->setData("error", $ex->getMessage());
                 $self->setData("backtrace", debug_backtrace());
                 $self->save();
             });
             try {
-                $this->state="running";
+                $this->state = "running";
                 $this->started_at = strftime('%Y-%m-%d %H:%M:%S');
-                $this->attempts+=1;
+                $this->attempts += 1;
                 $this->save();
 
                 $this->doRun($timelimit);
 
-                $this->state="finished";
+                $this->state = "finished";
                 $this->finished_at = strftime('%Y-%m-%d %H:%M:%S');
                 $this->save();
 
                 return true;
             }
-            catch(YieldException $e) {
+            catch (YieldException $e) {
                 // yielding means we save the object and retry again later
-                $this->state="new";
-                $this->started_at=null;
+                $this->state = "new";
+                $this->started_at = null;
                 // do not correct the attempts. Larger attempts value will sort
                 // the entry later in the pending-queue, allowing other entries
                 // to go first
                 //
                 // wait at least one second to allow other queue entries to go first
-                $this->available_at = strftime('%Y-%m-%d %H:%M:%S', time()+1);
-                $yields=$this->getData("yields",array());
-                $yields[]= strftime('%Y-%m-%d %H:%M:%S');
-                $this->setData("yields",$yields);
+                $this->available_at = strftime('%Y-%m-%d %H:%M:%S', time() + 1);
+                $yields = $this->getData("yields", array());
+                $yields[] = strftime('%Y-%m-%d %H:%M:%S');
+                $this->setData("yields", $yields);
                 $this->save();
                 error_log("yield exception for queue entry");
                 return true;
             }
-            catch(FailException $e) {
+            catch (FailException $e) {
                 // explicit fail, should have a regular log message
-                $this->state="error";
-                error_log("caught fail-queue exception ".$e->getMessage());
+                $this->state = "error";
+                error_log("caught fail-queue exception " . $e->getMessage());
                 $this->save();
             }
-            catch(\Exception $e) {
-                $this->state="error";
-                $this->setData("error",$e->getMessage());
-                $this->setData("backtrace",debug_backtrace());
+            catch (\Exception $e) {
+                $this->state = "error";
+                $this->setData("error", $e->getMessage());
+                $this->setData("backtrace", debug_backtrace());
                 error_log("caught generic queue exception " . $e->getMessage());
                 $this->save();
             }
@@ -200,26 +258,30 @@ class Queue extends Base {
         return false;
     }
 
-    public function yield() {
+    public function yield()
+    {
         throw new YieldException();
     }
 
-    public function fail() {
+    public function fail()
+    {
         throw new FailException();
     }
 
-    public function timeLeft() {
+    public function timeLeft()
+    {
         return $this->end_time - time();
     }
 
-    private function doRun($timelimit) {
+    private function doRun($timelimit)
+    {
         $this->end_time = time() + intval($timelimit);
-        $model = $this->getData("model");
-        $method=$this->getData("method","run");
-        if(!empty($model)) {
+        $model = $this->model;
+        $method = $this->getData("method", "run");
+        if (!empty($model)) {
             $obj = new $model($this);
         }
-        if(method_exists($obj,$method)) {
+        if (method_exists($obj, $method)) {
             ob_start();
             $obj->$method();
             ob_end_clean();
@@ -229,7 +291,8 @@ class Queue extends Base {
         }
     }
 
-    public function getData($key,$def=null) {
+    public function getData($key, $def = null)
+    {
         if (empty($this->_cache_data)) {
             $this->_cache_data = json_decode($this->payload, true);
         }

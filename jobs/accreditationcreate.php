@@ -35,7 +35,9 @@ class AccreditationCreate extends BaseJob {
         parent::create();
     }
 
-    public function run() {
+    public function run()
+    {
+        $this->log("running AccreditationCreate job");
         parent::run();
 
         $accreditation = new \EVFRanking\Models\Accreditation($this->queue->getData("accreditation_id"),true);
@@ -89,5 +91,6 @@ class AccreditationCreate extends BaseJob {
         else {
             $this->fail("Could not create output PDF");
         }
+        $this->log("end of AccreditationCreate job");
     }
 }

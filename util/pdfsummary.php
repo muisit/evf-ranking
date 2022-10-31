@@ -2,28 +2,31 @@
 
 namespace EVFRanking\Util;
 
-class PDFSummary {
+class PDFSummary
+{
     public $event;
     public $type;
     public $model;
     public $_path;
 
-    public function __construct($event, $type,$model) {
-        $this->event=$event;
-        $this->type=$type;
-        $this->model=$model;
+    public function __construct($event, $type, $model)
+    {
+        $this->event = $event;
+        $this->type = $type;
+        $this->model = $model;
     }
 
-    public static function CheckPath($eid, $path) {
+    public static function CheckPath($eid, $path)
+    {
         // path is summary_<type>_<tid>_<hash>.pdf
-        $elements=explode('_',basename($path));
-        if(sizeof($elements) == 4 && $elements[0] == "summary") {
+        $elements = explode('_', basename($path));
+        if (sizeof($elements) == 4 && $elements[0] == "summary") {
             $type = $elements[1];
             $tid = $elements[2];
 
             $actualfile = PDFSummary::SearchPath($eid, $type, $tid);
-            if(basename($actualfile) == $path) {
-                return PDFSummary::CheckHash($actualfile,$eid,$type,$tid);
+            if (basename($actualfile) == $path) {
+                return PDFSummary::CheckHash($actualfile, $eid, $type, $tid);
             }
         }
         return false;
@@ -89,22 +92,32 @@ class PDFSummary {
         return array($overallhash,$files);
     }
 
-    public function create() {
+    public function create()
+    {
+        global $evflogger;
         // delete any existing document first
         $outputpath = PDFSummary::SearchPath($this->event->getKey(), $this->type, $this->model->getKey());
+        $evflogger->log("PDFSummary::create at $outputpath");
         if (file_exists($outputpath)) {
             @unlink($outputpath);
         }
         if (file_exists($outputpath)) {
+            $evflogger->log("PDFSummary::create unable to unlink existing file, returning");
             // error: unable to delete output, cannot create new file
             return;
         }
 
-        $accreditations=$this->accreditations();
-        if(sizeof($accreditations) == 0) return;
+        $accreditations = $this->accreditations();
+        if (count($accreditations) == 0) {
+            $evflogger->log("PDFSummary::create no accreditations, returning empty file");
+            return;
+        }
 
-        list($overallhash,$files)=PDFSummary::CreateHash($accreditations);
-        if(sizeof($files) ==0) return;
+        list($overallhash, $files) = PDFSummary::CreateHash($accreditations);
+        if (count($files) == 0) {
+            $evflogger->log("PDFSummary::create no files found with hashes");
+            return;
+        }
         $outputpath = PDFSummary::GetPath($this->event->getKey(), $this->type, $this->model->getKey(), $overallhash);
 
         if (file_exists($outputpath)) {
@@ -112,6 +125,7 @@ class PDFSummary {
         }
         if (file_exists($outputpath)) {
             // error: unable to delete output, cannot create new file
+            $evflogger->log("PDFSummary::create unable to unlink existing file (again), returning");
             return;
         }
 
@@ -120,154 +134,187 @@ class PDFSummary {
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
         
-        $templates=array();
+        $templates = array();
         // to keep track of the next possible option, we assign 9 different positions:
         // A4 1, 2, 3 and 4
         // A4 landscape 5, 6
         // A5 landscape 7, 8
         // A6 portrait 9
-        // 
+        //
         // If a new template does not fit in any of these positions, we create a new page
-        $currentposition=null;
-        foreach($files as $k=>$v) {
+        $currentposition = null;
+        $evflogger->log("PDFSummary::create looping over contained files");
+        foreach ($files as $k => $v) {
             $accreditation = $v["accreditation"];
             $templateid = $accreditation->template_id;
-            if(!isset($templates["t".$templateid])) {
-                $templates["t".$templateid] = new \EVFRanking\Models\AccreditationTemplate($templateid,true);
+            if (!isset($templates["t" . $templateid])) {
+                $templates["t" . $templateid] = new \EVFRanking\Models\AccreditationTemplate($templateid,true);
             }
-            $template = isset($templates["t".$templateid]) ? $templates["t".$templateid] : null;
+            $template = isset($templates["t" . $templateid]) ? $templates["t" . $templateid] : null;
             $pageoption = "a4portrait";
-            if(!empty($template) && $template->exists()) {
-                $content=json_decode($template->content,true);
-                if(isset($content["print"])) $pageoption=$content["print"];
+            if (!empty($template) && $template->exists()) {
+                $content = json_decode($template->content, true);
+                if (isset($content["print"])) {
+                    $pageoption = $content["print"];
+                }
             }
 
             $pdf->SetSourceFile($v["file"]);
             $templateId = $pdf->importPage(1);
 
-            switch($pageoption) {
-            default:
-            case 'a4portrait':
-            case 'a4portrait2':
-            case 'a5landscape':
-            case 'a5landscape2':
-                $size = $pdf->getTemplateSize($templateId, 210);
-                break;
-            case 'a4landscape':
-            case 'a4landscape2':
-                $size = $pdf->getTemplateSize($templateId,297);
-                break;
-            case 'a6portrait':
-                $size = $pdf->getTemplateSize($templateId,105);
-                break;
+            switch ($pageoption) {
+                default:
+                case 'a4portrait':
+                case 'a4portrait2':
+                case 'a5landscape':
+                case 'a5landscape2':
+                    $size = $pdf->getTemplateSize($templateId, 210);
+                    break;
+                case 'a4landscape':
+                case 'a4landscape2':
+                    $size = $pdf->getTemplateSize($templateId, 297);
+                    break;
+                case 'a6portrait':
+                    $size = $pdf->getTemplateSize($templateId, 105);
+                    break;
             }
 
-            $thisposition=null;
-            $followingposition=null;
-            switch($pageoption) {
-            default:
-            case 'a4portrait':
-                if($currentposition === null) {
-                    $thisposition=1;
-                    $followingposition=3;
-                }
-                else if($currentposition === 3) {
-                    $thisposition=3;
-                    $followingposition=null;
-                }
-                break;
-            case 'a4landscape':
-                $thisposition=5;
-                $followingposition=null;
-                break;
-            case 'a4portrait2':
-                // allow 1, 2 and 3
-                if($currentposition === null) {
-                    $thisposition=1;
-                    $followingposition=2;
-                }
-                else if($currentposition === 2) {
-                    $thisposition=2;
-                    $followingposition=3;
-                }
-                else if($currentposition === 3) {
-                    $thisposition=3;
-                    $followingposition=4;
-                }
-                else if($currentposition === 4) {
-                    $thisposition=4;
-                    $followingposition=null;
-                }
-                break;
-            case 'a4landscape2':
-                if($currentposition === null) {
-                    $thisposition=5;
-                    $followingposition=null;
-                }
-                else if($currentposition === 6) {
-                    $thisposition=6;
-                    $followingposition=null;
-                }
-                break;
-            case 'a5landscape':
-                $thisposition=7;
-                $followingposition=null;
-                break;
-            case 'a5landscape2':
-                if($currentposition === null) {
-                    $thisposition=7;
-                    $followingposition=8;
-                }
-                else if($currentposition === 7) {
-                    $thisposition=8;
-                    $followingposition=null;
-                }
-                break;
-            case 'a6portrait':
-                $thisposition=9;
-                $followingposition=null;
-                break;
+            $thisposition = null;
+            $followingposition = null;
+            switch ($pageoption) {
+                default:
+                case 'a4portrait':
+                    if ($currentposition === null) {
+                        $thisposition = 1;
+                        $followingposition = 3;
+                    }
+                    else if ($currentposition === 3) {
+                        $thisposition = 3;
+                        $followingposition = null;
+                    }
+                    break;
+                case 'a4landscape':
+                    $thisposition = 5;
+                    $followingposition = null;
+                    break;
+                case 'a4portrait2':
+                    // allow 1, 2 and 3
+                    if ($currentposition === null) {
+                        $thisposition = 1;
+                        $followingposition = 2;
+                    }
+                    else if ($currentposition === 2) {
+                        $thisposition = 2;
+                        $followingposition = 3;
+                    }
+                    else if ($currentposition === 3) {
+                        $thisposition = 3;
+                        $followingposition = 4;
+                    }
+                    else if ($currentposition === 4) {
+                        $thisposition = 4;
+                        $followingposition = null;
+                    }
+                    break;
+                case 'a4landscape2':
+                    if ($currentposition === null) {
+                        $thisposition = 5;
+                        $followingposition = null;
+                    }
+                    else if ($currentposition === 6) {
+                        $thisposition = 6;
+                        $followingposition = null;
+                    }
+                    break;
+                case 'a5landscape':
+                    $thisposition = 7;
+                    $followingposition = null;
+                    break;
+                case 'a5landscape2':
+                    if ($currentposition === null) {
+                        $thisposition = 7;
+                        $followingposition = 8;
+                    }
+                    else if ($currentposition === 7) {
+                        $thisposition = 8;
+                        $followingposition = null;
+                    }
+                    break;
+                case 'a6portrait':
+                    $thisposition = 9;
+                    $followingposition = null;
+                    break;
             }
 
-            if($currentposition === null) {
+            if ($currentposition === null) {
                 error_log("adding a new page");
-                $pdf->AddPage($size['orientation'],$size);
+                $pdf->AddPage($size['orientation'], $size);
             }
 
-            $x=0;
-            $y=0;
-            $w=210;
-            $h=297;
-            switch($thisposition) {
-            case 1: break; // no adjustments
-            case 2: $x=105; break;
-            case 3: $y=148.5;break;
-            case 4: $x=105; $y=148.5;break;
-            case 5: $x=43; $y=31; $w=297;$h=210; break;
-            case 6: $x=43+105; $y=31; $w=297;$h=210; break;
-            case 7: $w=210; $h=148.5; break; 
-            case 8: $x=105; $w=210; $h=148.5; break;
-            case 9: $w=105; $h=148.5; break;
+            $x = 0;
+            $y = 0;
+            $w = 210;
+            $h = 297;
+            switch ($thisposition) {
+                case 1:
+                    break; // no adjustments
+                case 2:
+                    $x = 105;
+                    break;
+                case 3:
+                    $y = 148.5;
+                    break;
+                case 4:
+                    $x = 105;
+                    $y = 148.5;
+                    break;
+                case 5:
+                    $x = 43;
+                    $y = 31;
+                    $w = 297;
+                    $h = 210;
+                    break;
+                case 6:
+                    $x = 43 + 105;
+                    $y = 31;
+                    $w = 297;
+                    $h = 210;
+                    break;
+                case 7:
+                    $w = 210;
+                    $h = 148.5;
+                    break;
+                case 8:
+                    $x = 105;
+                    $w = 210;
+                    $h = 148.5;
+                    break;
+                case 9:
+                    $w = 105;
+                    $h = 148.5;
+                    break;
             }
 
-            error_log("importing page at position $thisposition, $x, $y -> $w, $h");
-            $pdf->useImportedPage($templateId,$x, $y, $w,$h,false);
+            $evflogger->log("importing page at position $thisposition, $x, $y -> $w, $h");
+            $pdf->useImportedPage($templateId, $x, $y, $w, $h, false);
 
             $currentposition = $followingposition;
         }
 
         $pdf->Output($outputpath, 'F');
-        $this->path=$outputpath;
+        $this->path = $outputpath;
+        $evflogger->log("PDFSummary::create end of create, path at $outputpath");
     }
 
-    public function accreditations() {
-        switch($this->type) {
-        case 'Country': 
-        case 'Event':
-        case 'Template':
-        case 'Role':
-            return $this->model->selectAccreditations($this->event);
-            break;
+    public function accreditations()
+    {
+        switch ($this->type) {
+            case 'Country':
+            case 'Event':
+            case 'Template':
+            case 'Role':
+                return $this->model->selectAccreditations($this->event);
+                break;
         }
         return array();
     }

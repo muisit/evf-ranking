@@ -68,13 +68,18 @@ $numtests=0;
 $success=0;
 $fails=0;
 foreach ($alltests as $key=>$model) {
-    if(empty($namedtests) || in_array($model->name,$namedtests)) {
-        echo "Running tests for ".$model->name."\r\n";
-        $model->run();
-        echo "Tests: ".$model->count." Success: ".$model->success." Fails: ".$model->fails."\r\n";
-        $success+=$model->success;
-        $fails+=$model->fails;
-        $numtests += $model->count;
+    try {
+        if(empty($namedtests) || in_array($model->name,$namedtests)) {
+            echo "Running tests for ".$model->name."\r\n";
+            $model->run();
+            echo "Tests: ".$model->count." Success: ".$model->success." Fails: ".$model->fails."\r\n";
+            $success+=$model->success;
+            $fails+=$model->fails;
+            $numtests += $model->count;
+        }
+    }
+    catch(\Exception $e) {
+        echo "caught exception while testing: ".$e->getMessage()."\r\n";
     }
 }
 

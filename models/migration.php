@@ -2,7 +2,7 @@
 
 /**
  * EVF-Ranking Migration Model
- * 
+ *
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
  * @copyright           2020 Michiel Uitdehaag for muis IT
@@ -24,17 +24,17 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Models;
 
- namespace EVFRanking\Models;
-
- class Migration extends Base {
+class Migration extends Base
+{
     public $table = "TD_Migration";
-    public $pk="id";
-    public $fields=array("id","name","status");
-    public $rules=array(
+    public $pk = "id";
+    public $fields = array("id","name","status");
+    public $rules = array(
         "id" => "skip",
         "name" => "skip",
-        "status"=>"int"
+        "status" => "int"
     );
 
     public function __construct($id=null,$forceload=false) {
@@ -148,16 +148,20 @@
             $migration = new Migration(array("name"=>"014: Team events","status"=>0));
             $migration->save();
         }
-        if($cnt < 16) {
-            $migration = new Migration(array("name"=>"015: Live feeds","status"=>0));
+        if ($cnt < 16) {
+            $migration = new Migration(array("name" => "015: Live feeds", "status" => 0));
             $migration->save();
         }
-        if($cnt < 17) {
-            $migration = new Migration(array("name"=>'016: Event config',"status"=>0));
+        if ($cnt < 17) {
+            $migration = new Migration(array("name" => '016: Event config', "status" => 0));
             $migration->save();
         }
-        if($cnt < 18) {
-            $migration = new Migration(array("name"=>'017: Ranking view update',"status"=>0));
+        if ($cnt < 18) {
+            $migration = new Migration(array("name" => '017: Ranking view update', "status" => 0));
+            $migration->save();
+        }
+        if ($cnt < 19) {
+            $migration = new Migration(array("name" => '018: Queue event and side-event', "status" => 0));
             $migration->save();
         }
     }
@@ -199,7 +203,7 @@
                 " c.competition_id, ".
                 " cat.category_id, cat.category_name, cat.category_abbr, ".
                 " w.weapon_id, w.weapon_name, w.weapon_abbr, w.weapon_gender, ".
-                " f.fencer_id, f.fencer_firstname, f.fencer_surname, f.fencer_dob, f.fencer_gender, fcnt.country_abbr as fencer_country_abbr, fcnt.country_name as fencer_country_name, ".
+                " f.fencer_id, f.018: Queue event and side-eventfencer_firstname, f.fencer_surname, f.fencer_dob, f.fencer_gender, fcnt.country_abbr as fencer_country_abbr, fcnt.country_name as fencer_country_name, ".
                 " r.result_id, r.result_place, r.result_points, r.result_national_points, r.result_entry, ".
                 " r.result_de_points, r.result_podium_points, r.result_total_points, e.event_factor, r.result_in_ranking ".
                 " FROM TD_Result r ".
@@ -318,9 +322,13 @@
                 " inner join TD_Category cat on cat.category_id=c.competition_category ".
                 " inner join TD_Weapon w on w.weapon_id=c.competition_weapon ".
                 " WHERE e.event_in_ranking='Y'");
+            break;
+        case '018: Queue event and side-event':
+            $wpdb->query("ALTER TABLE `TD_Queue` ADD column `event_id` INT NULL;");
+            $wpdb->query("ALTER TABLE `TD_Queue` ADD column `model` VARCHAR(255) NULL;");
+            break;
         default:
             break;
         }
     }
 }
- 

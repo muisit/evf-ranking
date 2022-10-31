@@ -82,7 +82,7 @@ export default class ResultsPage extends React.Component {
 
     render() {
         if(!this.state.events || this.state.events.length == 0) {
-            return (<div>...</div>);
+            return (<div>... please wait while loading data ...</div>);
         }
         return (
             <div className='container ranking-results front-ranking'>

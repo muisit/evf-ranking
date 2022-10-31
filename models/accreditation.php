@@ -2,7 +2,7 @@
 
 /**
  * EVF-Ranking Accreditation Model
- * 
+ *
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
  * @copyright           2020 Michiel Uitdehaag for muis IT
@@ -24,9 +24,9 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:disable PSR12.Classes.ClassInstantiation
 
 namespace EVFRanking\Models;
-
 
 class Accreditation extends Base {
     public $table = "TD_Accreditation";
@@ -132,7 +132,7 @@ class Accreditation extends Base {
             return false;
         }
 
-        $caps = $event->eventCaps();                    
+        $caps = $event->eventCaps();
         $enddate = strtotime($event->event_open) + (intval($event->event_duration)+1) * (24*60*60);
         // we cannot accredit anything until registrations opens
         $starttime=strtotime($event->event_registration_open);
@@ -213,7 +213,8 @@ class Accreditation extends Base {
         }
     }
 
-    public function checkDirtyAccreditations() {
+    public function checkDirtyAccreditations()
+    {
         // only look at accreditations that were made dirty at least 10 minutes ago, to avoid
         // situations where a registration is entered and we generate a new badge half way
         // there should not be a situation where one row is <10 minutes ago and another is >10 minutes,
@@ -221,39 +222,42 @@ class Accreditation extends Base {
         $notafter = strftime('%F %T', time() - EVFRANKING_RENEW_DIRTY_ACCREDITATONS * 60);
         $res = $this->select('TD_Fencer.fencer_id, a.event_id')
             ->from('TD_Fencer')
-            ->join("TD_Accreditation","a","a.fencer_id=TD_Fencer.fencer_id")
-            ->where("a.is_dirty","<>",null)
-            ->where("a.is_dirty","<",$notafter)
+            ->join("TD_Accreditation", "a", "a.fencer_id=TD_Fencer.fencer_id")
+            ->where("a.is_dirty", "<>", null)
+            ->where("a.is_dirty", "<", $notafter)
             ->groupBy(array("TD_Fencer.fencer_id", "a.event_id")) // make sure we get one entry per fencer/event
             ->orderBy(array("TD_Fencer.fencer_id", "a.event_id"))
             ->get();
 
         // we usually do not expect 2 events to run at the same time, causing additional queue entries
-        if(!empty($res)) {
+        if (!empty($res)) {
             // for each fencer, create a new AccreditationDirty job
             // we do not change the is_dirty timestamp. This will cause new jobs to be entered
             // as long as we do not process the queue, but as we'll check and reset the flag
             // before processing, the superfluous queue entries will die quickly
-            foreach($res as $row) {
+            foreach ($res as $row) {
                 $job = new \EVFRanking\Jobs\AccreditationDirty();
-                $job->create($row->fencer_id, $row->event_id);
+                $job->queue->event_id = $row->event_id;
+                $job->create($row->fencer_id);
             }
         }
     }
 
-    private function checkDirtyAccreditationsForFencer($fid,$eid,$queueid) {
+    private function checkDirtyAccreditationsForFencer($fid, $eid, $queueid)
+    {
         $res = $this->select('TD_Fencer.fencer_id, a.event_id, a.id')
             ->from('TD_Fencer')
-            ->join("TD_Accreditation","a","a.fencer_id=TD_Fencer.fencer_id")
-            ->where("a.is_dirty","<>",null)
-            ->where("TD_Fencer.fencer_id",$fid)
-            ->where("a.event_id",$eid)
+            ->join("TD_Accreditation", "a", "a.fencer_id=TD_Fencer.fencer_id")
+            ->where("a.is_dirty", "<>", null)
+            ->where("TD_Fencer.fencer_id", $fid)
+            ->where("a.event_id", $eid)
             ->get();
 
         if (!empty($res)) {
             $job = new \EVFRanking\Jobs\AccreditationDirty();
             $job->queue->queue = $queueid;
-            $job->create($fid, $eid);
+            $job->queue->event_id = $eid;
+            $job->create($fid);
         }
     }
 
@@ -318,15 +322,15 @@ class Accreditation extends Base {
 
             // loop over all different fencers that are registered and make accreditations dirty.
             // Only select fencers that have no accreditations, so we can make new ones.
-            $fids=$this->query()->from("TD_Registration")
+            $fids = $this->query()->from("TD_Registration")
                 ->select("distinct registration_fencer")
-                ->where("registration_mainevent",$event->getKey())
+                ->where("registration_mainevent", $event->getKey())
                 ->where("not exists(select * from TD_Accreditation a where a.fencer_id=TD_Registration.registration_fencer)")
                 ->get();
 
-            foreach($fids as $fid) {
+            foreach ($fids as $fid) {
                 $id = $fid->registration_fencer;
-                $this->makeDirty($id,$event->getKey());
+                $this->makeDirty($id, $event->getKey());
             }
 
             // The dirty-accreditation check will remove accreditations for fencers that have no registration
@@ -334,29 +338,31 @@ class Accreditation extends Base {
         return $retval;
     }
 
-    public function generate($eid,$type,$typeid) {
+    public function generate($eid, $type, $typeid)
+    {
         $event = new \EVFRanking\Models\Event($eid, true);
         if ($event->exists()) {
             // create a summary document for the given selection
             $job = new \EVFRanking\Jobs\CreateSummary();
-            $job->create($eid,$type,$typeid);
+            $job->queue->event_id = $eid;
+            $job->create($eid, $type, $typeid);
         }
         return array();
     }
 
-    public function generateForFencer($eid,$fid) {
+    public function generateForFencer($eid, $fid) {
         $event = new Event($eid, true);
-        $fencer = new Fencer($fid,true);
+        $fencer = new Fencer($fid, true);
         if ($event->exists() && $fencer->exists()) {
             $this->makeDirty($fencer->getKey(), $event->getKey());
             // create jobs to recreate the accreditations if needed
-            $myqueueid=uniqid();
-            $this->checkDirtyAccreditationsForFencer($fencer->getKey(),$event->getKey(),$myqueueid);
+            $myqueueid = uniqid();
+            $this->checkDirtyAccreditationsForFencer($fencer->getKey(), $event->getKey(), $myqueueid);
 
             $queue = new Queue();
             $queue->queue = $myqueueid;
 
-            while($queue->tick(60)) {
+            while ($queue->tick(60)) {
                 // continue
                 error_log("continuing synchronous queue");
             }
@@ -364,14 +370,15 @@ class Accreditation extends Base {
         return array();
     }
 
-    public function checkSummaryDocuments($eid) {
+    public function checkSummaryDocuments($eid)
+    {
         // check hashes of all summary documents of this event and remove any that our out of sync
         $retval = array();
         $event = new \EVFRanking\Models\Event($eid, true);
         if ($event->exists()) {
             $allsummaries = \EVFRanking\Util\PDFSummary::AllSummaries($eid);
-            foreach($allsummaries as $path) {
-                if(!\EVFRanking\Util\PDFSummary::CheckPath($eid,$path)) {
+            foreach ($allsummaries as $path) {
+                if (!\EVFRanking\Util\PDFSummary::CheckPath($eid, $path)) {
                     @unlink($path);
                 }
             }
@@ -385,18 +392,19 @@ class Accreditation extends Base {
         return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$sz[$factor];
     }
 
-    private function isValidQueue($entry) {
-        $q=new Queue($entry[0],true);
-        if($q->exists() && $q->state==="new") {
+    private function isValidQueue($queue)
+    {
+        if ($queue->exists() && $queue->state == "new") {
             return true;
         }
         return false;
     }
 
-    public function overview($eid) {
-        $retval=array();
-        $event=new \EVFRanking\Models\Event($eid,true);
-        if($event->exists()) {
+    public function overview($eid)
+    {
+        $retval = array();
+        $event = new \EVFRanking\Models\Event($eid,true);
+        if ($event->exists()) {
             // create an overview of total registrations, total accreditations, dirty accreditations and
             // generated accreditations per:
             // - event
@@ -406,86 +414,108 @@ class Accreditation extends Base {
 
             // We first create a list of all side events that have competitions, so we can easily weed
             // out the (non)athletes
-            $ses=SideEvent::SelectCompetitions($event);
-            $sids=array();
-            foreach($ses as $sid) $sids[]=$sid->id;
+            $ses = SideEvent::SelectCompetitions($event);
+            $sids = array();
+            foreach ($ses as $sid) {
+                $sids[] = $sid->id;
+            }
             
             // The mark the templates for athletes, federative roles and other roles
             $rtype = RoleType::FindByType("Country");
             $roles = Role::ListAll();
-            $roleById=array();
-            $roleByType=array();
-            foreach($roles as $r) {
-                $roleById["r".$r->role_id] = new Role($r);
-                if(!isset($roleByType["r".$r->role_type])) $roleByType["r" . $r->role_type] = array();
-                $roleByType["r".$r->role_type][] = $r->role_id;
+            $roleById = array();
+            $roleByType = array();
+            foreach ($roles as $r) {
+                $roleById["r" . $r->role_id] = new Role($r);
+                if (!isset($roleByType["r" . $r->role_type])) {
+                    $roleByType["r" . $r->role_type] = array();
+                }
+                $roleByType["r" . $r->role_type][] = $r->role_id;
             }
 
-            $templateByType = AccreditationTemplate::TemplateIdsByRoleType($event,$roleById);
+            $templateByType = AccreditationTemplate::TemplateIdsByRoleType($event, $roleById);
 
-            $retval["events"]=$this->overviewForEvents($event,$sids, $templateByType, $roleByType,$rtype);
-            $retval["countries"]=$this->overviewForCountries($event,$sids,$templateByType,$roleByType, $rtype);
-            $retval["roles"]=$this->overviewForRoles($event,$sids,$templateByType,$roleByType, $rtype);
-            $retval["templates"]=$this->overviewForTemplates($event,$sids,$templateByType,$roleByType, $rtype);
+            $retval["events"] = $this->overviewForEvents($event, $sids, $templateByType, $roleByType, $rtype);
+            $retval["countries"] = $this->overviewForCountries($event, $sids, $templateByType, $roleByType, $rtype);
+            $retval["roles"] = $this->overviewForRoles($event, $sids, $templateByType, $roleByType, $rtype);
+            $retval["templates"] = $this->overviewForTemplates($event, $sids, $templateByType, $roleByType, $rtype);
 
-            // create a list of all jobs for this event based on the running jobs in our wordpress queue configuration
-            $jobs=array();
-            $activequeue = get_option(\EVFRanking\Jobs\CreateSummary::QUEUENAME);
-            foreach($retval["events"] as $ev) {
-                $key=$event->getKey()."_Event_".$ev["event"];
-                if(isset($activequeue[$key])) {
-                    if($this->isValidQueue($activequeue[$key])) {
-                        $jobs[$key]=array("id"=>$ev["event"],"start"=>$activequeue[$key][1]); // value [0] is the queue id
-                    }
-                    else {
-                        unset($activequeue[$key]);
-                    }
-                }
-            }
-            foreach($retval["countries"] as $dat) {
-                $key=$event->getKey()."_Country_".$dat["country"];
-                if(isset($activequeue[$key])) {
-                    if($this->isValidQueue($activequeue[$key])) {
-                        $jobs[$key]=array("id"=>$dat["country"],"start"=>$activequeue[$key][1]);
-                    }
-                    else {
-                        unset($activequeue[$key]);
-                    }
-                }
-            }
-            foreach($retval["roles"] as $dat) {
-                $key=$event->getKey()."_Role_".$dat["role"];
-                if(isset($activequeue[$key])) {
-                    if($this->isValidQueue($activequeue[$key])) {
-                        $jobs[$key]=array("id"=>$dat["role"],"start"=>$activequeue[$key][1]);
-                    }
-                    else {
-                        unset($activequeue[$key]);
-                    }
-                }
-            }
-            foreach($retval["templates"] as $dat) {
-                $key=$event->getKey()."_Template_".$dat["template"];
-                if(isset($activequeue[$key])) {
-                    if($this->isValidQueue($activequeue[$key])) {
-                        $jobs[$key]=array("id"=>$dat["template"],"start"=>$activequeue[$key][1]);
-                    }
-                    else {
-                        unset($activequeue[$key]);
-                    }
-                }
-            }
-            $retval["jobs"]=$jobs;
-            update_option(\EVFRanking\Jobs\CreateSummary::QUEUENAME,$activequeue);
+            $retval["jobs" ] = $this->listJobs($retval, $event);
 
             // also provide a queue indication
-            $queue=new Queue();
-            $retval["queue"]=$queue->count(null,["waiting"=>true]);
+            $queue = new Queue();
+            $retval["queue"] = $queue->count(null, ["waiting" => true]);
         }
         return $retval;
     }
 
-    private function overviewForEvents($event,$sids,$templateByType,$roleByType, $rtype) {
+    private function listJobs($retval, $event)
+    {
+        // create a list of all jobs for this event based on the running jobs in our wordpress queue configuration
+        $jobs = array();
+        $activequeues = Queue::instance()->selectAll(
+            0,
+            10000,
+            array("event" => $event->getKey(), "queue" => "default", "model" => \EVFRanking\jobs\CreateSummary::class),
+            '',
+            array('pending' => true)
+        );
+        $activequeue = array();
+        // the queue field is used to store the summary queue key
+        foreach ($activequeues as $q) {
+            $queue = new Queue($q); 
+            $activequeue[$queue->getData('key')] = $queue;
+        }
+
+        foreach ($retval["events"] as $ev) {
+            $key = $event->getKey() . "_Event_" . $ev["event"];
+            if (isset($activequeue[$key])) {
+                if ($this->isValidQueue($activequeue[$key])) {
+                    $jobs[$key] = array("id" => $ev["event"], "start" => $activequeue[$key]->available_at);
+                }
+                else {
+                    unset($activequeue[$key]);
+                }
+            }
+        }
+        foreach ($retval["countries"] as $dat) {
+            $key = $event->getKey() . "_Country_" . $dat["country"];
+            if (isset($activequeue[$key])) {
+                if ($this->isValidQueue($activequeue[$key])) {
+                    $jobs[$key] = array("id" => $dat["country"], "start" => $activequeue[$key]->available_at);
+                }
+                else {
+                    unset($activequeue[$key]);
+                }
+            }
+        }
+        foreach ($retval["roles"] as $dat) {
+            $key = $event->getKey() . "_Role_" . $dat["role"];
+            if (isset($activequeue[$key])) {
+                if ($this->isValidQueue($activequeue[$key])) {
+                    $jobs[$key] = array("id" => $dat["role"], "start" => $activequeue[$key]->available_at);
+                }
+                else {
+                    unset($activequeue[$key]);
+                }
+            }
+        }
+        foreach ($retval["templates"] as $dat) {
+            $key = $event->getKey() . "_Template_" . $dat["template"];
+            if (isset($activequeue[$key])) {
+                if ($this->isValidQueue($activequeue[$key])) {
+                    $jobs[$key] = array("id" => $dat["template"], "start" => $activequeue[$key]->available_at);
+                }
+                else {
+                    unset($activequeue[$key]);
+                }
+            }
+        }
+        return $jobs;
+    }
+
+    private function overviewForEvents($event, $sids, $templateByType, $roleByType, $rtype)
+    {
         // for side-events, we only display the athletes and participants
         // we do that by selecting on the accreditation templates
         $k1 = "r0"; // athlete role
@@ -500,42 +530,61 @@ class Accreditation extends Base {
             "d.total as dirty",
             "g.total as generated"
         ))
-          ->join(function($qb) use ($event, $acceptableroles) {
-            $qb->from("TD_Registration")
-                ->select("registration_event, count(*) as total")
-                ->where("registration_mainevent",$event->getKey())
-                ->where_in("registration_role", $acceptableroles)
-                ->groupBy("registration_event");
-          },"r","TD_Event_Side.id=r.registration_event")
-          ->join(function($qb) use ($event, $acceptabletemplates) {
-            $qb->from("TD_Registration")
-                ->join("TD_Accreditation","ar","ar.fencer_id=TD_Registration.registration_fencer","inner")
-                ->select("TD_Registration.registration_event, count(*) as total")
-                ->where("TD_Registration.registration_mainevent",$event->getKey())
-                ->where_in("ar.template_id", $acceptabletemplates)
-                ->groupBy("TD_Registration.registration_event");
-          },"a","TD_Event_Side.id=a.registration_event")
-          ->join(function($qb) use ($event, $acceptabletemplates) {
-            $qb->from("TD_Registration")
-                ->join("TD_Accreditation","ar","ar.fencer_id=TD_Registration.registration_fencer","inner")
-                ->select("TD_Registration.registration_event, count(*) as total")
-                ->where("TD_Registration.registration_mainevent",$event->getKey())
-                ->where_in("ar.template_id", $acceptabletemplates)
-                ->where("ar.is_dirty","<>",null)
-                ->groupBy("TD_Registration.registration_event");
-          },"d","TD_Event_Side.id=d.registration_event")
-          ->join(function($qb) use ($event, $acceptabletemplates) {
-            $qb->from("TD_Registration")
-                ->join("TD_Accreditation","ar","ar.fencer_id=TD_Registration.registration_fencer","inner")
-                ->select("TD_Registration.registration_event, count(*) as total")
-                ->where("TD_Registration.registration_mainevent",$event->getKey())
-                ->where_in("ar.template_id", $acceptabletemplates)
-                ->where("ar.is_dirty","=", null)
-                ->groupBy("TD_Registration.registration_event");
-          },"g","TD_Event_Side.id=g.registration_event")
-          ->where("TD_Event_Side.competition_id","<>",null)
-          ->where("TD_Event_Side.event_id",$event->getKey())
-          ->get();
+            ->join(
+                function ($qb) use ($event, $acceptableroles) {
+                    $qb->from("TD_Registration")
+                        ->select("registration_event, count(*) as total")
+                        ->where("registration_mainevent", $event->getKey())
+                        ->where_in("registration_role", $acceptableroles)
+                        ->groupBy("registration_event");
+                },
+                "r",
+                "TD_Event_Side.id=r.registration_event"
+            )
+            ->join(
+                function ($qb) use ($event, $acceptabletemplates) {
+                    $qb->from("TD_Registration")
+                        ->join("TD_Accreditation", "ar", "ar.fencer_id=TD_Registration.registration_fencer", "inner")
+                        ->select("TD_Registration.registration_event, count(*) as total")
+                        ->where("TD_Registration.registration_mainevent", $event->getKey())
+                        ->where("ar.event_id", $event->getKey())
+                        ->where_in("ar.template_id", $acceptabletemplates)
+                        ->groupBy("TD_Registration.registration_event");
+                },
+                "a",
+                "TD_Event_Side.id=a.registration_event"
+            )
+            ->join(
+                function ($qb) use ($event, $acceptabletemplates) {
+                    $qb->from("TD_Registration")
+                        ->join("TD_Accreditation", "ar", "ar.fencer_id=TD_Registration.registration_fencer", "inner")
+                        ->select("TD_Registration.registration_event, count(*) as total")
+                        ->where("TD_Registration.registration_mainevent", $event->getKey())
+                        ->where("ar.event_id", $event->getKey())
+                        ->where_in("ar.template_id", $acceptabletemplates)
+                        ->where("ar.is_dirty", "<>", null)
+                        ->groupBy("TD_Registration.registration_event");
+                },
+                "d",
+                "TD_Event_Side.id=d.registration_event"
+            )
+            ->join(
+                function ($qb) use ($event, $acceptabletemplates) {
+                    $qb->from("TD_Registration")
+                        ->join("TD_Accreditation", "ar", "ar.fencer_id=TD_Registration.registration_fencer", "inner")
+                        ->select("TD_Registration.registration_event, count(*) as total")
+                        ->where("TD_Registration.registration_mainevent", $event->getKey())
+                        ->where("ar.event_id", $event->getKey())
+                        ->where_in("ar.template_id", $acceptabletemplates)
+                        ->where("ar.is_dirty", "=", null)
+                        ->groupBy("TD_Registration.registration_event");
+                },
+                "g",
+                "TD_Event_Side.id=g.registration_event"
+            )
+            ->where("TD_Event_Side.competition_id", "<>", null)
+            ->where("TD_Event_Side.event_id", $event->getKey())
+            ->get();
 
         $retval=array();
         foreach($results as $se) {

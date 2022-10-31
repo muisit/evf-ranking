@@ -20,7 +20,7 @@ export default class DetailDialog extends React.Component {
 
     render() {
         if (!this.props.detail || this.props.detail.length == 0) {
-            return (<div>...</div>);
+            return (null);
         }
         var footer=(<div>
             <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />

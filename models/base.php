@@ -364,5 +364,15 @@
         }
         return true;
     }
+
+    private static $hiddenInstance = null;
+    public static function instance()
+    {
+        if (self::$hiddenInstance == null) {
+            $className = get_called_class();
+            self::$hiddenInstance = new $className();
+        }
+        return self::$hiddenInstance;
+    }
 }
  

@@ -14,14 +14,35 @@ export default class RankingPage extends React.Component {
             category_id: -1,
             weapon_id: -1,
             orderBy: 'r',
-            items: []
+            items: [],
+            itemTries: -1,
+            itemSelect:null
         };
     }
 
     componentDidMount = () => {
-        weapons().then((wpns) => { if (wpns) this.setState({ 'weapons': wpns.data.list, weapon_id: wpns.data.list[0].id }, this.checkState) });
+        this.loadWeapons(0);
+        this.loadCats(0);
+    }
+
+    loadWeapons = (tries) => {
+        weapons().then((wpns) => { 
+            if (wpns) this.setState({ 'weapons': wpns.data.list, weapon_id: wpns.data.list[0].id }, this.checkState) 
+        })
+        .catch((e) => {
+            console.log("weapons: caught ",e);
+            if(tries < 5) {
+                this.loadWeapons(tries+1);
+            }
+            else {
+                alert("There seems to be a network problem and the page is unable to retrieve the information. Please try reloading the whole page, or try at a later time. If the problem persists, please contact webmaster@veteransfencing.eu");
+            }
+        });
+    }
+
+    loadCats = (tries) => {
         categories().then((cats) => { if (cats) {
-                var lst = cats.data.list.filter((cat) => {
+            var lst = cats.data.list.filter((cat) => {
                     if(cat.type === 'I' && parseInt(cat.value) < 5) {
                         return true;
                     }
@@ -29,21 +50,45 @@ export default class RankingPage extends React.Component {
                 });
                 this.setState({ 'categories': lst, category_id: lst[0].id }, this.checkState); 
             }
+        })
+        .catch((e) => {
+            console.log("cats: caught ",e);
+            if(tries < 5) {
+                this.loadCats(tries+1);
+            }
+            else {
+                alert("There seems to be a network problem and the page is unable to retrieve the information. Please try reloading the whole page, or try at a later time. If the problem persists, please contact webmaster@veteransfencing.eu");
+            }
         });
     }
 
-    loadItemPage = () => {
+    loadItemPage = (select, tries) => {
+        // check if we did not reselect
+        // do not keep retrying (tries>0) if our selection (select) does not match the latest selection
+        if(tries > 0 && this.state.itemSelect !== null && this.state.itemSelect != select) return; 
+
+        if(tries == 0 && this.state.itemTries > 0) tries=this.state.itemTries;
+        this.setState({itemTries: tries, itemSelect: select});
         ranking("list", {category_id: this.state.category_id, weapon_id: this.state.weapon_id})
             .then((res) => {
                 if(res && res.data && res.data.results) {
-                    this.setState({items: res.data.results});
+                    this.setState({items: res.data.results, itemTries: 0});
+                }
+            })
+            .catch((e) => {
+                if(this.state.itemTries < 5) {
+                    console.log("reloading item selection ",select," using ",this.state.itemTries);
+                    this.loadItemPage(select, this.state.itemTries+1);
+                }
+                else {
+                    alert("There seems to be a network problem and the page is unable to retrieve the information. Please try reloading the whole page, or try at a later time. If the problem persists, please contact webmaster@veteransfencing.eu");
                 }
             });
     }
 
     checkState = () => {
         if (this.state.weapon_id > 0 && this.state.category_id > 0) {
-            this.loadItemPage();
+            this.loadItemPage(this.state.weapon_id + "-" + this.state.category_id,0);
         }
     }
 
@@ -185,7 +230,12 @@ export default class RankingPage extends React.Component {
                             </tr>
                           ))}
                           {(!this.state.items || this.state.items.length==0) && (
-                              <tr><td colSpan='6' style={{text_align: 'center'}}>...</td></tr>
+                              <tr><td colSpan='6' style={{text_align: 'center'}}>
+                                {(this.state.itemTries<1) && (<span>...</span>)}
+                                {(this.state.itemTries>0) && (<span>
+                                    ... retrying ({this.state.itemTries})
+                                </span>)}
+                              </td></tr>
                           )}
                           </tbody>
                         </table>
@@ -196,7 +246,7 @@ export default class RankingPage extends React.Component {
             );
         }
         else {
-            return ('...');
+            return ('... please wait while loading ...');
         }
     }
 }

@@ -769,15 +769,20 @@ class PDFCreator {
         $width=0.0;
         global $evflogger;
         foreach($characters as $c) {
-            $w=floatval($this->pdf->GetCharWidth(ord($c)));
-            $width += $w;
-            $evflogger->log("character $c has width $w / $width");
+            if(ord($c) == 10 || ord($c) == 13) {
+                $evflogger->log("newline character has width 0/$width");
+            }
+            else {
+                $w=floatval($this->pdf->GetCharWidth(ord($c)));
+                $width += $w;
+                $evflogger->log("character $c has width $w / $width");
+            }
         }
         return $width;
     }
 
     private function breakText($text, $width) {
-        //global $evflogger;
+        global $evflogger;
         //$evflogger->log("breaking text '$text' based on width $width");
         // break the text into pieces based on whitespace, comma, dot and hyphen separation
         $tokens=$this->breakTextIntoTokens($text);
@@ -810,7 +815,7 @@ class PDFCreator {
                 $current=0;
             }
             else if(($current+($current>0?$lws:0)+$size) > $width) {
-                //$evflogger->log("token $token exceeds width, creating new line");
+                //$evflogger->log("token $token ".($current+$lws+$size)." exceeds width $width, creating new line");
                 // new line
                 if(strlen($line)) {
                     $lines[]=$line;
@@ -921,7 +926,9 @@ class PDFCreator {
         }
         $evflogger->log("width $width, height $height");
         $this->pdf->setJPEGQuality(90);
-        $this->pdf->Image($path,$x, $y, $width, $height, $type='', $link='', $align='', $resize=true, $dpi=600, $palign='', $ismask=false, $imgmask=false, $border=0, $fitbox=false, $hidden=false, $fitonpage=false, $alt=false, $altimgs=array());
+        $evflogger->log("PUT IMAGE @$x,$y ($width,$height)");
+        $this->pdf->Image($path,$x, $y, $width, $height, $type='', $link='', $align='', $resize=true, $dpi=600, $palign='', $ismask=false, $imgmask=false, $border=0, $fitbox='CM', $hidden=false, $fitonpage=false, $alt=false, $altimgs=array());
+        $evflogger->log("END OF PUT IMAGE");
     }
 
     private function getColour($element) {

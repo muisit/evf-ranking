@@ -392,7 +392,12 @@ class BaseTest {
             if(substr(strtolower($m),0,5) == "test_") {
                 if(!$verbose) echo "Running ".substr($m,5)."... ";
                 else echo "Test $m\r\n";
-                $this->$m();
+                try {
+                    $this->$m();
+                }
+                catch(\Exception $e) {
+                    echo " caught exception ".$e->getMessage()."\r\n";
+                }
 
                 if($this->fails - $prevfail > 0) {
                     echo "failed: ".($this->fails - $prevfail). " out of ".($this->count-$prevcount);

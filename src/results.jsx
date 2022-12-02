@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import ResultsPage from '../components/resultspage.jsx';
+import ResultsPage from '../components/results/index.jsx';
 
 document.addEventListener('DOMContentLoaded', function () {
 

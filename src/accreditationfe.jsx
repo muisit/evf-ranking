@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import AccreditationPage from '../components/accreditationpage.jsx';
+import AccreditationPage from '../components/accreditation/index.jsx';
 
 document.addEventListener('DOMContentLoaded', function () {
 

@@ -23,7 +23,7 @@ module.exports = {
   // collectCoverageFrom: undefined,
 
   // The directory where Jest should output its coverage files
-  coverageDirectory: "tests/coverage",
+  coverageDirectory: "jstests/coverage",
 
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [
@@ -120,7 +120,7 @@ module.exports = {
   roots: [
      "components",
      "src",
-     "tests/js"
+     "jstests/js"
   ],
 
   // Allows you to use a custom runner instead of Jest's default test runner

@@ -128,6 +128,7 @@ export default class EventDialog extends React.Component {
     }
 
     onChangeEl = (event,attrvalue) => {
+        console.log(event, attrvalue);
         var item=this.props.value;
         var name=attrvalue ? event : (event.target ? event.target.name : event.originalEvent.target.name);
         var value=attrvalue ? attrvalue : (event.target ? event.target.value : event.value);
@@ -149,6 +150,7 @@ export default class EventDialog extends React.Component {
         case 'country':
         case 'in_ranking':
         case 'feed':
+            console.log('setting ',name, value);
             item[name] = value;
             break;
         case 'opens':
@@ -291,7 +293,7 @@ export default class EventDialog extends React.Component {
       <div>
         <label>Year</label>
         <div className='input'>
-            <InputNumber className='inputint' name='year' onChange={this.onChangeEl} min={2000} max={2100}  mode="decimal" useGrouping={false} 
+            <InputNumber className='inputint' name='year' onChange={(ev) => this.onChangeEl('year',ev.value)} min={2000} max={2100}  mode="decimal" useGrouping={false} 
              value={year}
              showButtons buttonLayout="horizontal" step={1} decrementButtonClassName="p-button-success" incrementButtonClassName="p-button-success" 
              incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></InputNumber>

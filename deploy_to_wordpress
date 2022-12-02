@@ -83,11 +83,12 @@ fi
 
 echo "Version ${MAJ}.${MIN}.${MICR}"
 
-echo "Running tests"
+echo "Running JS tests"
 npm run --silent test -- --silent >/dev/null 2>&1
 if [[ ! "x$?" = "x0" ]]
 then
     echo "Javascript tests fail, please run tests yourself"
+    echo "npm run --silent test"
     exit 1
 else 
     echo "Javascript tests succeed"
@@ -98,6 +99,7 @@ php ./run.php > /dev/null 2>&1
 if [[ ! "x$?" = "x0" ]]
 then
     echo "PHP tests fail, please run tests yourself"
+    echo "cd oldtests; php ./run.php"
     exit 1
 else
     echo "PHP tests succeed"
@@ -114,7 +116,6 @@ then
 else
     echo "PHPUnit tests succeed"
 fi
-cd ..
 
 if [[ "x$DRY" = "x1" ]]
 then

@@ -93,7 +93,7 @@ else
     echo "Javascript tests succeed"
 fi
 
-cd tests
+cd oldtests
 php ./run.php > /dev/null 2>&1
 if [[ ! "x$?" = "x0" ]]
 then
@@ -104,6 +104,17 @@ else
 fi
 cd ..
 
+#phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
+phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
+if [[ ! "x$?" = "x0" ]]
+then
+    echo "PHPUnit tests fail, please run tests yourself"
+    echo "phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
+    exit 1
+else
+    echo "PHPUnit tests succeed"
+fi
+cd ..
 
 if [[ "x$DRY" = "x1" ]]
 then

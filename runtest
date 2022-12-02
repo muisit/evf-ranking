@@ -1,0 +1,11 @@
+#!/bin/bash
+
+what="tests"
+if [[ !"x$1" = "x" ]]
+then
+	what="$what/$1"
+fi
+
+phpunit --bootstrap tests/preload.php --testdox --color=always $what
+
+

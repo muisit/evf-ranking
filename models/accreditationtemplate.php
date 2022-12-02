@@ -375,16 +375,18 @@
         $templateByType = array(
             "r0" => array()
         );
-        foreach ($templs as $t) {
-            $model->read($t);
-            $roles = $model->forRoles();
+        if (!empty($templs)) {
+            foreach ($templs as $t) {
+                $model->read($t);
+                $roles = $model->forRoles();
 
-            foreach ($roles as $rid) {
-                $key = "r" . $rid;
-                if (!isset($templateByType[$key])) {
-                    $templateByType[$key] = array();
+                foreach ($roles as $rid) {
+                    $key = "r" . $rid;
+                    if (!isset($templateByType[$key])) {
+                        $templateByType[$key] = array();
+                    }
+                    $templateByType[$key][] = $model->getKey();
                 }
-                $templateByType[$key][] = $model->getKey();
             }
         }
         return $templateByType;

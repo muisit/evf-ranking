@@ -63,16 +63,18 @@
         return $orderBy;
     }
 
-    private function addFilter($qb, $filter,$special) {
-        if(is_string($filter)) $filter=array("name"=>$filter);
-        if(is_object($filter)) $filter=(array)$filter;
-        if(isset($filter["name"]) && !empty(trim($filter["name"]))) {
-            $filter=str_replace("%","%%",trim($filter["name"]));
-            $qb->where("role_name","like","%$filter%");
+    private function addFilter($qb, $filter, $special)
+    {
+        if (is_string($filter)) $filter = array("name" => $filter);
+        if (is_object($filter)) $filter = (array)$filter;
+        if (isset($filter["name"]) && !empty(trim($filter["name"]))) {
+            $filter = str_replace("%", "%%", trim($filter["name"]));
+            $qb->where("role_name", "like", "%$filter%");
         }
     }
 
-    public static function ListAll() {
+    public static function ListAll()
+    {
         $model=new Role();
         $roles=$model->selectAll(0,100000,array(),"");
         return $roles;
@@ -85,9 +87,10 @@
         return $qb->get();
     }
 
-    public function count($filter,$special=null) {
+    public function count($filter, $special = null)
+    {
         $qb = $this->numrows();
-        $this->addFilter($qb,$filter,$special);
+        $this->addFilter($qb, $filter, $special);
         return $qb->count();
     }
 
@@ -127,8 +130,10 @@
             ->where("event_id",$event->getKey())
             ->get();
         $retval = array();
-        foreach ($res as $r) $retval[] = new Accreditation($r);
+        if (!empty($res)) {
+            foreach ($res as $r) $retval[] = new Accreditation($r);
+        }
         return $retval;
-    }    
+    }
 }
  

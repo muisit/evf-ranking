@@ -157,6 +157,7 @@
     }
 
     public function save() {
+        global $evflogger;
         $fieldstosave=array();
         foreach($this->fields as $f) {
             if($this->differs($f)) {
@@ -164,12 +165,13 @@
             }
         }
         if(empty($fieldstosave)) {
-            global $evflogger;
             $evflogger->log("no fields to save");
         }
         else {
+            $evflogger->log("saving or updating");
             global $wpdb;
             if($this->isNew()) {
+                $evflogger->log("insert into $this->table, ".json_encode($fieldstosave));
                 $wpdb->insert($this->table,$fieldstosave);
                 $this->{$this->pk} = $wpdb->insert_id;
                 $this->_state = "loaded";

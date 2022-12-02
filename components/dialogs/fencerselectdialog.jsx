@@ -180,7 +180,8 @@ export default class FencerSelectDialog extends React.Component {
             sideevent: se,
             role: reg.role,
             team: reg.team,
-            payment: payment
+            payment: payment,
+            country: this.props.country.id
         })
             .then((json) => {
                 this.loading(false);

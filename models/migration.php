@@ -164,6 +164,10 @@ class Migration extends Base
             $migration = new Migration(array("name" => '018: Queue event and side-event', "status" => 0));
             $migration->save();
         }
+        if ($cnt < 20) {
+            $migration = new Migration(array("name" => '019: Link registration to country', 'status' => 0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -326,6 +330,9 @@ class Migration extends Base
         case '018: Queue event and side-event':
             $wpdb->query("ALTER TABLE `TD_Queue` ADD column `event_id` INT NULL;");
             $wpdb->query("ALTER TABLE `TD_Queue` ADD column `model` VARCHAR(255) NULL;");
+            break;
+        case '019: Link registration to country':
+            $wpdb->query("ALTER TABLE `TD_Registration` ADD column `registration_country` INT NULL;");
             break;
         default:
             break;

@@ -15,13 +15,16 @@ class TestDatabase
 
     public function doQuery($query)
     {
+        global $evflogger;
         $this->queryLog[] = $query;
 
+        $evflogger->log("query " . $query);
         if (isset($this->queries[$query])) {
             if (is_callable($this->queries[$query])) {
-                return $this->queries[$query]($query,$query);
+                return $this->queries[$query]($query, $query);
             }
             else {
+                $evflogger->log("returning " . json_encode($this->queries[$query]));
                 return $this->queries[$query];
             }
         }
@@ -40,7 +43,6 @@ class TestDatabase
             }
         }
 
-        global $evflogger;
         $evflogger->log("No query found for $query");
         return null;
     }

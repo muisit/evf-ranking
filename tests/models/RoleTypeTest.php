@@ -127,11 +127,11 @@ class RoleTypeTest extends \EVFTest\BaseTestCase
         $this->assertEquals($queries[0], "SELECT count(*) as cnt FROM TD_Role WHERE role_type = " . RoleTypeFixture::ROLETYPE_ID_1);
         $this->assertEquals(false, $result);
 
-        $result = $role->delete(RoleTypeFixture::ROLETYPE_ID_2);
+        $result = $model->delete(RoleTypeFixture::ROLETYPE_ID_2);
         $queries = $this->dbLog();
         $this->assertEquals(2, count($queries));
         $this->assertEquals($queries[0], "SELECT count(*) as cnt FROM TD_Role WHERE role_type = " . RoleTypeFixture::ROLETYPE_ID_2);
-        $this->assertEquals($queries[1], ["delete", "TD_Role_Type", ["roletype_id" => RoleTypeFixture::ROLETYPE_ID_2]]);
+        $this->assertEquals($queries[1], ["delete", "TD_Role_Type", ["role_type_id" => RoleTypeFixture::ROLETYPE_ID_2]]);
         $this->assertEquals(true, $result);
     }
 }

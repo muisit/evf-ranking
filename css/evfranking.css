@@ -62,6 +62,7 @@ table.compact { width: auto; }
 .datatable .search-input-results .wpndrop { width: 170px; }
 
 /* generic input width, old-style */
+.p-dialog-mask { z-index: 2000; }
 .p-dialog-content { position: relative; }
 .p-dialog-content label { display: block; width: 10vw; height: 2.5rem; line-height: 2.5rem; font-weight: 700; float: left; clear: both;}
 .p-dialog-content label.wide { width: 38vw; }
@@ -77,6 +78,9 @@ table.compact { width: auto; }
 /* specific settings for fencer-dialog */
 .fencer-dialog .p-dialog-content div div .p-inputgroup .p-inputtext { width: 8vw; }
 .fencer-dialog .p-dialog-content div div .p-inputgroup .p-dropdown { width: 10vw; }
+.fencer-dialog .p-dialog-content div div .p-inputgroup .clear-search { margin-top: 10px; margin-left: 4px; }
+.fencer-dialog .p-dialog-content div div.approval-dropdown { display: flex; justify-content: center; }
+.fencer-dialog .p-dialog-content div div.approval-dropdown .p-dropdown { width: 10vw; }
 .fencer-select-dialog .p-dialog-content div div.input .p-dropdown { width: 10vw; line-height: 1rem; }
 
 .p-datepicker:not(.p-disabled) table td span.p-disabled { 

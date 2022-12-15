@@ -2,10 +2,10 @@ import { fencers, accreditation } from "../api.js";
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
-import { parse_date, format_date, is_valid,
+import { parse_date, format_date, 
          is_organisation, is_sysop, is_hod, is_accreditor, is_organiser, is_hod_view } from '../functions';
 import React from 'react';
-import FencerDialog from '../dialogs/fencerdialog';
+import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
 import { ParticipantList } from './elements/participantlist';
 import FEBase from './base';
@@ -13,6 +13,7 @@ import { filter_event_category, filter_event_category_younger } from "./rules/wr
 import { filter_event_team_veterans } from "./rules/team_rule_veterans.jsx";
 import { filter_event_team_grandveterans } from "./rules/team_rule_grandveterans";
 import { adjustFencerData, updateFencerData, updateFencerRegistrations } from "../lib/registrations.js";
+import { defaultPayment } from "../lib/defaultPayment";
 
 export default class FERegistrationTab extends FEBase {
     constructor(props, context) {
@@ -20,56 +21,18 @@ export default class FERegistrationTab extends FEBase {
 
         this.state = Object.assign(this.state, {
             fencer: "",
-            fencer_object: { id: -1 },
+            fencer_object: { id: -1, name: '' },
             displayFencerDialog: false,
             displaySelectDialog: false,
-            suggestions: [],
+            addingNewRegistration: false,
             accreditations: [],
             fencer_events: [], // sideevents with fencer-specific convenience data
         });
     }
 
     onCountrySelect = (val) => {
-        // clear all suggestions
-        this.clearSearch();
         // retrieve the list of registrations for the selected country
         this.setState({ 'country': val, "country_item": this.countryFromId(val) }, this.getRegistrations);
-    }
-
-    clearSearch = () => {
-        this.setState({fencer:'', suggestions: []});        
-    }
-
-    autocomplete = (evt) => {
-        this.setState({fencer:evt.target.value});
-        var thistarget=evt.target.value;
-
-        if(thistarget.length > 0) {
-            var filters = { name: evt.target.value};
-            if(this.state.country_item && is_valid(this.state.country_item.id)) {
-                filters.country=this.state.country;
-            }
-            fencers(0, 10000, filters, "nf")
-                .then((json) => {
-                    if(this.state.fencer == thistarget) {
-                        var fencers=[];
-                        json.data.list.map((itm)=> {
-                            itm = adjustFencerData(itm, this.props.basic.event);
-
-                            // see if we already have this item in our list of registered fencers
-                            // If so, replace with our local version to retain the registrations
-                            if(this.state.registered["k" + itm.id]) {
-                                itm = this.state.registered["k"+itm.id];
-                            }
-                            fencers.push(itm);
-                        });
-                        this.setState({suggestions: fencers });
-                    }
-                });
-        }
-        else {
-            this.setState({ suggestions: [] });
-        }
     }
 
     addFencer = () => {
@@ -81,11 +44,11 @@ export default class FERegistrationTab extends FEBase {
             firstname:"",
             birthday: format_date(dt),
             country: this.state.country
-        }, displayFencerDialog:true});
+        }, displayFencerDialog:true, addingNewRegistration: true});
     }
 
     onFencerEdit = (fencer) => {
-        this.setState({fencer_object: fencer, displayFencerDialog: true});
+        this.setState({fencer_object: fencer, displayFencerDialog: true, addingNewRegistration: false});
     }
 
     onFencer = (tp, itm) => {
@@ -98,14 +61,15 @@ export default class FERegistrationTab extends FEBase {
         else if (tp == 'save') {
             itm = adjustFencerData(itm, this.props.basic.event);
             var newlist=updateFencerData(this.state.registered, itm); // replace data, keep registrations
-            this.setState({suggestions:[itm], registered:newlist});
+            this.setState({registered:newlist}, () => { if (this.state.addingNewRegistration) this.onFencerSelect(itm); });
         }
     }
 
     onFencerSelection = (tp, itm) => {
         if (tp == 'change') {
             var newlist=updateFencerRegistrations(this.state.registered, itm);
-            this.setState({ selected_fencer: itm, registered: newlist });
+            itm.defaultPayment = itm.defaultPayment || defaultPayment(this.state.country_item, itm);
+            this.setState({ selected_fencer: itm, registered: newlist});
         }
         else if (tp == 'close') {
             this.setState({ displaySelectDialog: false });
@@ -125,7 +89,8 @@ export default class FERegistrationTab extends FEBase {
         if(is_accreditor() || is_organiser() || is_sysop()) {
             this.loadAccreditations(this.props.basic.event.id, itm.id);
         }
-        this.setState({displaySelectDialog: true, selected_fencer: itm, fencer_events:events, registered: newlist });
+        itm.defaultPayment = defaultPayment(this.state.country_item, itm);
+        this.setState({displaySelectDialog: true, selected_fencer: itm, fencer_events:events, registered: newlist});
     }
 
     loadAccreditations = (eid,fid) => {
@@ -288,47 +253,27 @@ export default class FERegistrationTab extends FEBase {
 
         var addcountries=[this.state.country_item];
 
-        return (
-            <div className='row topmargin'>
-                {!is_hod_view() && (<div className='col-4 vertcenter'>Search fencers:</div>)}
-                {!is_hod_view() && (<div className='col-8'>
-                    <span className="p-input-icon-right">
-                        <i className="pi pi-times-circle" onClick={(e)=>this.clearSearch()}/>
-                        <InputText value={this.state.fencer} onChange={(e) => this.autocomplete(e)} />
-                    </span>
-                </div>)}
-                {!is_hod_view() && (<div className='col-12'>
-                    {this.state.suggestions.length ==0 && (
-                        <div className='subtitle center'>No fencers found</div>
-                    )}
-                    {this.state.suggestions.length > 0 && (
-                        <ParticipantList noErrors basic={this.props.basic} fencers={this.state.suggestions} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
-                    )}
-                    <Button label="Add New Fencer" icon="pi pi-check" className="p-button-raised cright" onClick={this.addFencer} />                    
-                    <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} basic={this.props.basic} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}/>
-                </div>)}
-                <div className='col-12'>
-                    {(is_valid(this.state.country_item.id)) && (
-                    <Accordion id="evfrankingacc" activeIndex={0}>
-                        <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
-                                <ParticipantList basic={this.props.basic} showRoles camera country={this.state.country_item} fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} onEdit={this.onFencerEdit}/>
-                        </AccordionTab>
-                        {this.props.basic.sideevents.map((itm,idx) => (
-                            <AccordionTab header={itm.title + " (" + (is_valid(itm.competition_id) ? acount["s" + itm.id] : pcount["s" + itm.id]) + ")"} key={idx}>
-                                <ParticipantList basic={this.props.basic} event={itm} fencers={this.state.registered} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit}/>
-                            </AccordionTab>
-                        ))}
-                    </Accordion>)}
-                    {is_organisation() && !is_valid(this.state.country_item.id) && (
-                    <Accordion id="evfrankingacc" activeIndex={0}>
-                            <AccordionTab header={"All Participants (" + pcount["all"] + ")"}>
-                                <ParticipantList basic={this.props.basic} country={this.state.country_item} showCountry showRoles camera fencers={this.state.registered} onSelect={this.onFencerSelect} allfencers={true} onEdit={this.onFencerEdit}/>
-                            </AccordionTab>
-                    </Accordion>)}                    
-                </div>
-                <FencerDialog apidata={{event: this.props.basic.event.id, country: this.state.country }} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.fencer_object} />
+        return (<div>
+            {!is_hod_view() && this.renderHeader(addcountries)}
+            {this.renderParticipants(allteams)}
             </div>
         );
+    }
+
+    renderHeader(addcountries) {
+        return (<div className='row topmargin'>
+            <div className='col-6 vertcenter'>
+                <Button label="Add Registration" icon="pi pi-plus" className="p-button-raised cright" onClick={this.addFencer} />
+            </div>
+            <FencerDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} fencer={this.state.fencer_object} />
+        </div>);
+    }
+
+    renderParticipants(allteams) {
+        return (<div className='row topmargin'>
+            <ParticipantList basic={this.props.basic} showRoles camera fencers={this.state.registered} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit} allfencers={true}/>
+            <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} basic={this.props.basic} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}/>
+        </div>);
     }
 
 }

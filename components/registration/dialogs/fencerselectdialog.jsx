@@ -16,22 +16,6 @@ import { parse_team_for_number, format_date_fe_short, is_valid, date_to_category
 export default class FencerSelectDialog extends React.Component {
     constructor(props, context) {
         super(props, context);
-        // if the fencer is paying individual in any of the registrations,
-        // set this marker to true
-        var paysIndividual='G';
-        if (is_organisation() && (!this.props.country || !is_valid(this.props.country.id))) paysIndividual = 'O';
-        if (is_sysop() && (!this.props.country || !is_valid(this.props.country.id))) paysIndividual='E';
-        if(this.props.value && this.props.value.registrations) {
-            this.props.value.registrations.map((itm) => {
-                if(itm.individual == 'I') {
-                    paysIndividual='I';
-                }
-            });
-        }
-
-        this.state = {
-            paysIndividual: paysIndividual
-        }
     }
 
     loading = (state) => {
@@ -138,7 +122,7 @@ export default class FencerSelectDialog extends React.Component {
     saveRegistration = (reg) => {
         // set the correct payment information:
         // For a HoD: follow the event restrictions
-        var payment=this.state.paysIndividual;
+        var payment=this.props.value.defaultPayment;
         if(is_sysop()) {
             // system administrators can select any payment type at the top.
             // Just copy that
@@ -269,7 +253,7 @@ export default class FencerSelectDialog extends React.Component {
         var selectThisOne=false;
         switch(name) {
         case 'paysIndividual':
-            this.setState({paysIndividual: value});
+            item.defaultPayment = value;
             break;
         case 'teamselect':
         case 'select':
@@ -292,7 +276,7 @@ export default class FencerSelectDialog extends React.Component {
                     selectedItem = {
                         event: this.props.basic.event.id,
                         sideevent: id,
-                        individual: this.state.paysIndividual,
+                        individual: this.props.payment,
                         //role: selectedEvent ? selectedEvent.default_role : 0 
                         role: 0 // only participate in an event, no event-specific roles
                         // date etc are all filled in during save
@@ -327,7 +311,7 @@ export default class FencerSelectDialog extends React.Component {
                 selectedItem = {
                     event: this.props.basic.event.id,
                     sideevent: -1,
-                    individual: this.state.paysIndividual
+                    individual: this.props.payment
                 }
             }
             if(value < 0) {
@@ -396,10 +380,14 @@ export default class FencerSelectDialog extends React.Component {
         }
 
         // filter out valid roles for the capabilities
+        var as_organiser = !this.props.country || !is_valid(this.props.country.id);
         var roles = this.props.basic.roles.filter((itm) => {
-            if (is_hod() && itm.org == 'Country') return true;
-            if (is_organisation() && (itm.org == 'Org' || itm.org == 'Country')) return true;
-            if (is_sysop()) return true; // allow all roles for system administrators
+            // if registering for a specific country, or if the user is a HoD, allow only Country roles
+            if ((!as_organiser || is_hod()) && itm.org == 'Country') return true;
+            // if registering as organiser, allow only Org roles for organisers
+            if (as_organiser && is_organisation() && (itm.org == 'Org')) return true;
+            // if registering as organiser, allow all non-Country roles
+            if (as_organiser && is_sysop() && (itm.org != 'Country')) return true; // allow all organisation roles
             return false;
         });
         roles.sort((a, b) => {
@@ -420,10 +408,9 @@ export default class FencerSelectDialog extends React.Component {
         var mycatname = date_to_category(this.props.value.birthday, this.props.basic.event.opens);
 
         var payments = (null);
-        if(is_organisation()) {
+        // if inviting as organisation for organisation tasks, allow only O or E
+        if(is_organisation() && !is_valid(this.props.country.id)) {
             var payment = [
-                { name: 'Individual', code: 'I' },
-                { name: 'As group', code: 'G' },
                 { name: 'By Organisation', code: 'O' },
             ];
             if(is_sysop()) {
@@ -433,17 +420,18 @@ export default class FencerSelectDialog extends React.Component {
             payments = (<div className='clearfix'>
                 <label>Payment</label>
                 <div className='input'>
-                    <Dropdown appendTo={document.body} name='paysIndividual' optionLabel="name" optionValue="code" value={this.state.paysIndividual} options={payment} placeholder="Payment" onChange={this.onChangeEl} />
+                    <Dropdown appendTo={document.body} name='paysIndividual' optionLabel="name" optionValue="code" value={this.props.value.defaultPayment} options={payment} placeholder="Payment" onChange={this.onChangeEl} />
                 </div>
             </div>);
         }
-        else if (this.props.basic.event.payments == "all") {
+        else if (this.props.basic.event.payments == "all") {            
             // payments can be selected by the user, but only choose between I or G
+            // this is also for event organisers that are registering for a specific country
             var payment = [{ name: 'Individual', code: 'I' }, { name: 'As group', code: 'G' }];
             payments = (<div className='clearfix'>
                 <label>Payment</label>
                 <div className='input'>
-                    <Dropdown appendTo={document.body} name='paysIndividual' optionLabel="name" optionValue="code" value={this.state.paysIndividual} options={payment} placeholder="Payment" onChange={this.onChangeEl} />
+                    <Dropdown appendTo={document.body} name='paysIndividual' optionLabel="name" optionValue="code" value={this.props.value.defaultPayment} options={payment} placeholder="Payment" onChange={this.onChangeEl} />
                 </div>
             </div>);
         }

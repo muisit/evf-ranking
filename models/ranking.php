@@ -129,7 +129,7 @@
             $maxyear = $qualifying_year - 80;
             break;
         }
-        return array($minyear,$maxyear);        
+        return array($minyear,$maxyear);
     }
 
     public function listResults($wid,$category) {
@@ -181,12 +181,12 @@
 
     public function calculateRankings() {
         global $wpdb;
-        // reset all results that we count in the ranking
-        $wpdb->query("update TD_Result set result_in_ranking='N'");
+        // reset all results that we count in the ranking, except for the excluded results
+        $wpdb->query("update TD_Result set result_in_ranking='N' where result_in_ranking in ('Y','N')");
 
         // sort by fencer, weapon, category
         // then by points to get the best results first, then by event_open to get the most recent best results first
-        $results=$wpdb->get_results("select result_id, fencer_id, weapon_id from VW_Ranking order by fencer_id, weapon_id, result_total_points DESC, event_open DESC");
+        $results=$wpdb->get_results("select result_id, fencer_id, weapon_id, result_in_ranking from VW_Ranking order by fencer_id, weapon_id, result_total_points DESC, event_open DESC");
         $current_fencer=null;
         $current_weapon=null;
         $cnt=0;
@@ -196,7 +196,7 @@
             $fid = intval($r->fencer_id);
             $wid= intval($r->weapon_id);
 
-            // change in fencer means a change in category and weapon as well
+            // change in fencer means a change in weapon as well
             if($current_fencer === null || $current_fencer != $fid) {
                 $current_fencer=$fid;
                 $current_weapon=null;
@@ -208,7 +208,8 @@
             }
 
             // for the 21/22 season, due to COVID, up to 4 results are counted
-            if($cnt < 4) {
+            // excluded 'excluded' results from being updated and included
+            if($cnt < 4 && $r->result_in_ranking != 'E') {
                 $allresults[]=$r->result_id;
                 $cnt+=1;
             }

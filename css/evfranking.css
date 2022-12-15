@@ -129,8 +129,10 @@ div.table-action i a { padding: 0; }
 .ranking-results table thead th i.pi.active { color: #003366; }
 .ranking-results table tr td.pos { text-align: right; }
 .ranking-results table tr td.icon { text-align: center; }
-table tr.counting { background-color: #86b9ec; color: black; }
-table tr.notcounting { background-color: #ff9999; color: #003366; }
+table tr.counting { background-color: #acffd8; color: black; }
+table tr.excluded { background-color: #ff9999; color: black; text-decoration: line-through; }
+table tr.excluded td { text-decoration: line-through; }
+table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
 
 .personaldetail { padding: 10px 5px; position: relative; width: 100%; }
 .personaldetail .fencer span { font-weight: bold;}

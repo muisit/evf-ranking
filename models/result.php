@@ -34,7 +34,7 @@
         "result_id","result_competition","result_fencer", 
         "result_place","result_points", "result_entry",
         "result_de_points","result_podium_points","result_total_points",
-        "fencer_firstname", "fencer_surname", "country_abbr", "country_id"
+        "fencer_firstname", "fencer_surname", "country_abbr", "country_id", "result_in_ranking"
     );
 
     public $fieldToExport = array(
@@ -47,6 +47,7 @@
         "result_de_points" => "de_points",
         "result_podium_points" => "podium_points",
         "result_total_points" => "total_points",
+        "result_in_ranking" => "ranked",
         "fencer_firstname" => "fencer_firstname",
         "fencer_surname" => "fencer_surname",
         "country_abbr" => "country",
@@ -71,7 +72,8 @@
         "result_entry" => array("rules" => "int"),
         "result_de_points"  => array("rules" => "float"),
         "result_podium_points" => array("rules" => "float"),
-        "result_total_points" => array("rules" => "float")
+        "result_total_points" => array("rules" => "float"),
+        "result_in_ranking" => array("rules" => "required|enum=Y,N,E")
     );
 
     private function sortToOrder($sort) {
@@ -264,7 +266,7 @@
         $pos=$res->result_place;
         $total=$res->result_entry;
 
-        $max_points = 50;        
+        $max_points = 50;
         if($pos > 0)
         {
             // Place factor: 1st place gets Max_points, last place (= size of entry) gets one point)
@@ -285,7 +287,7 @@
         $res->result_de_points *= $round_bonus;
        
         $podium_bonus = 3 * (pow($total,1/3));          // Points for reaching podium 
-        $res->result_podium_points = 0;       
+        $res->result_podium_points = 0;
         if($pos == 1) {
             $res->result_podium_points = 3 * $podium_bonus;
         } 
@@ -461,5 +463,4 @@
         }
         return $retval;
     }
- }
- 
+}

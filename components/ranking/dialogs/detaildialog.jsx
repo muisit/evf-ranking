@@ -55,7 +55,7 @@ export default class DetailDialog extends React.Component {
                     </thead>
                     <tbody>
                         {this.props.detail.map((comp,idx) => (
-                      <tr key={idx} className={(comp.included == 'Y') ? "counting":"notcounting"}>
+                      <tr key={idx} className={(comp.included == 'Y') ? "counting": (comp.included == 'E' ? "excluded" : "notcounting")}>
                           <td className='pos'>{idx+1}</td>
                           <td>{comp.event}</td>
                           <td>{comp.year}</td>

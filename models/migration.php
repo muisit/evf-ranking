@@ -168,6 +168,10 @@ class Migration extends Base
             $migration = new Migration(array("name" => '019: Link registration to country', 'status' => 0));
             $migration->save();
         }
+        if ($cnt < 21) {
+            $migration = new Migration(array("name" => '020: Exclude results', "status" => 0));
+            $migration->save();
+        }
     }
 
     public function execute() {
@@ -333,6 +337,9 @@ class Migration extends Base
             break;
         case '019: Link registration to country':
             $wpdb->query("ALTER TABLE `TD_Registration` ADD column `registration_country` INT NULL;");
+            break;
+        case '020: Exclude results':
+            $wpdb->query("ALTER TABLE `TD_Result` CHANGE `result_in_ranking` `result_in_ranking` ENUM('Y','N','E') CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N';");
             break;
         default:
             break;

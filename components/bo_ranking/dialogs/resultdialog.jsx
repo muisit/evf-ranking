@@ -63,6 +63,7 @@ export default class ResultDialog extends React.Component {
         var value = event.target ? event.target.value : event.value;
 
         switch(name) {
+        case 'ranked':
         case 'points':
         case 'place':
         case 'nat_points':
@@ -115,6 +116,12 @@ export default class ResultDialog extends React.Component {
                 <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
         }
+
+        var rankedValues = [
+            { 'label': 'Yes', 'value': 'Y'},
+            { 'label': 'No', 'value': 'N'},
+            { 'label': 'Exclude', 'value': 'E'},
+        ];
 
         return (<Dialog header="Edit Result" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
             <div>
@@ -185,6 +192,12 @@ export default class ResultDialog extends React.Component {
                     <InputNumber className='inputint' name='total_points' onChange={this.onChangeEl}
                         mode="decimal" inputMode='decimal' minFractionDigits={1} maxFractionDigits={5} min={0} useGrouping={false}
                         value={this.props.value.total_points}></InputNumber>
+                </div>
+            </div>
+            <div>
+                <label>Include in ranking</label>
+                <div className='input'>
+                    <Dropdown name='ranked' appendTo={document.body} optionLabel="label" optionValue="value" value={this.props.value.ranked} options={rankedValues} placeholder="Include" onChange={this.onChangeEl} />
                 </div>
             </div>
         </Dialog>);

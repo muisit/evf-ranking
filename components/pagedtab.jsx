@@ -185,6 +185,7 @@ export default class PagedTab extends React.Component {
     }
 
     render() {
+        console.log('pagedtab render');
         const pager=this.renderPager();
         return (
 <div>

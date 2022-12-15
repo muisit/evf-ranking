@@ -224,7 +224,7 @@ export default class ResultsTab extends PagedTab {
                 <i className="pi pi-plus-circle"></i><a onClick={()=>this.onImport('open')}>Import</a>
                 <i className="pi pi-trash"></i><a onClick={()=>this.onImport('clear')}>Clear</a>
                 <i className="pi pi-replay"></i><a onClick={()=>this.onImport('recalc')}>Recalculate</a>
-                <i className="pi pi-caret-left"></i><a onClick={()=>this.setState({competition: {}}) }>Back</a>
+                <i className="pi pi-caret-left"></i><a onClick={()=>this.setState({competition: {}, items: [1]}) }>Back</a>
             </span>);
         }
     }

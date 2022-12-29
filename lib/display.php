@@ -236,7 +236,7 @@ HEREDOC;
 
         // create a fake post instance
         $options = array(
-            "ID"=>$id,
+            "ID"=>0,
             "post_type" => "page",
             "filter" => "raw",
             "comment_status" => "closed",
@@ -264,7 +264,8 @@ HEREDOC;
             }
             $options["post_name"]="Accreditation Check";
             $options["post_title"]="Accreditation Check";
-            $options["post_content"]="<div id='evfaccreditation-frontend-root'></div>";
+            $options["post_content"] = "<div id='evfaccreditation-frontend-root'></div>";
+            //$options['post_parent'] = 0;
 
             if(!empty($accreditation) && $accreditation->exists()) {
                 $edata=$accreditation->export();

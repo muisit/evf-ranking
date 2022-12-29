@@ -111,7 +111,7 @@ export default class FencerSelectDialog extends React.Component {
 
     clearState = (itm) => {
         // find the current item
-        var reg = this.findRegistration(itm.sideevent);        
+        var reg = this.findRegistration(itm.sideevent, itm.role);        
         // only clear state if the item is still on the end-of-backend-call state
         if(reg && (reg.pending == "saved" || reg.pending=="deleted")) {
             reg.pending="";
@@ -259,15 +259,7 @@ export default class FencerSelectDialog extends React.Component {
         case 'select':
             if(name === 'select') selectThisOne=event.checked;
             else selectThisOne = (value != "0"); 
-            // selecting a role selects the event as well
-            // so we fall through
-            // (note that selecting a specific event role is currently not supported anymore)
-        case 'role':
-            if(name == "role") {
-                // note: this is dead code, as we no longer select roles
-                // for an event. You can only participate (role=0)
-                selectThisOne=true; // selecting a role selects the event
-            }
+
             var selectedItem=this.findRegistration(id); // this is the side-event registration
 
             if(selectThisOne) {
@@ -281,17 +273,12 @@ export default class FencerSelectDialog extends React.Component {
                         role: 0 // only participate in an event, no event-specific roles
                         // date etc are all filled in during save
                     }
-                }                
-                if(name == "role") {
-                    selectedItem.role = value;
                 }
-                else {
-                    // check that value is a string
-                    //console.log("setting team value to ",event.value);
-                    if(typeof(event.value) == "string") {
-                        selectedItem.team = event.value; // only valid for teams
-                    }
+                // check that value is a string
+                if(typeof(event.value) == "string") {
+                    selectedItem.team = event.value; // only valid for teams
                 }
+
                 selectedItem.pending = "save";                
                 this.saveRegistration(selectedItem); // send to backend
             }
@@ -314,12 +301,12 @@ export default class FencerSelectDialog extends React.Component {
                     individual: this.props.payment
                 }
             }
-            if(value < 0) {
+            if(!value) {
                 selectedItem.pending = "delete";
                 this.deleteRegistration(selectedItem);
             }
             else {
-                selectedItem.role=value;
+                selectedItem.role=id;
                 selectedItem.pending = "save";
                 this.saveRegistration(selectedItem);
             }
@@ -357,53 +344,15 @@ export default class FencerSelectDialog extends React.Component {
 
         var selectedevents = {};
         var overallroles = [];
-        var foundEmpty=false;
         this.props.value.registrations.map((ev) => {
-            foundEmpty = false; // foundEmpty should indicate the state of the last element
             if(!is_valid(ev.sideevent)) {
                 overallroles.push(ev);
-                if(!is_valid(ev.role) || (ev.pending=="delete" || ev.pending=="deleted")) {
-                    foundEmpty=true;
-                }
             }
             else {
                 var key = "k" + ev.sideevent;
                 selectedevents[key] = ev;
             }
         });
-        if(!foundEmpty) {
-            // add an additional empty role to allow setting additional roles
-            overallroles.push({
-                id:-1,
-                role: 0
-            });
-        }
-
-        // filter out valid roles for the capabilities
-        var as_organiser = !this.props.country || !is_valid(this.props.country.id);
-        var roles = this.props.basic.roles.filter((itm) => {
-            // if registering for a specific country, or if the user is a HoD, allow only Country roles
-            if ((!as_organiser || is_hod()) && itm.org == 'Country') return true;
-            // if registering as organiser, allow only Org roles for organisers
-            if (as_organiser && is_organisation() && (itm.org == 'Org')) return true;
-            // if registering as organiser, allow all non-Country roles
-            if (as_organiser && is_sysop() && (itm.org != 'Country')) return true; // allow all organisation roles
-            return false;
-        });
-        roles.sort((a, b) => {
-            if (a.org == 'Country' && b.org != 'Country') return -1;
-            if (b.org == 'Country' && a.org != 'Country') return 1;
-            if (a.org == 'Org' && b.org != 'Org') return -1;
-            if (b.org == 'Org' && a.org != 'Org') return 1;
-
-            return a.name > b.name;
-        });
-
-        var roleById = create_roleById(roles);
-        var allRolesById = this.props.basic.rolesById;
-
-        // add a None role
-        roles.splice(0, 0, { id: -1, name: "None" });
 
         var mycatname = date_to_category(this.props.value.birthday, this.props.basic.event.opens);
 
@@ -468,43 +417,71 @@ export default class FencerSelectDialog extends React.Component {
     </h5>)}
     {payments}
     {this.renderEvents(selectedevents, validteams, allow_more_teams)}
-    {this.renderRoles(overallroles, roles, roleById, allRolesById)}
+    {this.renderRoles(overallroles)}
     {this.renderAccreditation()}
 </Dialog>
 );
     }
 
-    renderRoles(overallroles, roleoptions, roleById, allRolesById) {
+    renderRoles(overallroles) {
+        // filter out valid roles for the capabilities
+        var as_organiser = !this.props.country || !is_valid(this.props.country.id);
+        var roles = this.props.basic.roles.filter((itm) => {
+            // if registering for a specific country, or if the user is a HoD, allow only Country roles
+            if ((!as_organiser || is_hod()) && itm.org == 'Country') return true;
+            // if registering as organiser, allow only Org roles for organisers
+            if (as_organiser && is_organisation() && (itm.org == 'Org')) return true;
+            // if registering as organiser, allow all non-Country roles
+            if (as_organiser && is_sysop() && (itm.org != 'Country')) return true; // allow all organisation roles
+            return false;
+        });
+        roles.sort((a, b) => {
+            if (a.org == 'Country' && b.org != 'Country') return -1;
+            if (b.org == 'Country' && a.org != 'Country') return 1;
+            if (a.org == 'Org' && b.org != 'Org') return -1;
+            if (b.org == 'Org' && a.org != 'Org') return 1;
+
+            return a.name > b.name;
+        });
+
+        var roleById = create_roleById(roles);
+        var allRolesById = this.props.basic.rolesById;
+
+        var selectedRolesById = {};
+        overallroles.map((reg) => {
+            selectedRolesById['r' + reg.role] = reg;
+
+            // copy static roles as well
+            if (!roleById['r' + reg.role]) {
+                roleById['r' + reg.role] = allRolesById['r' + reg.role];
+            }
+        });
+
         return (
         <div className='clearfix'>
-            <label>Support Roles</label>
+            <label className='wide'>Support Roles</label>
             <div className='input'>
                 <table>
                     <tbody>
-                {overallroles.map((reg,idx) => {
-                    var isstatic = this.isStaticRole(reg.role, roleById);
-                    var name="";
-                    if(isstatic && allRolesById["r"+reg.role]) {
-                        name = allRolesById["r"+reg.role].name;
-                    }
+                {roles.map((role,idx) => {
+                    var isstatic = this.isStaticRole(role.id, roleById);
+                    var reg = selectedRolesById['r' + role.id];
+                    var name = role.name;
 
-                    var is_error = reg.pending == "error1" || reg.pending == "error2";
-                    var is_success = reg.pending == "saved" || reg.pending == "deleted";
-                    var is_saving = reg.pending == "save" || reg.pending == "delete";
+                    var is_registered = reg != undefined;
+                    var is_error = reg && (reg.pending == "error1" || reg.pending == "error2");
+                    var is_success = reg && (reg.pending == "saved" || reg.pending == "deleted");
+                    var is_saving = reg && (reg.pending == "save" || reg.pending == "delete");
 
-                    var value=reg.role;
-                    if(reg.pending == "deleted" || reg.pending=="delete") {
-                        value=0;
-                    }
                     return (
                     <tr key={'rl-'+idx}>
                         <td>
-                        {isstatic && (
-                            <span>{name}</span>
-                        )}
                         {!isstatic && (
-                            <Dropdown name={'fullrole-' + reg.role} appendTo={document.body} optionLabel="name" optionValue="id" value={value} options={roleoptions} onChange={this.onChangeEl} />
+                            <Checkbox name={"fullrole-" + role.id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>
                         )}
+                        </td>
+                        <td>
+                            <span>{name}</span>
                         </td>
                         <td className="state-icons">
                             {is_error && (
@@ -518,6 +495,7 @@ export default class FencerSelectDialog extends React.Component {
                             )}
                             {!is_error && !is_success && !is_saving && (<span>&nbsp;</span>)}
                         </td>
+                        <td className='expand-cell'></td>
                     </tr>);
                 })}
                     </tbody>                    
@@ -570,17 +548,17 @@ export default class FencerSelectDialog extends React.Component {
                 return (
                 <tbody key={idx}>
                 <tr>
+                    <td>
+                        {!ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>)}
+                        {allow_more_teams && ev.is_team_event && (<Dropdown name={"teamselect-" + ev.id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
+                        {!allow_more_teams && ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={(e)=> this.onChangeEl({target:e.target, checked: e.checked, value: ev.category.name})} checked={is_registered}  disabled={is_saving}/>)}
+                    </td>
                     <td>{format_date_fe_short(ev.starts)}</td>
                     <td className='sideevent-title'>
                         {ev.weapon ? ev.weapon.name : ev.title }
                     </td>
                     <td className='sideevent-title'>
                         {ev.category && ev.category.name}
-                    </td>
-                    <td>
-                        {!ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>)}
-                        {allow_more_teams && ev.is_team_event && (<Dropdown name={"teamselect-" + ev.id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
-                        {!allow_more_teams && ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={(e)=> this.onChangeEl({target:e.target, checked: e.checked, value: ev.category.name})} checked={is_registered}  disabled={is_saving}/>)}
                     </td>
                     <td className="state-icons">
                         {is_error && (

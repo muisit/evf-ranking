@@ -8,6 +8,8 @@ import { InputMask } from 'primereact/inputmask';
 import DuplicateFencer from './duplicatefencer';
 import { parse_net_error, get_yob, is_valid, random_hash, is_hod, is_hod_view } from '../../functions';
 import { adjustFencerData } from "../../lib/registrations.js";
+import { emptyFencerRegistration } from "../../lib/EmptyFencerRegistration.js";
+import { getCountryFromIndex } from '../../lib/GetCountryFromIndex.js';
 import { FencerList } from '../elements/fencerlist';
 
 
@@ -63,7 +65,7 @@ export default class FencerDialog extends React.Component {
 
     onFencerSelect = (fencer) => {
         if (this.props.onChange) {
-            this.props.onChange(fencer);
+            this.props.onChange(fencer, true);
         }
     }
 
@@ -103,12 +105,16 @@ export default class FencerDialog extends React.Component {
             alert('Please select the proper gender');
             return;
         }
-        var yob=get_yob(obj.birthday);
-        var now=get_yob();
-        if(now-yob < 10 || now-yob > 120) {
-            alert('Please select a proper date of birth');
-            return;
+        if (obj.birthday && obj.birthday.length > 0) {
+            var yob=get_yob(obj.birthday);
+            var now=get_yob();
+            console.log(obj.birthday, yob, now);
+            if(now-yob < 10 || now-yob > 120) {
+                alert('Please select a proper date of birth');
+                return;
+            }
         }
+
         if(obj.name.length<2 || obj.firstname.length<2) {
             alert("Please set the surname and firstname");
             return;
@@ -131,7 +137,7 @@ export default class FencerDialog extends React.Component {
     }    
 
     onChangeEl = (event) => {
-        if(!event.target || (!event.target.value && !event.value)) return;
+        if(!event.target) return;
         if (is_hod_view()) return;
 
         var item=this.props.fencer;
@@ -140,7 +146,10 @@ export default class FencerDialog extends React.Component {
         case 'name':
         case 'country':
         case 'birthday':
-        case 'gender':item[event.target.name] = event.target.value; break;
+        case 'gender':
+            console.log('setting',event.target.name,' to ',event.target.value);
+            item[event.target.name] = event.target.value; 
+            break;
         case 'picture':
             var value=event.value;
             // allow changes from Y->A, Y->R, A->R, R->A
@@ -152,7 +161,7 @@ export default class FencerDialog extends React.Component {
             }
             break;
         }
-        if (this.props.onChange) this.props.onChange(item);
+        if (this.props.onChange) this.props.onChange(item, true);
     }
 
     onDeleteDialog = (event) => {
@@ -186,7 +195,7 @@ export default class FencerDialog extends React.Component {
     autocomplete = (evt) => {
         var item=this.props.fencer;
         item.name = evt.target.value;
-        if (this.props.onChange) this.props.onChange(item);
+        if (this.props.onChange) this.props.onChange(item, false);
 
         var thistarget=evt.target.value;
         if(thistarget.length > 1) {
@@ -202,13 +211,19 @@ export default class FencerDialog extends React.Component {
                             itm = adjustFencerData(itm, this.props.basic.event);
                             fencers.push(itm);
                         });
-                        this.setState({suggestions: fencers });
+                        this.setState({suggestions: this.addNewFencerToSuggestionList(fencers) });
                     }
                 });
         }
         else {
-            this.setState({ suggestions: [] });
+            this.setState({ suggestions: this.addNewFencerToSuggestionList([]) });
         }
+    }
+
+    addNewFencerToSuggestionList = (lst) => {
+        var newFencer = emptyFencerRegistration(this.props.fencer.name, getCountryFromIndex(this.props.country, this.props.basic.countriesById));
+        lst.unshift(newFencer);
+        return lst;
     }
 
     renderPicture () {
@@ -265,25 +280,23 @@ export default class FencerDialog extends React.Component {
         <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
 
-            var searching = !is_valid(this.props.fencer.id);
-
         return (<Dialog header="Add Registration" position="center" visible={this.props.display} className="fencer-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} baseZIndex={1500}>
     <div className="p-grid p-fluid">
       <div className="p-col-12 p-md-6">
         <div className="p-inputgroup">
           <InputText name='name' className="p-inputtext-sm" value={this.props.fencer.name} placeholder="Surname" onChange={(e) => this.autocomplete(e)} />
-          {searching && <i className="pi pi-times-circle clear-search" onClick={(e)=>this.clearSearch()}/>}
+          {this.props.allowSearch && <i className="pi pi-times-circle clear-search" onClick={(e)=>this.clearSearch()}/>}
         </div>
       </div>
       <div className="p-col-12 p-md-6">
         <div className="p-inputgroup">
-          {!searching && (<InputText name='firstname' className="p-inputtext-sm" value={this.props.fencer.firstname} placeholder="Firstname" onChange={this.onChangeEl} />)}
+          {!this.props.allowSearch && (<InputText name='firstname' className="p-inputtext-sm" value={this.props.fencer.firstname} placeholder="Firstname" onChange={this.onChangeEl} />)}
         </div>
       </div>
     </div>
-    {searching && this.renderSuggestions()}
-    {!searching && this.renderAdditional()}
-    {!searching && this.renderPicture()}
+    {this.props.allowSearch && this.renderSuggestions()}
+    {!this.props.allowSearch && this.renderAdditional()}
+    {!this.props.allowSearch && this.renderPicture()}
     <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.actualSave(this.state.pendingSave)} onClose={()=>this.close()} />
 </Dialog>
 );
@@ -317,6 +330,8 @@ export default class FencerDialog extends React.Component {
             country = (<div>{cname}</div>);
         }
 
+        var birthday = this.props.fencer.birthday;
+        if (!birthday || birthday == 'unknown' || birthday == '') birthday = null;
         return (
             <div className="p-grid p-fluid">
             <div className="p-col-12 p-md-4">
@@ -324,7 +339,7 @@ export default class FencerDialog extends React.Component {
             </div>
             <div className="p-col-12 p-md-4">
               <div className="p-inputgroup">
-                <InputMask name='birthday' mask="9999-99-99" slotChar="yyyy-mm-dd" value={this.props.fencer.birthday} onChange={this.onChangeEl}/>
+                <InputMask name='birthday' mask="9999-99-99" slotChar="yyyy-mm-dd" value={birthday} onChange={this.onChangeEl}/>
               </div>
             </div>
             <div className="p-col-12 p-md-4">

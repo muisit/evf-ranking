@@ -51,9 +51,11 @@ class Validator {
     }
 
     public function validate($data) {
+        global $evflogger;
         $this->loadModel($data);
         if(empty($this->model)) {
             $this->errors[]="No object found";
+            //$evflogger->log("no such model to validate");
             return false;
         }
 
@@ -76,7 +78,8 @@ class Validator {
     }
 
     public function validateField($field,$value) {
-        //error_log("validating $field with value $value");
+        global $evflogger;
+        //$evflogger->log("validating $field with value $value");
         $rules = isset($this->model->rules[$field]) ? $this->model->rules[$field] : 'skip';
         $label = $field;
         $msg=null;
@@ -107,8 +110,18 @@ class Validator {
         }
         if($allgood && !$isskip) {
             if($this->is_date($value)) {
-                $value = sprintf("%04d-%02d-%02d",$value['year'],$value['month'],$value['day']);
+                //$evflogger->log('date value is '.json_encode($value));
+                if ($this->isEmptyValue($value)) {
+                    $value = null;
+                }
+                else {
+                    //$evflogger->log('date value is not empty, setting DB value based on '.json_encode($value));
+                    $value = sprintf("%04d-%02d-%02d",$value['year'],$value['month'],$value['day']);
+                }
             }
+            //else {
+                //$evflogger->log('value is not a date: '.json_encode($value));
+            //}
             $this->model->{$field} = $value;
         }
         return $allgood;
@@ -130,260 +143,352 @@ class Validator {
         return $ruleelements;
     }
 
-    public function validateRule(&$value,$ruleelements) {
-        $rule=$ruleelements['rule'];
-        $params=$ruleelements['parameters'];
+    private function isEmptyValue($value)
+    {
+        return empty($value) && $value !== false && (!is_string($value) || strlen($value) == 0);
+    }
+
+    public function validateRule(&$value, $ruleelements)
+    {
+        $rule = $ruleelements['rule'];
+        $params = $ruleelements['parameters'];
         $msg = isset($ruleelements['message']) ? $ruleelements['message'] : null;
         $label = $ruleelements['label'];
-        $p1='';
-        $p2='';
+        $p1 = '';
+        $p2 = '';
+        $retval = false;
 
-        $valueisempty = empty($value) && $value !== false && (!is_string($value) || strlen($value) == 0);
+        // first apply the formatting rules, which adjust the value, but do not give errors
+        switch ($rule) {
+            case 'default':
+                // use this if the value is empty
+                if ($valueisempty) {
+                    $value = $params[0];
+                }
+                $retval = true;
+                break;
+            case 'int':
+                $retval = true;
+                $value = intval($value);
+                break;
+            case 'float':
+                // convert and format
+                $retval = true;
+                $format = sizeof($params) == 1 ? "%" . $params[0] . "f" : "%f";
+                $value = floatval(sprintf($format, floatval($value)));
+                break;
+            case 'bool':
+                $retval = true;
+                $tst = strtolower($value);
+                if ($tst == 'y' || $tst == 't' || $tst == 'yes' || $tst == 'true' || $tst == 'on') {
+                    $value = 'Y';
+                }
+                else {
+                    $value = 'N';
+                }
+                break;
+            case 'trim':
+                $retval = true;
+                if (is_object($value) || is_array($value)) {
+                    $value = json_encode($value);
+                }
+                else {
+                    $value = strval($value);
+                }
+                $value = trim($value);
+                break;
+            case 'upper':
+                $retval = true;
+                $value = strtoupper($value);
+                break;
+            case 'ucfirst':
+                $retval = true;
+                $value = ucfirst($value);
+                break;
+            case 'lower':
+                $retval = true;
+                $value = strtolower($value);
+                break;
+            case 'date':
+                $retval = true;
+                $value = $this->sanitize_date($value);
+                break;
+        }
+
         // always pass if we have an empty value and this is not the required rule
         // if the rule is 'contains' and the value is empty, it contains an empty list, which is information
         // we can't drop
-        if($rule != 'required' && $rule != "contains" && $valueisempty) {
+        global $evflogger;
+        $valueisempty = $this->isEmptyValue($value);
+        //$evflogger->log('value '.json_encode($value).'/'.json_encode($valueisempty));
+        if ($rule != 'required' && $rule != "contains" && $valueisempty) {
             return true;
         }
 
-        $retval=true;
+        // then apply the validation rules, which can return true or false
         switch($rule) {
-        case 'required':
-            // value must be present and have content
-            $retval = !$valueisempty;
-            if($msg === null) $msg = "{label} is a required field";
-            break;
-        case 'default':
-            // use this if the value is empty
-            if($valueisempty) {
-                $value = $params[0];
-            }
-            break;
-        case 'skip': break;
-        case 'fail': 
-            $retval = false;
-            if($msg === null) $msg = "{label} is an unsupported field";
-        case 'int': $value = intval($value); break;
-        case 'float':
-            // convert and format
-            $format = sizeof($params)==1 ? "%".$params[0]."f" : "%f";
-            $value = floatval(sprintf($format,floatval($value)));
-            break;
-        case 'bool':            
-            $tst=strtolower($value);
-            if($tst == 'y' || $tst == 't' || $tst == 'yes' || $tst == 'true' || $tst == 'on') {
-                $value = 'Y';
-            }
-            else {
-                $value = 'N';
-            }
-        case 'lt':
-            if(sizeof($params) == 1) {
-                if(is_string($value)) {
-                    $p1 = intval($params[0]);
-                    if($msg === null) $msg="{label} should contain less than {p1} characters";
-                    $retval = strlen($value) < $p1;
+            case 'required':
+                // value must be present and have content
+                $retval = !$valueisempty;
+                if ($msg === null) {
+                    $msg = "{label} is a required field";
                 }
-                else if(is_numeric($value)) {
-                    $p1 = floatval($params[0]);
-                    if($msg === null) $msg="{label} should be less than {p1}";
-                    $retval = floatval($value) < $p1;
-                }
-                else if($this->is_date($value)) {
-                    $p1 = date_parse($params[0]);
-                    $dt1=sprintf("%04d-%02d-%02d",$p1['year'],$p1['month'],$p1['day']);
-                    $tm1=strtotime(sprintf("%04d-%02d-%02d",$value['year'],$value['month'],$value['day']));
-                    $tm2=strtotime($dt1);
-                    $p1=$dt1;
-                    if($msg === null) $msg="{label} should be before {p1}";
-                    $retval = $tm1 < $tm2;
-                }
-            }
-            break;
-        case 'lte':
-            if(sizeof($params) == 1) {
-                if(is_string($value)) {
-                    $p1 = intval($params[0]);
-                    if($msg === null) $msg="{label} should contain no more than {p1} characters";
-                    $retval = strlen($value) <= $p1;
-                }
-                else if(is_numeric($value)) {
-                    $p1 = floatval($params[0]);
-                    if($msg === null) $msg="{label} should be less than or equal to {p1}";
-                    $retval = floatval($value) <= $p1;
-                }
-                else if($this->is_date($value)) {
-                    $p1 = date_parse($params[0]);
-                    $dt1=sprintf("%04d-%02d-%02d",$p1['year'],$p1['month'],$p1['day']);
-                    $tm1=strtotime(sprintf("%04d-%02d-%02d",$value['year'],$value['month'],$value['day']));
-                    $tm2=strtotime($dt1);
-                    $p1=$dt1;
-                    if($msg === null) $msg="{label} should be at or before {p1}";
-                    $retval = $tm1 <= $tm2;
-                }
-            }
-            break;
-        case 'eq':
-            if(sizeof($params) == 1) {
-                if(is_string($value)) {
-                    $p1 = intval($params[0]);
-                    if($msg === null) $msg="{label} should contain exactly {p1} characters";
-                    $retval = strlen($value) == $p1;
-                }
-                else if(is_numeric($value)) {
-                    $p1 = floatval($params[0]);
-                    if($msg === null) $msg="{label} should be equal to {p1}";
-                    $retval = abs(floatval($value) - $p1) < 0.00001;
-                }
-                else if($this->is_date($value)) {
-                    $p1 = date_parse($params[0]);
-                    $dt1=sprintf("%04d-%02d-%02d",$p1['year'],$p1['month'],$p1['day']);
-                    $tm1=strtotime(sprintf("%04d-%02d-%02d",$value['year'],$value['month'],$value['day']));
-                    $tm2=strtotime($dt1);
-                    $p1=$dt1;
-                    if($msg === null) $msg="{label} should be at {p1}";
-                    $retval = $tm1 == $tm2;
-                }
-            }
-            break;
-        case 'gt':
-            if(sizeof($params) == 1) {
-                if(is_string($value)) {
-                    $p1 = intval($params[0]);
-                    if($msg === null) $msg="{label} should contain more than {p1} characters";
-                    $retval = strlen($value) > $p1;
-                }
-                else if(is_numeric($value)) {
-                    $p1 = floatval($params[0]);
-                    if($msg === null) $msg="{label} should be more than {p1}";
-                    $retval = floatval($value) > $p1;
-                }
-                else if($this->is_date($value)) {
-                    $p1 = date_parse($params[0]);
-                    $dt1=sprintf("%04d-%02d-%02d",$p1['year'],$p1['month'],$p1['day']);
-                    $tm1=strtotime(sprintf("%04d-%02d-%02d",$value['year'],$value['month'],$value['day']));
-                    $tm2=strtotime($dt1);
-                    $p1=$dt1;
-                    if($msg === null) $msg="{label} should be after {p1}";
-                    $retval = $tm1 > $tm2;
-                }
-            }
-            break;
-        case 'gte':
-            if(sizeof($params) == 1) {
-                if(is_string($value)) {
-                    $p1 = intval($params[0]);
-                    if($msg === null) $msg="{label} should contain no less than {p1} characters";
-                    $retval = strlen($value) >= $p1;
-                }
-                else if(is_numeric($value)) {
-                    $p1 = floatval($params[0]);
-                    if($msg === null) $msg="{label} should be more than or equal to {p1}";
-                    $retval = floatval($value) >= $p1;
-                }
-                else if($this->is_date($value)) {
-                    $p1 = date_parse($params[0]);
-                    $dt1=sprintf("%04d-%02d-%02d",$p1['year'],$p1['month'],$p1['day']);
-                    $tm1=strtotime(sprintf("%04d-%02d-%02d",$value['year'],$value['month'],$value['day']));
-                    $tm2=strtotime($dt1);
-                    $p1=$dt1;
-                    if($msg === null) $msg="{label} should be at or after {p1}";
-                    $retval = $tm1 >= $tm2;
-                }
-            }
-            break;
-        case 'trim':
-            if(is_object($value) || is_array($value)) {
-                $value=json_encode($value);
-            }
-            else {
-                $value=strval($value);
-            }
-            $value = trim($value);
-            break;
-        case 'upper':
-            $value = strtoupper($value);
-            break;
-        case 'ucfirst':
-            $value = ucfirst($value);
-            break;
-        case 'lower':
-            $value = strtolower($value);
-            break;
-        case 'email':  
-            $retval = filter_var($value, FILTER_VALIDATE_EMAIL); 
-            if($msg === null) $msg = "{label} is not a correct e-mail address";
-            break;
-        case 'url': 
-            $retval = filter_var($value, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED|FILTER_FLAG_HOST_REQUIRED); 
-            if($msg === null) $msg = "{label} is not a correct website";
-            break;
-        case 'date': 
-            $value = $this->sanitize_date($value);
-            if($value === null) {
-                $retval=false;
-                if($msg === null) $msg = "{label} is not a date";
                 break;
-            }
-            break;
-        case 'enum':
-            $retval = in_array($value, $params);
-            if($msg === null) $msg = "{label} should be one of ".json_encode($params);
-            break;
-        case 'model':
-            try {
-                $id=intval($value);
-                $name = "\\EVFRanking\\Models\\".$params[0];
-                $isnotrequired=isset($params[1]) && $params[1]=="null";
-                $attrmodel = new $name($id);
-                if(!$attrmodel->exists()) {
-                    $value=null;
-                    $retval=$isnotrequired || false;
+            case 'skip':
+                $retval = true;
+                break;
+            case 'fail':
+                $retval = false;
+                if ($msg === null) {
+                    $msg = "{label} is an unsupported field";
                 }
-                if($msg === null) $msg = "Please select a valid value for {label}";
-            }
-            catch(Exception $e) {
-                if($msg === null) $msg = "{label} caused internal model error";
-                $value=null;
-                $retval=false;
-            }
-            break;
-        case 'contains':
-            // value is a list of contained models
-            $name = "\\EVFRanking\\Models\\".$params[0];
-            try {
-                $lst=array();
-                foreach($value as $objvals) {
-                    $id=intval($objvals['id']);
-                    if(empty($id)) $id=-1;
-
-                    $obj = new $name($id);
-                    $validator=new Validator($obj);
-
-                    $result = $validator->validate($objvals);
-                    $retval = $result && $retval;
-                    if(!$result && isset($validator->errors) && sizeof($validator->errors)) {
-                        $this->errors=array_merge($this->errors,$validator->errors);
+                break;
+            case 'lt':
+                $retval = true;
+                if (sizeof($params) == 1) {
+                    if (is_string($value)) {
+                        $p1 = intval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should contain less than {p1} characters";
+                        }
+                        $retval = strlen($value) < $p1;
                     }
-                    $lst[]=$obj;
+                    else if (is_numeric($value)) {
+                        $p1 = floatval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should be less than {p1}";
+                        }
+                        $retval = floatval($value) < $p1;
+                    }
+                    else if ($this->is_date($value)) {
+                        $p1 = date_parse($params[0]);
+                        $dt1 = sprintf("%04d-%02d-%02d", $p1['year'], $p1['month'], $p1['day']);
+                        $tm1 = strtotime(sprintf("%04d-%02d-%02d", $value['year'], $value['month'], $value['day']));
+                        $tm2 = strtotime($dt1);
+                        $p1 = $dt1;
+                        if ($msg === null) {
+                            $msg = "{label} should be before {p1}";
+                        }
+                        $retval = $tm1 < $tm2;
+                    }
                 }
-                $addfield = sizeof($params) > 1 ? $params[1] : "sublist";
-                $this->model->$addfield = $lst;
-            }
-            catch(Exception $e) {
-                if($msg === null) $msg = "{label} caused internal model error";
-                error_log("caught exception on contained model ".$e->getMessage());
-                $retval=false;
-            }
-            break;
-        default:
-            if($msg === null) $msg = "Invalid rule {rule} found";
-            $retval=false;
-            break;
+                break;
+            case 'lte':
+                $retval = true;
+                if (sizeof($params) == 1) {
+                    if (is_string($value)) {
+                        $p1 = intval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should contain no more than {p1} characters";
+                        }
+                        $retval = strlen($value) <= $p1;
+                    }
+                    else if (is_numeric($value)) {
+                        $p1 = floatval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should be less than or equal to {p1}";
+                        }
+                        $retval = floatval($value) <= $p1;
+                    }
+                    else if ($this->is_date($value)) {
+                        $p1 = date_parse($params[0]);
+                        $dt1 = sprintf("%04d-%02d-%02d", $p1['year'], $p1['month'], $p1['day']);
+                        $tm1 = strtotime(sprintf("%04d-%02d-%02d", $value['year'], $value['month'], $value['day']));
+                        $tm2 = strtotime($dt1);
+                        $p1 = $dt1;
+                        if ($msg === null) {
+                            $msg = "{label} should be at or before {p1}";
+                        }
+                        $retval = $tm1 <= $tm2;
+                    }
+                }
+                break;
+            case 'eq':
+                $retval = true;
+                if (sizeof($params) == 1) {
+                    if (is_string($value)) {
+                        $p1 = intval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should contain exactly {p1} characters";
+                        }
+                        $retval = strlen($value) == $p1;
+                    }
+                    else if (is_numeric($value)) {
+                        $p1 = floatval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should be equal to {p1}";
+                        }
+                        $retval = abs(floatval($value) - $p1) < 0.00001;
+                    }
+                    else if ($this->is_date($value)) {
+                        $p1 = date_parse($params[0]);
+                        $dt1 = sprintf("%04d-%02d-%02d", $p1['year'], $p1['month'], $p1['day']);
+                        $tm1 = strtotime(sprintf("%04d-%02d-%02d", $value['year'], $value['month'], $value['day']));
+                        $tm2 = strtotime($dt1);
+                        $p1 = $dt1;
+                        if ($msg === null) {
+                            $msg = "{label} should be at {p1}";
+                        }
+                        $retval = $tm1 == $tm2;
+                    }
+                }
+                break;
+            case 'gt':
+                $retval = true;
+                if (sizeof($params) == 1) {
+                    if (is_string($value)) {
+                        $p1 = intval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should contain more than {p1} characters";
+                        }
+                        $retval = strlen($value) > $p1;
+                    }
+                    else if (is_numeric($value)) {
+                        $p1 = floatval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should be more than {p1}";
+                        }
+                        $retval = floatval($value) > $p1;
+                    }
+                    else if ($this->is_date($value)) {
+                        $p1 = date_parse($params[0]);
+                        $dt1 = sprintf("%04d-%02d-%02d", $p1['year'], $p1['month'], $p1['day']);
+                        $tm1 = strtotime(sprintf("%04d-%02d-%02d", $value['year'], $value['month'], $value['day']));
+                        $tm2 = strtotime($dt1);
+                        $p1 = $dt1;
+                        if ($msg === null) {
+                            $msg = "{label} should be after {p1}";
+                        }
+                        $retval = $tm1 > $tm2;
+                    }
+                }
+                break;
+            case 'gte':
+                if (sizeof($params) == 1) {
+                    if (is_string($value)) {
+                        $p1 = intval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should contain no less than {p1} characters";
+                        }
+                        $retval = strlen($value) >= $p1;
+                    }
+                    else if (is_numeric($value)) {
+                        $p1 = floatval($params[0]);
+                        if ($msg === null) {
+                            $msg = "{label} should be more than or equal to {p1}";
+                        }
+                        $retval = floatval($value) >= $p1;
+                    }
+                    else if ($this->is_date($value)) {
+                        $p1 = date_parse($params[0]);
+                        $dt1 = sprintf("%04d-%02d-%02d", $p1['year'], $p1['month'], $p1['day']);
+                        $tm1 = strtotime(sprintf("%04d-%02d-%02d", $value['year'], $value['month'], $value['day']));
+                        $tm2 = strtotime($dt1);
+                        $p1 = $dt1;
+                        if ($msg === null) {
+                            $msg = "{label} should be at or after {p1}";
+                        }
+                        $retval = $tm1 >= $tm2;
+                    }
+                }
+                break;
+            case 'email':
+                $retval = filter_var($value, FILTER_VALIDATE_EMAIL);
+                if ($msg === null) {
+                    $msg = "{label} is not a correct e-mail address";
+                }
+                break;
+            case 'url':
+                $retval = filter_var($value, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED);
+                if ($msg === null) {
+                    $msg = "{label} is not a correct website";
+                }
+                break;
+            case 'date':
+                $retval = true;
+                if ($value === null) {
+                    $retval = false;
+                    if ($msg === null) {
+                        $msg = "{label} is not a date";
+                    }
+                }
+                break;
+            case 'enum':
+                $retval = in_array($value, $params);
+                if ($msg === null) {
+                    $msg = "{label} should be one of " . json_encode($params);
+                }
+                break;
+            case 'model':
+                $retval = true;
+                try {
+                    $id = intval($value);
+                    $name = "\\EVFRanking\\Models\\" . $params[0];
+                    $isnotrequired = isset($params[1]) && $params[1] == "null";
+                    $attrmodel = new $name($id);
+                    //$evflogger->log("instantiated $name($id)");
+                    if (!$attrmodel->exists()) {
+                        $value = null;
+                        $retval = $isnotrequired || false;
+                        //$evflogger->log("does not exist");
+                    }
+                    if ($msg === null) {
+                        $msg = "Please select a valid value for {label}";
+                    }
+                }
+                catch (Exception $e) {
+                    if ($msg === null) {
+                        $msg = "{label} caused internal model error";
+                    }
+                    $value = null;
+                    $retval = false;
+                }
+                break;
+            case 'contains':
+                // value is a list of contained models
+                $name = "\\EVFRanking\\Models\\" . $params[0];
+                $retval = true;
+                try {
+                    $lst = array();
+                    foreach ($value as $objvals) {
+                        $id = intval($objvals['id']);
+                        if (empty($id)) {
+                            $id = -1;
+                        }
+
+                        $obj = new $name($id);
+                        $validator = new Validator($obj);
+
+                        $result = $validator->validate($objvals);
+                        $retval = $result && $retval;
+                        if (!$result && isset($validator->errors) && sizeof($validator->errors)) {
+                            $this->errors = array_merge($this->errors, $validator->errors);
+                        }
+                        $lst[] = $obj;
+                    }
+                    $addfield = sizeof($params) > 1 ? $params[1] : "sublist";
+                    $this->model->$addfield = $lst;
+                }
+                catch (Exception $e) {
+                    if ($msg === null) {
+                        $msg = "{label} caused internal model error";
+                    }
+                    error_log("caught exception on contained model " . $e->getMessage());
+                    $retval = false;
+                }
+                break;
+            default:
+                // if this was a formatting rule, retval was set to true above
+                if ($retval === false) {
+                    if ($msg === null) {
+                        $msg = "Invalid rule {rule} found";
+                    }
+                }
+                break;
         }
 
-        if($retval == false) {
-            $msg = str_replace(array("{label}","{rule}","{p1}","{p2}"),array($label,$rule,$p1,$p2),$msg);
+        if ($retval === false) {
+            $msg = str_replace(array("{label}", "{rule}", "{p1}", "{p2}"), array($label, $rule, $p1, $p2), $msg);
             error_log("validation of rule $rule failed with message $msg");
             $this->errors[] = $msg;
         }
@@ -394,10 +499,10 @@ class Validator {
         // names contain only alphabetic characters, dash, apostrophe and spaces
         return mb_ereg_replace("([^\w \-'])", '', $name);
     }
-    protected function sanitize_date($date){
+    protected function sanitize_date($date) {
         // we expect yyyy-mm-dd, but we'll let the date_parse function manage this
-        $vals = date_parse($date);        
-        if($this->is_date($vals)) {
+        $vals = date_parse($date);
+        if ($this->is_date($vals)) {
             return $vals;
         }
         return null;

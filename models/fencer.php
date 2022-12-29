@@ -208,7 +208,7 @@
             }
             return array("suggestions"=>$retval);
         }
-        return array(); 
+        return array();
     }
 
     public function merge($modeldata) {

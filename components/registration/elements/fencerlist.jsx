@@ -1,3 +1,4 @@
+import { is_valid } from '../../functions';
 
 export function FencerList(props) {
     if (!props.fencers || !props.basic) {
@@ -9,7 +10,6 @@ export function FencerList(props) {
     fencers.sort(function (a1, a2) {
             return a1.fullname > a2.fullname;
     });
-    console.log(fencers);
 
     return (
         <table className='style-stripes'>
@@ -28,12 +28,13 @@ export function FencerList(props) {
                 {fencers.map((fencer,idx) => (
                         <tr key={idx} onClick={(e) => props.onSelect(fencer)}>
                             <td>{fencer.name}</td>
-                            <td>{fencer.firstname}</td>
-                            <td>{fencer.country_name}</td>
-                            <td>{fencer.fullgender}</td>
-                            <td>{fencer.birthyear}</td>
-                            <td>{fencer.category}</td>
-                            <td><a onClick={(e) => props.onSelect(fencer)}><i className='pi pi-chevron-circle-right'></i></a></td>
+                            {is_valid(fencer.id) && (<td>{fencer.firstname}</td>)}
+                            {is_valid(fencer.id) && (<td>{fencer.country_name}</td>)}
+                            {is_valid(fencer.id) && (<td>{fencer.fullgender}</td>)}
+                            {is_valid(fencer.id) && (<td>{fencer.birthyear}</td>)}
+                            {is_valid(fencer.id) && (<td>{fencer.category}</td>)}
+                            {!is_valid(fencer.id) && (<td colSpan='5' style={{textAlign:'center'}}>&lt; add a new entry &gt;</td>)}
+                            <td><i className='pi pi-chevron-circle-right'></i></td>
                         </tr>
                     ))}
             </tbody>

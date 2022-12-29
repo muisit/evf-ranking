@@ -42,7 +42,7 @@ export const adjustFencerData =  (fencer, event) => {
             fencer.category = "None";
             fencer.category_num = -1;
             fencer.birthyear = "unknown";
-            fencer.birthday=format_date(parse_date());
+            fencer.birthday = null;
         }
         fencer.fullgender = fencer.gender == 'M' ? "M" : "W";
         if(!fencer.registrations) fencer.registrations = [];

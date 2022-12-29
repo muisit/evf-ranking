@@ -25,6 +25,7 @@ export default class FERegistrationTab extends FEBase {
             displayFencerDialog: false,
             displaySelectDialog: false,
             addingNewRegistration: false,
+            searchingForFencer: true,
             accreditations: [],
             fencer_events: [], // sideevents with fencer-specific convenience data
         });
@@ -44,16 +45,17 @@ export default class FERegistrationTab extends FEBase {
             firstname:"",
             birthday: format_date(dt),
             country: this.state.country
-        }, displayFencerDialog:true, addingNewRegistration: true});
+        }, displayFencerDialog:true, addingNewRegistration: true, searchingForFencer: true});
     }
 
     onFencerEdit = (fencer) => {
-        this.setState({fencer_object: fencer, displayFencerDialog: true, addingNewRegistration: false});
+        this.setState({fencer_object: fencer, displayFencerDialog: true, addingNewRegistration: false, searchingForFencer: false});
     }
 
-    onFencer = (tp, itm) => {
+    onFencer = (tp, itm, extra) => {
         if (tp == 'change') {
-            this.setState({ fencer_object: itm });
+            console.log('setting fencer object to ', itm);
+            this.setState({ fencer_object: itm, searchingForFencer: !extra });
         }
         else if (tp == 'close') {
             this.setState({ displayFencerDialog: false });
@@ -265,14 +267,14 @@ export default class FERegistrationTab extends FEBase {
             <div className='col-6 vertcenter'>
                 <Button label="Add Registration" icon="pi pi-plus" className="p-button-raised cright" onClick={this.addFencer} />
             </div>
-            <FencerDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change', itm)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} fencer={this.state.fencer_object} />
+            <FencerDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm, doSelect) => this.onFencer('change', itm, doSelect)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} fencer={this.state.fencer_object} allowSearch={this.state.searchingForFencer} />
         </div>);
     }
 
     renderParticipants(allteams) {
         return (<div className='row topmargin'>
             <ParticipantList basic={this.props.basic} showRoles camera fencers={this.state.registered} onSelect={this.onFencerSelect} onEdit={this.onFencerEdit} allfencers={true}/>
-            <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm)} onSave={(itm) => this.onFencerSelection('save', itm)} basic={this.props.basic} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}/>
+            <FencerSelectDialog value={this.state.selected_fencer} display={this.state.displaySelectDialog} events={this.state.fencer_events} onClose={() => this.onFencerSelection('close')} onChange={(itm) => this.onFencerSelection('change', itm, true)} onSave={(itm) => this.onFencerSelection('save', itm)} basic={this.props.basic} country={this.state.country_item} accreditations={this.state.accreditations} reloadAccreditations={this.loadAccreditations} teams={allteams}/>
         </div>);
     }
 

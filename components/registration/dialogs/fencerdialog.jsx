@@ -223,6 +223,9 @@ export default class FencerDialog extends React.Component {
 
     clearSearch = () => {
         this.setState({suggestions: []});
+        var item=this.props.fencer;
+        item.name = '';
+        if (this.props.onChange) this.props.onChange(item, false);
     }
 
     autocomplete = (evt) => {
@@ -318,7 +321,7 @@ export default class FencerDialog extends React.Component {
     <div className="p-grid p-fluid">
       <div className="p-col-12 p-md-6">
         <div className="p-inputgroup">
-          <InputText name='name' className="p-inputtext-sm" value={this.props.fencer.name} placeholder="Surname" onChange={(e) => this.autocomplete(e)} />
+          <InputText name='name' autoFocus className="p-inputtext-sm" value={this.props.fencer.name} placeholder="Surname" onChange={(e) => this.autocomplete(e)} />
           {this.props.allowSearch && <i className="pi pi-times-circle clear-search" onClick={(e)=>this.clearSearch()}/>}
         </div>
       </div>

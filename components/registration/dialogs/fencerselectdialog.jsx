@@ -520,6 +520,10 @@ export default class FencerSelectDialog extends React.Component {
             return true;
         });
 
+        if (events.length == 0) {
+            return (null);
+        }
+
         return (<div className='clearfix'>
         <label className='wide'>Competitions and Side Events</label>
         <div className='input'>

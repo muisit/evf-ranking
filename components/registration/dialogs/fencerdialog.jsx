@@ -262,7 +262,7 @@ export default class FencerDialog extends React.Component {
                     </div>
                 )}
                 <div className='textcenter'>
-                <input type="file" onChange={this.onFileChange} />
+                    <input type="file" onChange={this.onFileChange} />
                 </div>
                 {canapprove && (
                     <div className='approval-dropdown'>

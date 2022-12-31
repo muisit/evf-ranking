@@ -176,6 +176,15 @@ table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
     white-space: nowrap;
     padding: 2px 5px;
 }
+.fencer-select-dialog .fencer-select-events label {
+    display: inline;
+    width: auto;
+    height: auto;
+    line-height: inherit;
+    font-weight: normal;
+    float: none;
+    clear: none;
+}
 .fencer-select-dialog .fencer-select-events td.expand-cell { width: 99%; }
 .fencer-select-dialog .fencer-select-events td,
 .fencer-select-dialog .fencer-select-events td  .p-checkbox { vertical-align: middle; }

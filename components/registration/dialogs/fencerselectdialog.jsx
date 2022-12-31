@@ -461,7 +461,7 @@ export default class FencerSelectDialog extends React.Component {
         <div className='clearfix'>
             <label className='wide'>Support Roles</label>
             <div className='input'>
-                <table>
+                <table className='fencer-select-events'>
                     <tbody>
                 {roles.map((role,idx) => {
                     var isstatic = this.isStaticRole(role.id, roleById);
@@ -472,16 +472,16 @@ export default class FencerSelectDialog extends React.Component {
                     var is_error = reg && (reg.pending == "error1" || reg.pending == "error2");
                     var is_success = reg && (reg.pending == "saved" || reg.pending == "deleted");
                     var is_saving = reg && (reg.pending == "save" || reg.pending == "delete");
-
+                    var id = "fullrole-" + role.id;
                     return (
                     <tr key={'rl-'+idx}>
                         <td>
                         {!isstatic && (
-                            <Checkbox name={"fullrole-" + role.id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>
+                            <Checkbox inputId={id} name={id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>
                         )}
                         </td>
                         <td>
-                            <span>{name}</span>
+                            <label htmlFor={id}>{name}</label>
                         </td>
                         <td className="state-icons">
                             {is_error && (
@@ -547,22 +547,29 @@ export default class FencerSelectDialog extends React.Component {
                 var is_error = selected_event && (selected_event.pending == "error1" || selected_event.pending == "error2");
                 var is_success = selected_event && (selected_event.pending == "saved" || selected_event.pending == "deleted");
                 var is_saving = selected_event && (selected_event.pending == "save" || selected_event.pending == "delete");
-
+                var id = 'select-' + ev.id;
+                if (allow_more_teams) {
+                    id = "teamselect-" + ev.id;
+                }
                 //console.log("allowing more teams ",allow_more_teams);
                 return (
                 <tbody key={idx}>
                 <tr>
                     <td>
-                        {!ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>)}
-                        {allow_more_teams && ev.is_team_event && (<Dropdown name={"teamselect-" + ev.id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
-                        {!allow_more_teams && ev.is_team_event && (<Checkbox name={"select-" + ev.id} onChange={(e)=> this.onChangeEl({target:e.target, checked: e.checked, value: ev.category.name})} checked={is_registered}  disabled={is_saving}/>)}
+                        {!ev.is_team_event && (<Checkbox inputId={id} name={id} onChange={this.onChangeEl} checked={is_registered} disabled={is_saving}/>)}
+                        {allow_more_teams && ev.is_team_event && (<Dropdown inputId={id} name={id} onChange={this.onChangeEl} appendTo={document.body} optionLabel="text" optionValue="value" value={of_team} options={ourteams} />)}
+                        {!allow_more_teams && ev.is_team_event && (<Checkbox inputId={id} name={id} onChange={(e)=> this.onChangeEl({target:e.target, checked: e.checked, value: ev.category.name})} checked={is_registered}  disabled={is_saving}/>)}
                     </td>
-                    <td>{format_date_fe_short(ev.starts)}</td>
+                    <td><label htmlFor={id}>{format_date_fe_short(ev.starts)}</label></td>
                     <td className='sideevent-title'>
-                        {ev.weapon ? ev.weapon.name : ev.title }
+                        <label htmlFor={id}>
+                            {ev.weapon ? ev.weapon.name : ev.title }
+                        </label>
                     </td>
                     <td className='sideevent-title'>
-                        {ev.category && ev.category.name}
+                        <label htmlFor={id}>
+                            {ev.category && ev.category.name}
+                        </label>
                     </td>
                     <td className="state-icons">
                         {is_error && (

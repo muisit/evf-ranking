@@ -371,20 +371,23 @@ export default class FencerDialog extends React.Component {
         if (!birthday || birthday == 'unknown' || birthday == '') birthday = null;
         return (
             <div className="p-grid p-fluid">
-            <div className="p-col-12 p-md-4">
-              <div className="p-inputgroup">{country}</div>
+                <div className="p-col-12 p-md-4">
+                    <div className="p-inputgroup">{country}</div>
+                </div>
+                <div className="p-col-12 p-md-4">
+                    <div className="p-inputgroup">
+                        <div className='d-flex flex-column'>
+                            <InputMask name='birthday' mask="9999-99-99" slotChar="yyyy-mm-dd" value={birthday} onChange={this.onChangeEl}/>
+                            <div className='smallprint'>(date of birth is only required for athletes)</div>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-col-12 p-md-4">
+                    <div className="p-inputgroup">
+                        <Dropdown name='gender' optionLabel="name" optionValue="code" value={this.props.fencer.gender} options={genders} placeholder="Gender" onChange={this.onChangeEl} style={{zIndex: 20000}}/>
+                    </div>
+                </div>
             </div>
-            <div className="p-col-12 p-md-4">
-              <div className="p-inputgroup">
-                <InputMask name='birthday' mask="9999-99-99" slotChar="yyyy-mm-dd" value={birthday} onChange={this.onChangeEl}/>
-              </div>
-            </div>
-            <div className="p-col-12 p-md-4">
-              <div className="p-inputgroup">
-                <Dropdown name='gender' optionLabel="name" optionValue="code" value={this.props.fencer.gender} options={genders} placeholder="Gender" onChange={this.onChangeEl} style={{zIndex: 20000}}/>
-              </div>
-            </div>
-        </div>
         );
     }
 }

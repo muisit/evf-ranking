@@ -48,19 +48,30 @@ export default class FencerDialog extends React.Component {
     }
 
     onFileChange = (event) => {
-        var selectedFile=event.target.files[0];
-        upload_file("events",selectedFile,{
-            fencer: this.props.fencer.id,
-            event: this.props.apidata ? this.props.apidata.event : -1})
-        .then((json) => {
-            var itm = Object.assign({}, this.props.fencer);
-            if (json.data.model) {
-                itm = Object.assign({}, itm, json.data.model);
+        if (this.fencerDataIsComplete()) {
+            if (!is_valid(this.props.fencer.id)) {
+                this.actualSave(this.props.fencer)
+                    .then((fencer) => {
+                        if (this.props.onChange) this.props.onChange(fencer, true);
+                        this.onFileChange(event);
+                    });
             }
-            if(this.props.onSave) this.props.onSave(itm);
-            this.setState({imageHash: random_hash()});
-        })
-        .catch((err) => parse_net_error(err));
+            else {
+                var selectedFile=event.target.files[0];
+                upload_file("events",selectedFile,{
+                    fencer: this.props.fencer.id,
+                    event: this.props.apidata ? this.props.apidata.event : -1})
+                .then((json) => {
+                    var itm = Object.assign({}, this.props.fencer);
+                    if (json.data.model) {
+                        itm = Object.assign({}, itm, json.data.model);
+                    }
+                    this.setState({imageHash: random_hash()});
+                    if (this.props.onChange) this.props.onChange(itm, true);
+                })
+                .catch((err) => parse_net_error(err));        
+            }
+        }
     }
 
     onFencerSelect = (fencer) => {
@@ -69,8 +80,20 @@ export default class FencerDialog extends React.Component {
         }
     }
 
+    fencerDataIsComplete = () => {
+        if (  (this.props.fencer.name && this.props.fencer.name.length > 1)
+           && (this.props.fencer.firstname && this.props.fencer.firstname.length > 0)
+           && (this.props.fencer.gender && ['M','F'].includes(this.props.fencer.gender))
+           && is_valid(this.props.fencer.country)
+        ) {
+            return true;
+        }
+        console.log('fencer data is not complete', this.props.fencer.name, this.props.fencer.firstname, this.props.fencer.gender, this.props.fencer.country);
+        return false;
+    }
+
     actualSave = (obj) => {
-        fencer('save',obj)
+        return fencer('save',obj)
             .then((json) => {
                 this.loading(false);
                 var itm=Object.assign({},this.props.fencer);
@@ -80,7 +103,7 @@ export default class FencerDialog extends React.Component {
                 if(json.data.model) {
                     itm = Object.assign({},itm,json.data.model);
                 }
-                this.save(itm);
+                return itm;
             })
             .catch(parse_net_error);
     }
@@ -126,10 +149,20 @@ export default class FencerDialog extends React.Component {
                     this.setState({suggestiondialog: true, suggestions: json.data.suggestions, pendingSave: obj})
                 }
                 else {
-                    this.actualSave(obj);
+                    this.actualSave(obj)
+                        .then((fencer) => {
+                            this.save(fencer);
+                        });
                 }
             })
             .catch(parse_net_error);
+    }
+
+    onPreSaveClose = (itm) => {
+        this.actualSave(itm)
+            .then((fencer) => {
+                this.save(fencer);
+            });
     }
 
     onCancelDialog = (event) => {
@@ -252,6 +285,7 @@ export default class FencerDialog extends React.Component {
             picstate='N';
         }
         var eventid=this.props.apidata ? this.props.apidata.event : -1;
+        var uploadDisabled = !this.fencerDataIsComplete();
         return (<div className="p-grid p-fluid">
             <div className='p-col-12'>
                 <label className='header'>Accreditation Photo</label>
@@ -262,7 +296,7 @@ export default class FencerDialog extends React.Component {
                     </div>
                 )}
                 <div className='textcenter'>
-                    <input type="file" onChange={this.onFileChange} />
+                    <input type="file" onChange={this.onFileChange} disabled={uploadDisabled}/>
                 </div>
                 {canapprove && (
                     <div className='approval-dropdown'>
@@ -297,7 +331,7 @@ export default class FencerDialog extends React.Component {
     {this.props.allowSearch && this.renderSuggestions()}
     {!this.props.allowSearch && this.renderAdditional()}
     {!this.props.allowSearch && this.renderPicture()}
-    <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.actualSave(this.state.pendingSave)} onClose={()=>this.close()} />
+    <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.onPreSaveClose(this.state.pendingSave)} onClose={()=>this.close()} />
 </Dialog>
 );
     }

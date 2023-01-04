@@ -232,8 +232,8 @@ export default class FencerDialog extends React.Component {
         var thistarget=evt.target.value;
         if(thistarget.length > 1) {
             var filters = { name: evt.target.value};
-            if(this.props.country && is_valid(this.props.country.id)) {
-                filters.country=this.props.country.id;
+            if(this.props.country && is_valid(this.props.country)) {
+                filters.country=this.props.country;
             }
             fencers(0, 10000, filters, "nf")
                 .then((json) => {

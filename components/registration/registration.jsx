@@ -7,6 +7,7 @@ import { parse_date, format_date,
 import React from 'react';
 import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
+import CSVUploadDialog from "./dialogs/csvuploaddialog.jsx";
 import { ParticipantList } from './elements/participantlist';
 import FEBase from './base';
 import { filter_event_category, filter_event_category_younger } from "./rules/wrong_category.jsx";
@@ -28,12 +29,23 @@ export default class FERegistrationTab extends FEBase {
             searchingForFencer: true,
             accreditations: [],
             fencer_events: [], // sideevents with fencer-specific convenience data
+            displayUploadDialog: false,
         });
     }
 
     onCountrySelect = (val) => {
         // retrieve the list of registrations for the selected country
         this.setState({ 'country': val, "country_item": this.countryFromId(val) }, this.getRegistrations);
+    }
+
+    uploadCSV = () => {
+        this.setState({displayUploadDialog: true});
+    }
+
+    onUpload = (tp, items) => {
+        if (tp == 'close') {
+            this.setState({ displayUploadDialog: false }, this.getRegistrations);
+        }
     }
 
     addFencer = () => {
@@ -54,7 +66,6 @@ export default class FERegistrationTab extends FEBase {
 
     onFencer = (tp, itm, extra) => {
         if (tp == 'change') {
-            console.log('setting fencer object to ', itm);
             this.setState({ fencer_object: itm, searchingForFencer: !extra });
         }
         else if (tp == 'close') {
@@ -266,8 +277,12 @@ export default class FERegistrationTab extends FEBase {
         return (<div className='row topmargin'>
             <div className='col-6 vertcenter'>
                 <Button label="Add Registration" icon="pi pi-plus" className="p-button-raised cright" onClick={this.addFencer} />
+                <FencerDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm, doSelect) => this.onFencer('change', itm, doSelect)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} fencer={this.state.fencer_object} allowSearch={this.state.searchingForFencer} />
             </div>
-            <FencerDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm, doSelect) => this.onFencer('change', itm, doSelect)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} fencer={this.state.fencer_object} allowSearch={this.state.searchingForFencer} />
+            <div className='col-3 offset-3 vertcenter'>
+                <Button label="Upload CSV" icon="pi pi-upload" className="p-button-raised cright" onClick={this.uploadCSV} />
+                <CSVUploadDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onUpload('close')} onSave={(items) => this.onUpload('save', items)} delete={false} display={this.state.displayUploadDialog} width='80vw'/>
+            </div>
         </div>);
     }
 

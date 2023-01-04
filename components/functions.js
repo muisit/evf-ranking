@@ -32,6 +32,28 @@ export function get_yob(dt) {
     return parseInt(mmt.year());
 }
 
+export function random_token(length, charlist) {
+    if (!charlist) charlist = "abcdefghijklmnopqrstuvwxyz0123456789-_|^#";
+    if (length > 100) length = 100;
+    if (length < 0) return null;
+    var retval = '';
+    for (var i=0;i < length; i++) {
+        retval += random_from_list(charlist);
+    }
+    return retval;
+}
+
+export function random_from_list(lst) {
+    if (!lst || !lst.length) return null;
+    var index = random_int(lst.length);
+    return lst[index];
+}
+
+export function random_int(max) {
+    if (!max) max = 0x7fffffff;
+    return Math.floor(Math.random() * max);
+}
+
 export function random_hash() {
     return moment().format("YYYYMMDDHHmmss");
 }

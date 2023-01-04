@@ -33,6 +33,8 @@ table.style-stripes-body > tbody:nth-child(2n+1) tr {
 }
 table.compact { width: auto; }
 
+.p-tooltip { z-index: 100000 !important; }
+
 .pager { position: relative; }
 .pager .slider { width: 80%; padding-right: 20px; }
 .pager .slider .p-slider { margin-top: -15px; }
@@ -148,17 +150,21 @@ table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
 .front-ranking .event div.competition div.opens { width: 8rem; }
 
 .resultranking tbody td { vertical-align: middle; }
-.resultranking tbody td.nok { background-color: #f99; }
-.resultranking tbody td.und { background-color: #ff9; }
-.resultranking tbody td.ok { background-color: #9f9; }
+.resultranking tbody td.nok, .resultranking tr.nok { background-color: #f99; }
+.resultranking tbody td.und, .resultranking tr.und { background-color: #ff9; }
+.resultranking tbody td.ok, .resultranking tr.ok { background-color: #9f9; }
 .resultranking tbody td.part { background-color: #fa4; }
 .resultranking tbody .right { float: right; padding: 0; width: auto; height: 18px;}
+.resultranking tbody .button { padding: 0; width: auto; padding-left: 10px; }
+.resultranking tbody .button span.p-button-label { margin-top: 5px; }
 .resultranking tbody td span.item { padding-top: 0px;}
 
 .suggestiontable { padding-top: 8px; border-spacing: 0px; border-collapse: collapse; }
 .suggestiontable tr.selected td{ background-color: #9f9; }
 .suggestiontable tr.selected td.icon { background-color: none; }
 .suggestiontable tr td { padding: 2px 4px; }
+.suggestiontable .p-button { padding: 0; }
+.suggestiontable .p-button .p-button-label { margin-top: 5px; }
 
 #evfregistration-root .sideevent { position: relative; width: 100%; height: 100%; padding-bottom: 20px;}
 #evfregistration-root .sideevent:after { content:"";display:table;clear:both; }

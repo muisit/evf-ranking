@@ -30,9 +30,11 @@ namespace EVFRanking\Lib;
 class PictureManager extends BaseLib {
 
     public function display($fencer) {
-        if($fencer->fencer_picture != 'N') {
+        global $evflogger;
+        $evflogger->log("picturemanager: display");
+        if ($fencer->fencer_picture != 'N') {
             $filename = $fencer->getPath();
-            if(file_exists($filename)) {
+            if (file_exists($filename)) {
                 header('Content-Disposition: inline;');
                 header('Content-Type: image/jpeg');
                 header('Expires: ' . (time() + 2*24*60*60));
@@ -42,6 +44,12 @@ class PictureManager extends BaseLib {
                 readfile($filename);
                 exit();
             }
+            else {
+                $evflogger->log("picture was not found");
+            }
+        }
+        else {
+            $evflogger->log("fencer has no picture stored");
         }
         die(403);
     }

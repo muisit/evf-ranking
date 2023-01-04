@@ -364,7 +364,7 @@
 
             if($fencerid<0) {
                 //error_log("fencer id not set, finding suggestions");
-                $suggestions=$this->findSuggestions($model,$firstname, $lastname, $country, $gender);
+                $suggestions=$model->findSuggestions($firstname, $lastname, $country, $gender);
 
                 if(sizeof($suggestions) == 1) {
                     // only 1 suggestion means we are more or less sure this 'is the one'
@@ -414,52 +414,6 @@
                 "all_check" => $acheck
             );
             $retval["ranking"][]=$values;
-        }
-        return $retval;
-    }
-
-    private function findSuggestions($model, $firstname, $lastname, $country, $gender) {
-        $retval = array();
-        $allbylastname = $model->allByLastNameSound($lastname,$gender);
-        $allbyfirstname = $model->allByFirstNameSound($firstname,$gender);
-        $allbycountry = $model->allByCountry($country,$gender);
-
-        $ln=array();
-        foreach($allbylastname as $f) {
-            $v = (array)$f;
-            $ln["f_".$v["fencer_id"]] = $v;
-        }
-        $fn=array();
-        foreach($allbyfirstname as $f) {
-            $v = (array)$f;
-            $fn["f_".$v["fencer_id"]] = $v;
-        }
-        $cn=array();
-        foreach($allbycountry as $f) {
-            $v = (array)$f;
-            $cn["f_".$v["fencer_id"]] = $v;
-        }
-
-        // find out the records that match 2 out of 3 fields
-        $m1 = array_intersect(array_keys($ln),array_keys($fn));
-        $m2 = array_intersect(array_keys($ln),array_keys($cn));
-        $m3 = array_intersect(array_keys($fn),array_keys($cn));
-        $keys = array_unique(array_merge($m1,$m2,$m3));
-
-        // if any list is very small and we have less than 10 values, add that list
-        // first add all matching lastnames (which are relatively country-specific)
-        if(sizeof($keys)<10 && sizeof($ln) < 10) $keys = array_unique(array_merge($keys,array_keys($ln)));
-        // then add all matching firstnames (which are more international)
-        if(sizeof($keys)<10 && sizeof($fn) < 10) $keys = array_unique(array_merge($keys,array_keys($fn)));
-        // then add all fencers from the same country
-        if(sizeof($keys)<10 && sizeof($cn) < 10) $keys = array_unique(array_merge($keys,array_keys($cn)));
-
-        $values = array_merge($ln,$fn,$cn);
-        foreach($keys as $k) {
-            if(isset($values[$k])) {
-                $vs = $model->export($values[$k]);
-                $retval[]=$vs;
-            }
         }
         return $retval;
     }

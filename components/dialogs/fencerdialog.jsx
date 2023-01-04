@@ -46,7 +46,7 @@ export default class FencerDialog extends React.Component {
         var selectedFile=event.target.files[0];
         upload_file("events",selectedFile,{
             fencer: this.props.value.id,
-            event: this.props.apidata ? this.props.apidata.event : -1})
+        })
         .then((json) => {
             var itm = Object.assign({}, this.props.value);
             if (json.data.model) {
@@ -88,8 +88,6 @@ export default class FencerDialog extends React.Component {
             id: this.props.value.id,
             picture: this.props.value.picture
         };
-        // include the additional API data (e.g.: event, country)
-        var obj = Object.assign(obj,this.props.apidata ? this.props.apidata : {});
 
         if(obj.gender != 'M' && obj.gender != 'F') {
             alert('Please select the proper gender');
@@ -195,13 +193,12 @@ export default class FencerDialog extends React.Component {
         if(!['Y','N','R','A'].includes(picstate)) {
             picstate='N';
         }
-        var eventid=this.props.apidata ? this.props.apidata.event : -1;
         return (<div className='p-col-12'>
             <label className='header'>Accreditation Photo</label>
             <div>
             {['Y','A','R'].includes(this.props.value.picture) && (
                 <div className='accreditation'>
-                  <img className='photoid' src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + "&event=" + eventid + '&hash='+this.state.imageHash}></img>
+                  <img className='photoid' src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + '&hash='+this.state.imageHash}></img>
                 </div>
             )}
             <div className='textcenter'>

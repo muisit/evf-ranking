@@ -358,27 +358,27 @@ export default class ImportDialog extends React.Component {
                         <td className={itm.pos_check}>
                             {itm.pos}
                             {itm.pos_text !== '' && (
-                            <Button icon="pi pi-info-circle" className="p-butto-sm p-button-text right" tooltip={itm.pos_text} />)}
+                            <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.pos_text} />)}
                         </td>
                         <td className={itm.lastname_check}>
                             <span className='item'>{itm.lastname}</span>
                             {itm.lastname_text !== '' && (
-                            <Button icon="pi pi-info-circle" className="p-butto-sm p-button-text right" tooltip={itm.lastname_text} />)}
+                            <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.lastname_text} />)}
                         </td>
                         <td className={itm.firstname_check}>
                             {itm.firstname}                            
                             {itm.firstname_text !== '' && (
-                            <Button icon="pi pi-info-circle" className="p-butto-sm p-button-text right" tooltip={itm.firstname_text} />)}
+                            <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.firstname_text} />)}
                             </td>
                         <td className={itm.country_check}>
                             {itm.country}
                             {itm.country_text !== '' && (
-                            <Button icon="pi pi-info-circle" className="p-butto-sm p-button-text right" tooltip={itm.country_text} />)}
+                            <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.country_text} />)}
                         </td>
                         <td className={itm.all_check}>
                             {itm.all} ({itm.suggestions.length})
                             {itm.all_text !== '' && (
-                            <Button icon="pi pi-info-circle" className="p-butto-sm p-button-text right" tooltip={itm.all_text} />)}
+                            <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.all_text} />)}
                         </td>
                       </tr>
                         ))}

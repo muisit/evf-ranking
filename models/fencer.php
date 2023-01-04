@@ -25,9 +25,11 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Fencer extends Base {
+use \DateTimeImmutable;
+
+class Fencer extends Base {
     public $table = "TD_Fencer";
     public $pk="fencer_id";
     public $fields=array("fencer_id","fencer_firstname","fencer_surname","fencer_country","fencer_dob",
@@ -258,5 +260,240 @@
         return $value;
     }
 
+    public function doImportCheck($fencers, $cid)
+    {
+        global $evflogger;
+        $evflogger->log("Fencer::doImportCheck for $cid and list of " . count($fencers) . " fencers");
+        $retval = array("result" => array());
+        $country = new Country($cid);
+
+        foreach ($fencers as $entry) {
+            $name = Fencer::Sanitize($entry["name"]);
+            $firstname = Fencer::Sanitize($entry["firstname"]);
+            $gender = trim(Fencer::Sanitize($entry['gender']));
+            $countryAbbreviation = trim(Fencer::Sanitize($entry['country']));
+
+            $birthdayText = isset($entry['birthday']) ? $entry['birthday'] : null;
+            $birthday = $this->parseBirthdate($birthdayText);
+
+            $retval["result"][] = $this->checkSingleFencer($name, $firstname, $gender, $birthday, $countryAbbreviation, $country, $entry["index"]);
+        }
+        return $retval;
+    }
+
+    private function checkSingleFencer($name, $firstname, $gender, $birthday, $countryAbbreviation, $country, $index)
+    {
+        global $evflogger;
+        $retval = [
+            "id" => -1,
+            "index" => $index,
+            "lastNameCheck" => 'nok',
+            "firstNameCheck" => 'nok',
+            "birthdayCheck" => 'nok',
+            "countryCheck" => 'nok',
+            "suggestions" => [],
+            'error' => '',
+            'firstname' => ucfirst(trim($firstname)),
+            'name' => strtoupper(trim($name)),
+            'birthday' => $birthday->format('Y-m-d'),
+            'gender' => $gender
+        ];
+
+        if (strlen($retval['firstname']) == 0) {
+            $retval['error'] .= 'Please enter a valid first name. ';
+            $retval['firstNameCheck'] = 'err';
+        }
+        if (strlen($retval['name']) < 2) {
+            $retval['error'] .= 'Please enter a valid last name. ';
+            $retval['lastNameCheck'] = 'err';
+        }
+        $birthdayTime = strtotime($retval['birthday']);
+        if ($birthdayTime > (time() - 12 * 365 * 24 * 60 * 60)) { // age of 12 minimum
+            $retval['error'] .= 'Please enter a valid date of birth. ';
+            $retval['birthdayCheck'] = 'err';
+        }
+        if ($birthdayTime < (time() - 110 * 365 * 24 * 60 * 60)) { // age of 110 maximum
+            $retval['error'] .= 'Please enter a valid date of birth. ';
+            $retval['birthdayCheck'] = 'err';
+        }
+        $birthyear = $birthday->format('Y');
+        if ($birthyear == (new DateTimeImmutable('now'))->format('Y')) {
+            $birthyear = null;
+        }
+
+        if (!in_array($gender, array('F','W','M'))) {
+            $retval['error'] .= 'Gender ' . htmlspecialchars($gender) . ' is not allowed. Please enter a valid gender. ';
+            $retval['lastNameCheck'] = 'err';
+        }
+        else if ($gender == 'W') {
+            $retval['gender'] = 'F';
+        }
+
+        if (empty($countryAbbreviation) && !$country->exists()) {
+            $retval['error'] .= 'Please select a correct country. ';
+            $retval['countryCheck'] = 'err';
+        }
+        else {
+            if (!empty($countryAbbreviation)) {
+                $evflogger->log("selecting country based on $countryAbbreviation");
+                $fencerCountry = $country->select('*')->where('country_abbr', $countryAbbreviation)->first();
+                if (!empty($fencerCountry)) {
+                    // override the country for picking the most probable selection
+                    $country = new Country($fencerCountry);
+                    $retval['country'] = $country->getKey();
+                }
+                else {
+                    $retval['error'] .= 'Invalid country abbreviation ' . htmlspecialchars($countryAbbreviation) .'. ';
+                    $retval['countryCheck'] = 'err';
+                }
+            }
+            else {
+                if (!$country->exists()) {
+                    $retval['error'] .= 'Please enter a valid country for each fencer. ';
+                    $retval['countryCheck'] = 'err';
+                }
+                else {
+                    $retval['country'] = $country->getKey();
+                }
+            }
+        }
+
+        $allbyname = $this->allByName($name, $firstname, $gender);
+        foreach ($allbyname as $fencer) {
+            $values = (array)$fencer;
+            if (!$country->exists() || $values["country_abbr"] == $country->country_abbr) {
+                if ($birthyear != null) {
+                    $birthyear2 = DateTimeImmutable::createFromFormat('Y-m-d', $values['fencer_dob'])->format('Y');
+                }
+                if ($birthyear === null || $birthyear2 == $birthyear) {
+                    $retval["id"] = $values["fencer_id"];
+                    $retval["lastNameCheck"] = 'ok';
+                    $retval["firstNameCheck"] = 'ok';
+                    $retval["countryCheck"] = 'ok';
+                    $retval["birthdayCheck"] = $values["fencer_dob"] == $retval['birthday'] ? 'ok' : 'nok';
+                    $retval["suggestions"] = array($this->export($values));
+                    break;
+                }
+            }
+        }
+            
+        // no match, but if we found exactly one fencer, it is only a country change
+        if (sizeof($allbyname) == 1 && $retval["id"] < 0) {
+            if ($birthyear != null) {
+                $birthyear2 = DateTimeImmutable::createFromFormat('Y-m-d', $values['fencer_dob'])->format('Y');
+            }
+            if ($birthyear === null || $birthyear2 == $birthyear) {
+                $values = (array)$allbyname[0];
+                $retval["id"] = $values["fencer_id"];
+                $retval["lastNameCheck"] = 'ok';
+                $retval["firstNameCheck"] = 'ok';
+                $retval["countryCheck"] = 'nok';
+                $retval["birthdayCheck"] = $values["fencer_dob"] == $retval['birthday'] ? 'ok' : 'nok';
+                $retval["suggestions"] = array($this->export($values));
+            }
+        }
+
+        if ($retval['id'] < 0) {
+            $suggestions = $this->findSuggestions($firstname, $name, $country->exists() ? $country->country_abbr : null, $gender);
+            $retval["suggestions"] = $suggestions;
+        }
+        return $retval;
+    }
+
+    public function findSuggestions($firstname, $lastname, $country, $gender)
+    {
+        $retval = array();
+        $allbylastname = $this->allByLastNameSound($lastname, $gender);
+        $allbyfirstname = $this->allByFirstNameSound($firstname, $gender);
+        $allbycountry = empty($country) ? [] : $this->allByCountry($country, $gender);
+
+        $ln = array();
+        foreach ($allbylastname as $f) {
+            $v = (array)$f;
+            $ln["f_" . $v["fencer_id"]] = $v;
+        }
+        $fn = array();
+        foreach ($allbyfirstname as $f) {
+            $v = (array)$f;
+            $fn["f_" . $v["fencer_id"]] = $v;
+        }
+        $cn = array();
+        foreach ($allbycountry as $f) {
+            $v = (array)$f;
+            $cn["f_" . $v["fencer_id"]] = $v;
+        }
+
+        // find out the records that match 2 out of 3 fields
+        $m1 = array_intersect(array_keys($ln), array_keys($fn));
+        $m2 = array_intersect(array_keys($ln), array_keys($cn));
+        $m3 = array_intersect(array_keys($fn), array_keys($cn));
+        $keys = array_unique(array_merge($m1, $m2, $m3));
+
+        // if any list is very small and we have less than 10 values, add that list
+        // first add all matching lastnames (which are relatively country-specific)
+        if (sizeof($keys) < 10 && sizeof($ln) < 10) $keys = array_unique(array_merge($keys, array_keys($ln)));
+        // then add all matching firstnames (which are more international)
+        if (sizeof($keys) < 10 && sizeof($fn) < 10) $keys = array_unique(array_merge($keys, array_keys($fn)));
+        // then add all fencers from the same country
+        if (sizeof($keys) < 10 && sizeof($cn) < 10) $keys = array_unique(array_merge($keys, array_keys($cn)));
+
+        $values = array_merge($ln, $fn, $cn);
+        foreach ($keys as $k) {
+            if (isset($values[$k])) {
+                $vs = $this->export($values[$k]);
+                $vs["inLn"] = isset($ln[$k]) ? 'ok' : 'nok';
+                $vs["inFn"] = isset($fn[$k]) ? 'ok' : 'nok';
+                $vs["inCn"] = isset($cn[$k]) ? 'ok' : 'nok';
+                $retval[] = $vs;
+            }
+        }
+        return $retval;
+    }
+
+    private function parseBirthdate($date)
+    {
+        if (empty($date)) return time();
+
+        $format = 'Y#m#d';
+        $sep = '-';
+        $pos = strpos($date, $sep);
+        if ($pos === false) {
+            $sep = '/';
+            $pos = strpos($date, $sep);
+        }
+        if ($pos === false) {
+            return strtotime($date);
+        }
+        if ($pos > 2) {
+            // first digit is too wide, expect YYYY/M/D
+            $format = 'Y#m#d';
+        }
+        else if(strlen($date) < 9) {
+            if ($sep == '/') {
+                // expect M/D/YY
+                $format = 'm#d#y';
+            }
+            else {
+                $format = 'd#m#y';
+            }
+        }
+        else if ($sep == '/') {
+            // Windows/American date, expect M/D/YYYY
+            $format = 'm#d#Y';
+        }
+        else {
+            $format = 'Y#m#d';
+        }
+        global $evflogger;
+        $evflogger->log("parsing $date using $format ($pos, '$sep')");
+        $date = DateTimeImmutable::createFromFormat($format, $date);
+        $time = strtotime($date->format('Y-m-d'));
+        if ($time > time() && strpos($format, $y) !== false) {
+            // in case we used 'y', it is interpreted as between 1970 and 2069, but we need to shift that
+            // to the past. So we reformat the date into the 19-hundreds
+            $evflogger->log('reformatting date to 20th century: ' . '19' . $date->format('y-m-d'));
+            $date = DateTimeImmutable::createFromFormat('Y-m-d', '19' . $date->format('y-m-d'));
+        }
+        return $date;
+    }
 }
- 

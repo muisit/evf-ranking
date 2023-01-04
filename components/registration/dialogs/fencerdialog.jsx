@@ -32,7 +32,7 @@ export default class FencerDialog extends React.Component {
     close = () => {
         if(this.props.onClose) this.props.onClose();
         // clear our duplicate check settings for the next new fencer
-        this.setState({suggestionDialog: false, suggestions:null, pendingSave:null});
+        this.setState({suggestionDialog: false, suggestions:null, pendingSave:null, imageHash: random_hash()});
     }
 
     save = (item) => {
@@ -60,7 +60,7 @@ export default class FencerDialog extends React.Component {
                 var selectedFile=event.target.files[0];
                 upload_file("events",selectedFile,{
                     fencer: this.props.fencer.id,
-                    event: this.props.apidata ? this.props.apidata.event : -1})
+                    event: this.props.basic.event ? this.props.basic.event.id : -1})
                 .then((json) => {
                     var itm = Object.assign({}, this.props.fencer);
                     if (json.data.model) {
@@ -88,7 +88,6 @@ export default class FencerDialog extends React.Component {
         ) {
             return true;
         }
-        console.log('fencer data is not complete', this.props.fencer.name, this.props.fencer.firstname, this.props.fencer.gender, this.props.fencer.country);
         return false;
     }
 
@@ -119,10 +118,9 @@ export default class FencerDialog extends React.Component {
             gender: this.props.fencer.gender,
             name: this.props.fencer.name,
             id: this.props.fencer.id,
-            picture: this.props.fencer.picture
+            picture: this.props.fencer.picture,
+            event: this.props.basic.event ? this.props.basic.event.id : -1,
         };
-        // include the additional API data (e.g.: event, country)
-        var obj = Object.assign(obj,this.props.apidata ? this.props.apidata : {});
 
         if(obj.gender != 'M' && obj.gender != 'F') {
             alert('Please select the proper gender');
@@ -131,7 +129,6 @@ export default class FencerDialog extends React.Component {
         if (obj.birthday && obj.birthday.length > 0) {
             var yob=get_yob(obj.birthday);
             var now=get_yob();
-            console.log(obj.birthday, yob, now);
             if(now-yob < 10 || now-yob > 120) {
                 alert('Please select a proper date of birth');
                 return;
@@ -180,7 +177,6 @@ export default class FencerDialog extends React.Component {
         case 'country':
         case 'birthday':
         case 'gender':
-            console.log('setting',event.target.name,' to ',event.target.value);
             item[event.target.name] = event.target.value; 
             break;
         case 'picture':
@@ -287,7 +283,7 @@ export default class FencerDialog extends React.Component {
         if(!['Y','N','R','A'].includes(picstate)) {
             picstate='N';
         }
-        var eventid=this.props.apidata ? this.props.apidata.event : -1;
+        var eventid=this.props.basic.event ? this.props.basic.event.id : -1;
         var uploadDisabled = !this.fencerDataIsComplete();
         return (<div className="p-grid p-fluid">
             <div className='p-col-12'>

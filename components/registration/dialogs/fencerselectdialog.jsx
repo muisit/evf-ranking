@@ -551,7 +551,7 @@ export default class FencerSelectDialog extends React.Component {
                 if (allow_more_teams) {
                     id = "teamselect-" + ev.id;
                 }
-                //console.log("allowing more teams ",allow_more_teams);
+
                 return (
                 <tbody key={idx}>
                 <tr>

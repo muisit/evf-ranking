@@ -28,26 +28,28 @@
 namespace EVFRanking\Lib;
 
 class API extends BaseLib {
-    public function createNonceText() {
-        $user = wp_get_current_user();        
-        if(!empty($user)) {
-            return "evfranking".$user->ID;
+    public function createNonceText()
+    {
+        $user = wp_get_current_user();
+        if (!empty($user)) {
+            return "evfranking" . $user->ID;
         }
         return "evfranking";
     }
 
-    public function resolve() {
+    public function resolve()
+    {
         $json = file_get_contents('php://input');
-        $data = json_decode($json,true);
+        $data = json_decode($json, true);
 
         if (!empty($_FILES)) {
-            $retval= $this->doFile($_POST["nonce"]);
+            $retval = $this->doFile($_POST["nonce"]);
         }
-        else if(empty($data) || !isset($data['nonce']) || !isset($data['path'])) {
-            if(empty($data)) {
+        else if (empty($data) || !isset($data['nonce']) || !isset($data['path'])) {
+            if (empty($data)) {
                 // see if we have the proper GET requests for a download
-                if(!empty($this->fromGet("action")) && !empty($this->fromGet("nonce"))) {
-                    $retval=$this->doGet($this->fromGet("action"),$this->fromGet("nonce"));
+                if (!empty($this->fromGet("action")) && !empty($this->fromGet("nonce"))) {
+                    $retval = $this->doGet($this->fromGet("action"), $this->fromGet("nonce"));
                 }
             }
 
@@ -66,7 +68,8 @@ class API extends BaseLib {
         wp_die();
     }
 
-    protected function checkNonce($nonce) {
+    protected function checkNonce($nonce)
+    {
         $result = wp_verify_nonce($nonce, $this->createNonceText());
         if (!($result === 1 || $result === 2)) {
             error_log('die because nonce does not match');
@@ -74,18 +77,26 @@ class API extends BaseLib {
         }
     }
 
-    private function fromGet($var, $def=null) {
-        if(isset($_GET[$var])) return $_GET[$var];
+    private function fromGet($var, $def = null)
+    {
+        if (isset($_GET[$var])) {
+            return $_GET[$var];
+        }
         return $def;
     }
-    private function fromPost($var, $def=null) {
-        if(isset($_POST[$var])) return $_POST[$var];
+    private function fromPost($var, $def = null)
+    {
+        if (isset($_POST[$var])) {
+            return $_POST[$var];
+        }
         return $def;
     }
 
-    private function doGet($action, $nonce) {
+    private function doGet($action, $nonce)
+    {
+        global $evflogger;
         $this->checkNonce($nonce);
-        if($action == "evfranking") {
+        if ($action == "evfranking") {
             $filetype = $this->fromGet("download");
             $sid = $this->fromGet("event");
             $eid = $this->fromGet("mainevent");
@@ -94,10 +105,10 @@ class API extends BaseLib {
             //error_log("filetype $filetype, sid $sid, eid $eid, picture $picture, tid $tid");
 
             if ((!empty($sid) || !empty($eid)) && in_array($filetype, array("participants","participantsxml"))) {
-                $sideevent = $this->loadModel("SideEvent",$sid);
-                $event = $this->loadModel("Event",$eid);
-                if(empty($eid) && $sideevent->exists()) {
-                    $event=$this->loadModel("Event",$sideevent->event_id);
+                $sideevent = $this->loadModel("SideEvent", $sid);
+                $event = $this->loadModel("Event", $eid);
+                if (empty($eid) && $sideevent->exists()) {
+                    $event = $this->loadModel("Event", $sideevent->event_id);
                 }
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
@@ -111,7 +122,7 @@ class API extends BaseLib {
                     ));
 
                     if($filetype == "participantsxml") {
-                        $em = new XMLManager();                        
+                        $em = new XMLManager();
                     }
                     else {
                         $em = new ExportManager();
@@ -119,8 +130,8 @@ class API extends BaseLib {
                     $em->export($filetype,$sideevent,$event);
                 }
             }
-            else if(!empty($eid) && in_array($filetype,array("summary"))) {
-                $event = $this->loadModel("Event",$eid);
+            else if (!empty($eid) && in_array($filetype, array("summary"))) {
+                $event = $this->loadModel("Event", $eid);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("accreditation", "view", array(
@@ -130,11 +141,11 @@ class API extends BaseLib {
                     ));
 
                     $em = new ExportManager();
-                    $em->exportSummary($event,$this->fromGet("type"),$this->fromGet("typeid"));
+                    $em->exportSummary($event, $this->fromGet("type"), $this->fromGet("typeid"));
                 }
             }
-            else if(!empty($eid) && in_array($filetype,array("accreditation"))) {
-                $event = $this->loadModel("Event",$eid);
+            else if (!empty($eid) && in_array($filetype, array("accreditation"))) {
+                $event = $this->loadModel("Event", $eid);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("accreditation", "view", array(
@@ -144,11 +155,11 @@ class API extends BaseLib {
                     ));
 
                     $em = new ExportManager();
-                    $em->exportAccreditation($event,$this->fromGet("id"));
+                    $em->exportAccreditation($event, $this->fromGet("id"));
                 }
             }
             else if (!empty($sid) && in_array($filetype, array("cashier"))) {
-                $event = $this->loadModel("Event",$eid);
+                $event = $this->loadModel("Event", $eid);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("registration", "list", array(
@@ -165,8 +176,8 @@ class API extends BaseLib {
                 }
             }
             else if (!empty($tid) && !empty($picture)) {
-                $event = $this->loadModel("Event",$sid);
-                $template = $this->loadModel("AccreditationTemplate",$tid);
+                $event = $this->loadModel("Event", $sid);
+                $template = $this->loadModel("AccreditationTemplate", $tid);
 
                 if ($event->exists() && $template->exists() && $template->event_id == $event->getKey()) {
                     $this->checkPolicy("templates", "save", array(
@@ -176,19 +187,19 @@ class API extends BaseLib {
                     ));
                     
                     $pm = new PictureManager();
-                    $pm->template($template,$picture);
+                    $pm->template($template, $picture);
                 }
             }
             else if (!empty($sid) && is_numeric($picture)) {
-                $event = $this->loadModel("Event",$sid);
-                $fencer = $this->loadModel("Fencer",$picture);
+                $event = $this->loadModel("Event", $sid);
+                $fencer = $this->loadModel("Fencer", $picture);
 
-                if($fencer->exists()) {
-                    $sideevent=new \EVFRanking\Models\SideEvent();
+                if ($fencer->exists()) {
+                    $sideevent = new \EVFRanking\Models\SideEvent();
                     if ($event->exists()) {
                         $sides = $event->sides();
                         if (!empty($sides)) {
-                            $sideevent = $this->loadModel("SideEvent",$sides[0]); // pick any sideevent
+                            $sideevent = $this->loadModel("SideEvent", $sides[0]); // pick any sideevent
                         }
                     }
 
@@ -199,7 +210,7 @@ class API extends BaseLib {
                             "event" => $sideevent->event_id,
                         )
                     ));
-
+                    $evflogger->log("starting picture manager");
                     $pm = new PictureManager();
                     $pm->display($fencer);
                 }
@@ -208,19 +219,21 @@ class API extends BaseLib {
         die(403);
     }
 
-    private function doFile($nonce) {
+    private function doFile($nonce)
+    {
         $this->checkNonce($nonce);
 
         $upload = $this->fromPost("upload");
         $fencer = $this->fromPost("fencer");
         $event = $this->fromPost("event");
         $template = $this->fromPost("template");
-        $retval=array("error"=>true);
+        $type = $this->fromPost('type');
+        $retval = array("error" => true);
 
-        if (!empty($event) && $upload == "true")  {
-            $event = $this->loadModel("Event",$event);
-            $fencer = $this->loadModel("Fencer",$fencer);
-            $template = $this->loadModel("AccreditationTemplate",$template);
+        if (!empty($event) && $upload == "true") {
+            $event = $this->loadModel("Event", $event);
+            $fencer = $this->loadModel("Fencer", $fencer);
+            $template = $this->loadModel("AccreditationTemplate", $template);
 
             if ($fencer->exists()) {
                 // check the policy to see if the user can save a picture
@@ -232,10 +245,10 @@ class API extends BaseLib {
                 ));
 
                 $pm = new PictureManager();
-                $retval=$pm->import($fencer);
+                $retval = $pm->import($fencer);
                 if (!isset($retval["error"])) {
                     $retval["success"] = true;
-                    $retval["model"]=$fencer->export();
+                    $retval["model"] = $fencer->export();
                 }
             }
             else if ($event->exists() && $template->exists()) {
@@ -251,6 +264,13 @@ class API extends BaseLib {
                 if(!isset($retval["error"])) {
                     $retval["success"] = true;
                     //$retval["model"] = $template->export();
+                }
+            }
+            else if (!empty($type) && $type == 'csv') {
+                $manager = new CSVManager();
+                $retval = $manager->import();
+                if (!isset($retval["error"])) {
+                    $retval["success"] = true;
                 }
             }
         }
@@ -339,6 +359,13 @@ class API extends BaseLib {
                     if(!is_array($ranks)) $ranks=array();
                     $comp = isset($modeldata["competition"]) ? intval($modeldata["competition"]) : -1;
                     $retval=array_merge($retval, $model->doImportCheck($ranks,$comp));
+                }
+                else if ($path[0] == 'fencers' && isset($path[1]) && $path[1] == "importcheck") {
+                    $this->checkPolicy("fencers", "save", array("filter" => $filter, "model" => $modeldata));
+                    $fencers = isset($modeldata["fencers"]) ? $modeldata["fencers"] : array();
+                    $countryId = isset($modeldata["country"]) ? $modeldata["country"] : array();
+                    if (!is_array($fencers)) $fencers = array();
+                    $retval = array_merge($retval, $model->doImportCheck($fencers, $countryId));
                 }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "import") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));

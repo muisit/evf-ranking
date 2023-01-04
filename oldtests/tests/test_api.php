@@ -584,10 +584,17 @@ class Test_Api extends BaseTest {
             ),
             "other" => array("special"=>"data"),
             "save" => array("special"=>"data"),
+            "importcheck" => array(
+                "country" => 1,
+                "fencers" => array(
+                    array("name" => "test", "firstname" => "test2", "gender" => "M")
+                )
+                ),
         );
         $specials=array(
             "presavecheck"=>"save",
             "merge"=>"save",
+            "importcheck" => "importcheck"
         );
         $expected=array(
             "list" => 'nonce check test//policy check fencers list {"filter":{"a":1,"b":"b"},"model":{"offset":10,"pagesize":50,"filter":{"a":1,"b":"b"},"sort":"abcdef","special":["special1","special2"]}}//listresults EVFTest\Models\Fencer 10 false//{"listresults":10}//12,selectAll([10,50,{"a":1,"b":"b"},"abcdef",["special1","special2"]]),count({"a":1,"b":"b"},["special1","special2"])',
@@ -597,6 +604,7 @@ class Test_Api extends BaseTest {
             "other" => 'nonce check test//policy check fencers list {"filter":"","model":{"special":"data"}}//listresults EVFTest\Models\Fencer 10 false//{"listresults":10}//12,selectAll([0,20,"","","data"]),count("","data")',
             "presavecheck" => 'nonce check test//policy check fencers save {"filter":"","model":{"special":"data"}}//{"a":"preSaveCheck","0":{"special":"data"}}//12,preSaveCheck([{"special":"data"}])',
             "merge" => 'nonce check test//policy check fencers save {"filter":"","model":{"special":"data"}}//{"a":"merge","0":{"special":"data"}}//12,merge([{"special":"data"}])',
+            "importcheck" => 'nonce check test//policy check fencers save {"filter":"","model":{"country":1,"fencers":[{"name":"test","firstname":"test2","gender":"M"}]}}//{"a":"doImportCheck","0":[{"name":"test","firstname":"test2","gender":"M"}],"1":1}//12,doImportCheck([[{"name":"test","firstname":"test2","gender":"M"}],1])',
         );
 
         $this->do_test_api("fencers","fencers",$data, $expected, $specials);

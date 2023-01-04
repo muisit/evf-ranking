@@ -304,7 +304,7 @@ export default class CSVUploadDialog extends React.Component {
     }
 
     minimalColumnsSelected = () => {
-        var colsRequired={};
+        var colsRequired = {};
         var countryColumn = false;
         Object.keys(this.state.headerFields).map((fld) => {
             var value = this.state.headerFields[fld];

@@ -605,7 +605,7 @@ export default class CSVUploadDialog extends React.Component {
         });
         this.setState({fencers: fencers}, () => this.resolveEvents());
     }
-
+/*
     onValidImport = () => {
         var data = ImportFencerList();
         var fencers = data.fencers.map((fencer) => {
@@ -637,7 +637,7 @@ export default class CSVUploadDialog extends React.Component {
         var data = ValidCSVImport();
         this.setState({contents: data.contents, headerFields: data.headers, skipRows: data.skipRows, step: "select"});
     }
-
+*/
     render() {
         var label='Continue';
         switch (this.state.step)
@@ -649,11 +649,11 @@ export default class CSVUploadDialog extends React.Component {
         case 'finish': label = 'Close'; break;
         }
 
+        //<Button label="SkipImport" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onValidImport} />
+        //<Button label="SkipEvents" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onValidEvents} />
+        //<Button label="InvalidCSV" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onInvalidCSV} />
+        //<Button label="ValidCSV" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onValidCSV} />
         var footer=(<div>
-            <Button label="SkipImport" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onValidImport} />
-            <Button label="SkipEvents" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onValidEvents} />
-            <Button label="InvalidCSV" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onInvalidCSV} />
-            <Button label="ValidCSV" icon="pi" className="p-button-warning p-button-raised p-button-text" onClick={this.onValidCSV} />
             <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
             <Button label={label} icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
         </div>);

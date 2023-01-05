@@ -1,6 +1,6 @@
 {
   "name": "EVFRanking",
-  "version": "1.6.1",
+  "version": "1.6.3",
   "main": "index.jsx",
   "browserlists": [
     "defaults"

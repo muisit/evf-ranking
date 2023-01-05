@@ -121,16 +121,16 @@ if [[ "x$DRY" = "x1" ]]
 then
     echo "cat \"$PROJECT.php\" | sed \"s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/\" > tmp.$$"
     echo "mv tmp.$$ \"$PROJECT.php\""
-    echo "cat \"package.json\" | sed \"s/\(.*version\\\"[ \t:]*\\\"\).*/\1${MAJ}.${MIN}.${MICR}\\\",/\" > tmp.$$"
+    echo "cat \"package.json\" | sed \"s/\(.*\\\"version\\\"[ \t:]*\\\"\).*/\1${MAJ}.${MIN}.${MICR}\\\",/\" > tmp.$$"
     echo "mv tmp.$$ \"package.json\""
 else
     cat "$PROJECT.php" | sed "s/\(.*Version[ \t:]*\).*/\1${MAJ}.${MIN}.${MICR}/" > tmp.$$
     mv tmp.$$ "$PROJECT.php"
     cat "$PROJECT.php" |  sed "s/\(define.*VERSION[^\"]*\"\)[^\"]*\(\".*\)/\1${MAJ}.${MIN}.${MICR}\2/"  > tmp.$$
     mv tmp.$$ "$PROJECT.php"
-    cat "package.json" | sed "s/\(.*version\"[ \t:]*\"\).*/\1${MAJ}.${MIN}.${MICR}\",/" > tmp.$$
+    cat "package.json" | sed "s/\(.*\"version\"[ \t:]*\"\).*/\1${MAJ}.${MIN}.${MICR}\",/" > tmp.$$
     mv tmp.$$ "package.json"
-    mg create tag "{$MAJ}.${MIN}.${MICR}" -m "auto tagged commit"
+    mg create tag "${MAJ}.${MIN}.${MICR}" -m "auto tagged commit"
 fi
 
 if [[ "x$DRY" = "x1" ]]

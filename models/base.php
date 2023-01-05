@@ -191,6 +191,9 @@
         return true;
     }
 
+    public function postProcessing($data) {
+    }
+
     public function identical($other) {
         // if id's match, we're identical
         if(!$this->isNew() && $this->getKey() == $other->getKey()) {

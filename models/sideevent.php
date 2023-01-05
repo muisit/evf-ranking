@@ -50,6 +50,17 @@
         "competition_id" => "skip"
     );
 
+    public static function ExportAll($event)
+    {
+        $model = new SideEvent();
+        $lst = $model->listByEvent($event->getKey());
+        $retval = [];
+        foreach ($lst as $c) {
+            $retval[] = $model->export($c);
+        }
+        return $retval;
+    }
+
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
         return $this->select('*')->offset($offset)->limit($pagesize)->orderBy(array("starts", "title","costs"))->get();
     }

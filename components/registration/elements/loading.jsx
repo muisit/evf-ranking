@@ -29,7 +29,7 @@ export function Loading(props) {
     }
 
     return (<div className='p-dialog-mask p-component-overlay p-dialog-visible overlay-panel'>
-        <div className="progress-panel p-dialog p-component">
+        <div className="progress-panel p-dialog p-dialog-visible p-component">
           <ProgressBar value={value} displayValueTemplate={displayValueTemplate}></ProgressBar>
         </div>
     </div>);

@@ -638,8 +638,13 @@ class API extends BaseLib {
         return $this->listResults($model, $model->selectAll($offset,$pagesize,$filter,$sort,$special), $model->count($filter,$special));
     }
 
-    protected function createModel($model, $data) {
-        return $model->get($data['id']);
+    protected function createModel($model, $data)
+    {
+        $viewModel = $model->get($data['id']);
+        if (!empty($data)) {
+            $viewModel->postProcessing($data);
+        }
+        return $viewModel;
     }
 
     protected function loadModel($modelname,$arg=null) {

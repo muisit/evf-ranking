@@ -48,6 +48,17 @@
         "competition_weapon_check" => "date"
     );
 
+    public static function ExportAll($event)
+    {
+        $model = new Competition();
+        $lst = $model->listByEvent($event->getKey());
+        $retval = [];
+        foreach ($lst as $c) {
+            $retval[] = $model->export($c);
+        }
+        return $retval;
+    }
+
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
         return $this->select('*')->offset($offset)->limit($pagesize)->orderBy(array("competition_opens", "competition_weapon","competition_category"))->get();
     }

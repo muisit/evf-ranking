@@ -106,9 +106,30 @@
     );
 
     public function export($result=null) {
-        $retval=parent::export($result);
-        if(isset($retval["config"])) $retval["config"]=json_decode($retval["config"],true);
+        $retval = parent::export($result);
+        if (isset($retval["config"])) {
+            $retval["config"] = json_decode($retval["config"], true);
+        }
+        if (isset($this->basic)) {
+            $retval["basic"] = $this->basic;
+        }
         return $retval;
+    }
+
+    public function postProcessing($data)
+    {
+        global $evflogger;
+        $evflogger->log("postProcessing event using ".json_encode($data));
+        if (!empty($data) && isset($data["full"]) && $data["full"]) {
+            $evflogger->log("full is set");
+            $this->basic = array();
+            $this->basic["countries"] = \EVFRanking\Models\Country::ExportAll();
+            $this->basic['weapons'] = \EVFRanking\Models\Weapon::ExportAll();
+            $this->basic['categories'] = \EVFRanking\Models\Category::ExportAll();
+            $this->basic['roles'] = \EVFRanking\Models\Role::ExportAll();
+            $this->basic['sides'] = \EVFRanking\Models\SideEvent::ExportAll($this);
+            $this->basic['competitions'] = \EVFRanking\Models\Competition::ExportAll($this);
+        }
     }
 
     private function sortToOrder($sort) {

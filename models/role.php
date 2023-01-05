@@ -73,6 +73,17 @@
         }
     }
 
+    public static function ExportAll()
+    {
+        $model = new Role();
+        $lst = $model->selectAll(0, null, null, "n", null);
+        $retval = [];
+        foreach ($lst as $c) {
+            $retval[] = $model->export($c);
+        }
+        return $retval;
+    }
+
     public static function ListAll()
     {
         $model=new Role();

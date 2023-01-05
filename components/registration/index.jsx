@@ -48,6 +48,7 @@ export default class RegistrationPage extends React.Component {
     }
 
     onload = (key, label, value) => {
+        console.log('onload',key,label,value);
         this.setState((state) => {
             state.loading[key] = { label: label, state: false, value: value };
             return { loading: state.loading };
@@ -224,7 +225,7 @@ export default class RegistrationPage extends React.Component {
 
     componentDidMount = () => {
         this.onload("event", "Loading event data", evfranking.eventid);
-        singleevent("view",{id: evfranking.eventid})
+        singleevent("view",{id: evfranking.eventid, full: true})
             .then(json => {
                 this.unload("event", evfranking.eventid);
 
@@ -237,56 +238,17 @@ export default class RegistrationPage extends React.Component {
                     isclosed: closesat.isBefore(now)
                 });
 
-                var eventid=json.data.item.id;
-                // now load the competitions and side-events
-                this.onload("sideevents", "Loading side events", eventid);
-                sideevents(eventid).then((json) => {
-                    this.unload("sideevents", eventid);
+                if (json.data.item.basic) {
+                    if (json.data.item.basic.countries) this.sortAllInOrder("countries", json.data.item.basic.countries);
+                    if (json.data.item.basic.roles) this.sortAllInOrder("roles", json.data.item.basic.roles);
+                    if (json.data.item.basic.weapons) this.sortAllInOrder("weapons", json.data.item.basic.weapons);
+                    if (json.data.item.basic.categories) this.sortAllInOrder("categories", json.data.item.basic.categories);
 
-                    if(json && json.data && json.data.list && json.data.list.length) {      
-                        this.sortAllInOrder("events",json.data.list);
-                    }
-                });
-
-                this.onload("competitions", "Loading competitions", eventid);
-                competitions(eventid).then((cmp) => {
-                    if (cmp && cmp.data && cmp.data.list) {
-                        this.unload("competitions", eventid);
-                        this.sortAllInOrder("competitions", cmp.data.list);
-                    }
-                });
-
-            });
-        this.onload("countries", "Loading country data", "countries");
-        countries(0, 1000, '', "n")
-            .then(json => {
-                if (json) {
-                    this.unload("countries", "countries");
-                    this.sortAllInOrder("countries", json.data.list);
+                    if (json.data.item.basic.competitions) this.sortAllInOrder("competitions", json.data.item.basic.competitions);
+                    if (json.data.item.basic.sides) this.sortAllInOrder("events", json.data.item.basic.sides);
                 }
-            });
-        this.onload("categories", "Loading category data", "categories");
-        categories(0, 1000, '', "n")
-            .then(json => {
-                if (json) {
-                    this.unload("categories", "categories");
-                    this.sortAllInOrder("categories", json.data.list);
-                }
-            });
-        this.onload("roles", "Loading role data", "roles");
-        roles(0, 10000, '', "n")
-            .then(json => {
-                if (json) {
-                    this.unload("roles", "roles");
-                    this.sortAllInOrder("roles", json.data.list);
-                }
-            });
-        this.onload("weapons", "Loading weapon data", "weapons");
-        weapons(0, 1000, '', "n")
-            .then(json => {
-                if(json) {
-                    this.unload("weapons", "weapons");
-                    this.sortAllInOrder("weapons",json.data.list);
+                else {
+                    alert("There was a problem retrieving data from the database. Please reload and try again");
                 }
             });
     }

@@ -44,7 +44,18 @@ class Category extends Base {
         "category_abbr" => "trim",
         "category_type" => "enum=I,T",
         "category_value" => "int"
-    );     
+    );
+
+    public static function ExportAll()
+    {
+        $model = new Category();
+        $lst = $model->selectAll(0, null, null, "n", null);
+        $retval = [];
+        foreach ($lst as $c) {
+            $retval[] = $model->export($c);
+        }
+        return $retval;
+    }
 
     public function selectAll($offset=0,$pagesize=0,$filter=null,$sort=null,$special=null) {
         return $this->select('*')->orderBy('category_name')->get();

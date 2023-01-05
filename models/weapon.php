@@ -42,7 +42,18 @@
         "weapon_name" => "trim",
         "weapon_abbr" => "trim",
         "weapon_gender" => "enum=M,F"
-    );     
+    );
+
+    public static function ExportAll()
+    {
+        $model = new Weapon();
+        $lst = $model->selectAll(0, null, null, "n", null);
+        $retval = [];
+        foreach ($lst as $c) {
+            $retval[] = $model->export($c);
+        }
+        return $retval;
+    }
 
     public function selectAll($offset=0,$pagesize=0,$filter=null,$sort=null,$special=null) {
         return $this->select('*')->orderBy('weapon_id')->get();

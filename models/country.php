@@ -69,6 +69,17 @@
         }
     }
 
+    public static function ExportAll()
+    {
+        $model = new Country();
+        $lst = $model->selectAll(0,null,null,"n",null);
+        $retval = [];
+        foreach ($lst as $c) {
+            $retval[] = $model->export($c);
+        }
+        return $retval;
+    }
+
     public function selectAll($offset,$pagesize,$filter,$sort, $special=null) {
         $qb = $this->select('*')->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);

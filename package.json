@@ -1,9 +1,11 @@
 {
   "name": "EVFRanking",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "main": "index.jsx",
-  "browserlists": [
-    "defaults"
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all"
   ],
   "dependencies": {
     "@babel/core": "^7.20.12",

@@ -1,17 +1,18 @@
 import { is_hod_view } from '../../functions';
-import { wrong_category } from '../rules/wrong_category';
-import { wrong_gender } from '../rules/wrong_gender';
-import { team_rule_grandveterans } from '../rules/team_rule_grandveterans';
-import { team_rule_veterans } from '../rules/team_rule_veterans';
+import { filterFencers } from './participantlist/filterfencers';
+import { sortFencers } from './participantlist/sortFencers';
+import { useState } from 'react';
 
 export function ParticipantList(props) {
+    const [sort, setSort] = useState(props.sort || "ni");
+
     if (!props.fencers || !props.basic) {
         return (<div></div>);
     }
 
     var showErrors=false; // debug setting
     // requirement 1.4.3: for specific team events, show the team name instead of the fencer category
-    var showTeam = false;
+    var showTeam = props.showTeam;
 
     // configuration setting: allow more than 1 team per competition. If so, we also store the team index
     // If not, we do not need to display the team name in the role, only the category
@@ -19,170 +20,26 @@ export function ParticipantList(props) {
     var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
 
     var roleById = Object.assign({},props.basic.rolesById);
-    roleById["r0"] = { name: "Participant" };
-    if(props.event && props.event.competition) {
-        roleById["r0"] = { name: "Athlete" };
+    roleById["r0"] = { name: "Athlete" };
 
-        if(props.event.category && props.event.category.type == 'T') {
-            showTeam=true;
-        }
-    }
     // if this is a team event, but only 1 team per country, do not show teams anyway
     if(!allow_more_teams) {
         showTeam=false;
     }
 
-    var fencers=Object.keys(props.fencers).map((key) => {
-        var fencer=props.fencers[key];
-        fencer.is_registered=!props.event; // if we are not filtering on event, always registered
-        fencer.role=[];
-        fencer.has_role = [];
-        fencer.incorrect_cat = false;
-        fencer.has_team=false;
+    var fencers=filterFencers(props.fencers, props.noErrors, roleById, props.basic);
 
-        fencer.registrations.map((reg) => {
-            // Requirement 1.1.5: display event roles, or, for role 0 (participant), display
-            //    the event title
-            var comp = null;
-            var role = parseInt(reg.role);
-            if (props.event && reg.sideevent == props.event.id) {
-                // this is a fencer participating in a specific event (competition or other side-event)
-                fencer.sideevent = reg;
-                fencer.is_registered = true;
-                comp = props.event.competition;
+    var sortingConfig = { allow_more_teams: allow_more_teams};
+    fencers = sortFencers(fencers, sort, sortingConfig);
 
-                // determine the roleof the fencer for this specific event.
-                fencer.role.push(role);
-                fencer.has_role.push(roleById["r" + role] ? roleById["r" + role].name : "");
-            }
-            else if (!props.event) {
-                // if we are not filtering out fencers, summarise all registrations
-                var regFor = props.basic.sideeventsById["s" + reg.sideevent] || null;
-                if (roleById["r" + reg.role] && regFor && regFor.competition) {
-                    // role for a specific competition
-                    fencer.role.push(role);
-
-                    // generic participant/athlete: push the event title
-                    if(role == 0) {
-                        fencer.has_role.push(regFor.abbreviation);
-                    }
-                    else {
-                        // specific event role, push the actual role name + event title
-                        // note: this is currently dead code: we cannot assign a role to a specific
-                        // event at this time
-                        var rname = roleById["r" + role] ? roleById["r" + role].name : "";
-                        rname += " (" + regFor.title + ")";
-                        fencer.has_role.push(rname);
-                    }
-                    comp = regFor.competition;
-                }
-                else {
-                    // role for the entire event
-                    var role = parseInt(reg.role);
-                    fencer.role.push(role);
-                    var rname = roleById["r" + role] ? roleById["r" + role].name : "";
-                    if(regFor && role == 0) {
-                        // participation in a side event, list the title
-                        fencer.has_role.push(regFor.title);
-                    }
-                    else if(rname != "") {
-                        fencer.has_role.push(rname);
-                    }
-                }
-            }
-
-            // if we're not showing roles, this is the search-result. Do not display errors for search results
-            // because the fencers in the search results do no necessarily make up a complete team, but they 
-            // might already be selected
-            if(!props.noErrors) {
-                var ruleobject = {
-                    event: props.event,
-                    competition: comp,
-                    fencer: fencer,
-                    registration: reg,
-                    fencers: props.fencers
-                };
-
-                // Requirement 1.1.6: events with a mismatch in category are marked
-                fencer.error='';
-                if(wrong_category(ruleobject)) {
-                    fencer.incorrect_cat=true;
-                    fencer.error="(C)";
-                }
-                if (wrong_gender(ruleobject)) {
-                    fencer.incorrect_cat = true;
-                    fencer.error = "(S)";
-                }
-                if(team_rule_veterans(ruleobject)) {
-                    fencer.incorrect_cat=true;
-                    fencer.error="(V)";
-                }
-                if(team_rule_grandveterans(ruleobject)) {
-                    fencer.incorrect_cat=true;
-                    fencer.error="(G)";
-                }
-            }
-
-            // Requirement 1.4.1: sort by team name
-            if(comp && comp.category && comp.category.type == 'T') {
-                // this is a team event
-                // only store the last team this fencer participates in. For the overall overview, this is useless
-                // in case a fencer is part of more than 1 team, but for the individual events this works out fine
-                fencer.has_team = reg.team; 
-            }
-        });
-
-        return fencer;
-    }).filter((fencer) => {
-        return fencer.is_registered;
-    }).map((fencer) => {
-        if(fencer.has_role) {
-            // sort the roles
-            fencer.has_role.sort();
-            fencer.allroles=fencer.has_role.join(", ");
-        }
-        return fencer;
-    });
-
-    // sort based on role (athletes or non-athletes) and name
-    fencers.sort(function (a1, a2) {
-            // requirement 1.4.1: sort by event, then by team, then by name
-            // (two teams in the same event/role should 'stick' together)
-            if(props.event) {
-                // listing for a specific event, only separate non-athletes from athletes
-                // if we have event-specific roles (currently not used)
-                if (a1.has_role.includes("Athlete") && !a2.has_role.includes('Athlete')) return -1;
-                if (a2.has_role.includes("Athlete") && !a1.has_role.includes("Athlete")) return 1;
-
-                // then sort by teams
-                if(allow_more_teams) {
-                    if(a1.has_team && !a2.has_team) return -1;
-                    if(!a1.has_team && a2.has_team) return 1;
-                    if(a1.has_team && a2.has_team && a1.has_team != a2.has_team) return a1.has_team > a2.has_team;
-                    // else same team, or no team
-                }
-
-                // then by name
-                return a1.fullname > a2.fullname;
-            }
-
-            // do not sort by roles if this is an overall listing (not for a specific event)
-            // it depends on how the roles were ordered and when people
-            // have multiple roles it gets confusing
-            //if(a1.has_role.length > 0 && a2.has_role.length == 0) return -1;
-            //if (a2.has_role.length > 0 && a1.has_role.length == 0) return 1;
-            //if(a1.allroles && a2.allroles && a1.allroles != a2.allroles) return a1.allroles > a2.allroles;
-
-            // sort by teams if we have more than 1 team
-            if(allow_more_teams) {
-                if(a1.has_team && !a2.has_team) return -1;
-                if(!a1.has_team && a2.has_team) return 1;
-                if(a1.has_team && a2.has_team && a1.has_team != a2.has_team) return a1.has_team > a2.has_team;
-                // else same team, or no team
-            }
-
-            return a1.fullname > a2.fullname;
-        });
+    var nameSort = determineSort(sort, 'n', 'N');
+    var firstNameSort = determineSort(sort, 'f', 'F');
+    var countrySort = determineSort(sort, 'c', 'C');
+    var genderSort = determineSort(sort, 'g', 'G');
+    var birthdaySort = determineSort(sort, 'd', 'D');
+    var categorySort = determineSort(sort, 'a', 'A');
+    var teamSort = determineSort(sort, 't', 'T');
+    var roleSort = determineSort(sort, 'e', 'E');
 
     // the roles column is now shown when we have no side-event. 
     // if we have sideevent-specific roles, we should show roles as well on the side-event lists
@@ -192,16 +49,32 @@ export function ParticipantList(props) {
     // to Event/Role in that case for the overall list.
     return (
         <table className='style-stripes'>
-            <thead>
+            <thead className='with-sort'>
                 <tr>
-                    <th>Name</th>
-                    <th>First name</th>
-                    {props.showCountry && (<th>Country</th>)}
-                    <th>Gender</th>
-                    <th>YOB</th>
-                    {!showTeam && (<th>Category</th>)}
-                    {showTeam && (<th>Team</th>)}
-                    {props.showRoles && (<th>Role</th>)}
+                    <th onClick={() => setSort(combineSort(sort, 'n', nameSort))}>
+                        <div className='d-flex'>Name <i className={"inline pi pi-icon " + nameSort}></i></div>
+                    </th>
+                    <th onClick={() => setSort(combineSort(sort, 'f', firstNameSort))}>
+                        <div className='d-flex'>First name <i className={"inline pi pi-icon " + firstNameSort}></i></div>
+                    </th>
+                    {props.showCountry && (<th onClick={() => setSort(combineSort(sort, 'c', countrySort))}>
+                        <div className='d-flex'>Country  <i className={"inline pi pi-icon " + countrySort}></i></div>
+                    </th>)}
+                    <th onClick={() => setSort(combineSort(sort, 'g', genderSort))}>
+                        <div className='d-flex'>Gender <i className={"inline pi pi-icon " + genderSort}></i></div>
+                    </th>
+                    <th onClick={() => setSort(combineSort(sort, 'd', birthdaySort))}>
+                        <div className='d-flex'>YOB <i className={"inline pi pi-icon " + birthdaySort}></i></div>
+                    </th>
+                    {!showTeam && (<th onClick={() => setSort(combineSort(sort, 'a', categorySort))}>
+                        <div className='d-flex'>Category <i className={"inline pi pi-icon " + categorySort}></i></div>
+                    </th>)}
+                    {showTeam && (<th onClick={() => setSort(combineSort(sort, 't', teamSort))}>
+                        <div className='d-flex'>Team <i className={"inline pi pi-icon " + teamSort}></i></div>
+                    </th>)}
+                    {props.showRoles && (<th onClick={() => setSort(combineSort(sort, 'e', roleSort))}>
+                        <div className='d-flex'>Role <i className={"inline pi pi-icon " + roleSort}></i></div>
+                    </th>)}
                     {props.camera && (<th></th>)}
                     <th></th>
                     {!is_hod_view() && (<th></th>)}
@@ -233,4 +106,21 @@ export function ParticipantList(props) {
             </tbody>
         </table>
     );
+}
+
+function determineSort(sortOrder, ascVal, descVal) {
+    if (sortOrder.includes(ascVal)) return "pi-sort-up";
+    if (sortOrder.includes(descVal)) return "pi-sort-down";
+    return "pi-sort";
+}
+
+function combineSort(oldSort, sortChar, sortDir) {
+    var ascVal = sortChar;
+    var descVal = sortChar.toUpperCase();
+    oldSort = oldSort.replace(ascVal,'').replace(descVal,'');
+
+    if (sortDir == "pi-sort-up") {
+        return descVal + oldSort;
+    }
+    return ascVal + oldSort;
 }

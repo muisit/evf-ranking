@@ -346,42 +346,13 @@ export default class RegistrationPage extends React.Component {
         var canaccredit = (is_sysop() || is_organiser() || is_accreditor());
         var canaccredit2 = (is_sysop() || is_organiser());
 
-        if(canaccredit2) {
-            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
-                {overviewtab}
-                {canregister && regtab}
-                {cancashier && cashiertab}
-                {canaccredit && accrtab1}
-                {canaccredit && accrtab}
-                {canaccredit2 && accrtab2}
-            </TabView>);
-        }
-        else if(is_hod()) {
-            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
-                {overviewtab}
-                {canregister && regtab}
-                {cancashier && cashiertab}
-            </TabView>);
-        }
-        else if (canregister) {
-            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
-                {overviewtab}
-                {canregister && regtab}
-            </TabView>);
-        }
-        else if(cancashier) {
-            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
-                {overviewtab}
-                {cancashier && cashiertab}
-            </TabView>);
-        }
-        else if(canaccredit) {
-            return (<TabView id="evfregistrationtabs" animate={true} large={true} defaultSelectedTabId="overview">
-                {overviewtab}
-                {canaccredit && accrtab1}
-                {canaccredit && accrtab}
-            </TabView>);
-        }
-
+        return (<TabView id="evfregistrationtabs">
+            {overviewtab}
+            {canregister && regtab}
+            {cancashier && cashiertab}
+            {canaccredit && accrtab1}
+            {canaccredit && accrtab}
+            {canaccredit2 && accrtab2}
+        </TabView>);
     }
 }

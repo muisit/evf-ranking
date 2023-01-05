@@ -671,8 +671,8 @@ export default class CSVUploadDialog extends React.Component {
 
     renderUploadButton() {
         return (
-        <div className="p-grid p-fluid">            
-            <div className="p-col-12">
+        <div className="grid">
+            <div className="col-12">
                 <div className="p-inputgroup">
                     <input type="file" onChange={this.onFileChange}/>
                 </div>

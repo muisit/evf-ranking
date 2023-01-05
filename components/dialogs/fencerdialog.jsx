@@ -193,7 +193,7 @@ export default class FencerDialog extends React.Component {
         if(!['Y','N','R','A'].includes(picstate)) {
             picstate='N';
         }
-        return (<div className='p-col-12'>
+        return (<div className='col-12'>
             <label className='header'>Accreditation Photo</label>
             <div>
             {['Y','A','R'].includes(this.props.value.picture) && (
@@ -215,7 +215,7 @@ export default class FencerDialog extends React.Component {
 
     renderResults() {
         if(!this.props.value.results) return (null);
-        return (<div className="p-col-12 ranking-results">
+        return (<div className="col-12 ranking-results">
             <table className='list'>
                 <thead>
                     <tr>
@@ -271,28 +271,26 @@ export default class FencerDialog extends React.Component {
         }
 
         return (<Dialog header="Edit Fencer" position="center" visible={this.props.display} className="fencer-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} >
-    <div className="p-grid p-fluid">
-      <div className="p-col-12 p-md-6">
+    <div className="grid">
+      <div className="col-12 col-md-6">
         <div className="p-inputgroup">
           <InputText name='name' className="p-inputtext-sm" value={this.props.value.name} placeholder="Surname" onChange={this.onChangeEl} />
         </div>
       </div>
-      <div className="p-col-12 p-md-6">
+      <div className="col-12 col-md-6">
         <div className="p-inputgroup">
           <InputText name='firstname' className="p-inputtext-sm" value={this.props.value.firstname} placeholder="Firstname" onChange={this.onChangeEl} />
         </div>
       </div>
-    </div>
-    <div className="p-grid p-fluid">
-      <div className="p-col-12 p-md-4">
+      <div className="col-12 col-md-4">
         <div className="p-inputgroup">{country}</div>
       </div>
-      <div className="p-col-12 p-md-4">
+      <div className="col-12 col-md-4">
         <div className="p-inputgroup">
           <InputMask name='birthday' mask="9999-99-99" slotChar="yyyy-mm-dd" value={this.props.value.birthday} onChange={this.onChangeEl}/>
         </div>
       </div>
-      <div className="p-col-12 p-md-4">
+      <div className="col-12 col-md-4">
         <div className="p-inputgroup">
           <Dropdown name='gender' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.gender} options={genders} placeholder="Gender" onChange={this.onChangeEl}/>
         </div>

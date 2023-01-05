@@ -63,6 +63,9 @@ table.compact { width: auto; }
 .datatable .search-input-results .catdrop { width: 200px; }
 .datatable .search-input-results .wpndrop { width: 170px; }
 
+thead.with-sort tr th { white-space: nowrap;}
+thead.with-sort tr th .pi-icon { padding-left: 5px;}
+
 /* generic input width, old-style */
 .p-dialog-mask { z-index: 2000; }
 .p-dialog-content { position: relative; }

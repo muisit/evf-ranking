@@ -346,13 +346,16 @@ export default class RegistrationPage extends React.Component {
         var canaccredit = (is_sysop() || is_organiser() || is_accreditor());
         var canaccredit2 = (is_sysop() || is_organiser());
 
-        return (<TabView id="evfregistrationtabs">
-            {overviewtab}
-            {canregister && regtab}
-            {cancashier && cashiertab}
-            {canaccredit && accrtab1}
-            {canaccredit && accrtab}
-            {canaccredit2 && accrtab2}
-        </TabView>);
+        return (<div>
+            <div className='version'>v{this.props.version}</div>
+            <TabView id="evfregistrationtabs">
+                {overviewtab}
+                {canregister && regtab}
+                {cancashier && cashiertab}
+                {canaccredit && accrtab1}
+                {canaccredit && accrtab}
+                {canaccredit2 && accrtab2}
+            </TabView>
+        </div>);
     }
 }

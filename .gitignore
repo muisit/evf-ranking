@@ -23,6 +23,9 @@ node_modules/
 *.sqlite
 *.old
 
+# ignore the dynamically generated version file
+src/version.js
+
 dist/
 deploy/
 assets/

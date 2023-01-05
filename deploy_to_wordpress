@@ -130,6 +130,7 @@ else
     mv tmp.$$ "$PROJECT.php"
     cat "package.json" | sed "s/\(.*version\"[ \t:]*\"\).*/\1${MAJ}.${MIN}.${MICR}\",/" > tmp.$$
     mv tmp.$$ "package.json"
+    mg create tag "{$MAJ}.${MIN}.${MICR}" -m "auto tagged commit"
 fi
 
 if [[ "x$DRY" = "x1" ]]

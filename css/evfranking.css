@@ -66,6 +66,8 @@ table.compact { width: auto; }
 thead.with-sort tr th { white-space: nowrap;}
 thead.with-sort tr th .pi-icon { padding-left: 5px;}
 
+.version { float: right; font-style: italic; color: #999;}
+
 /* generic input width, old-style */
 .p-dialog-mask { z-index: 2000; }
 .p-dialog-content { position: relative; }

@@ -17,7 +17,7 @@ export function FencerList(props) {
                 <tr>
                     <th>Name</th>
                     <th>First name</th>
-                    <th>Country</th>
+                    {!is_valid(props.country) && (<th>Country</th>)}
                     <th>Gender</th>
                     <th>YOB</th>
                     <th>Category</th>
@@ -29,7 +29,7 @@ export function FencerList(props) {
                         <tr key={idx} onClick={(e) => props.onSelect(fencer)}>
                             <td>{fencer.name}</td>
                             {is_valid(fencer.id) && (<td>{fencer.firstname}</td>)}
-                            {is_valid(fencer.id) && (<td>{fencer.country_name}</td>)}
+                            {!is_valid(props.country) && is_valid(fencer.id) && (<td>{fencer.country_name}</td>)}
                             {is_valid(fencer.id) && (<td>{fencer.fullgender}</td>)}
                             {is_valid(fencer.id) && (<td>{fencer.birthyear}</td>)}
                             {is_valid(fencer.id) && (<td>{fencer.category}</td>)}

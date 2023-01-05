@@ -5,7 +5,6 @@ import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputMask } from 'primereact/inputmask';
-import DuplicateFencer from './duplicatefencer';
 import { parse_net_error, get_yob, is_valid, random_hash, is_hod, is_hod_view } from '../../functions';
 import { adjustFencerData } from "../../lib/registrations.js";
 import { emptyFencerRegistration } from "../../lib/EmptyFencerRegistration.js";
@@ -139,27 +138,11 @@ export default class FencerDialog extends React.Component {
             alert("Please set the surname and firstname");
             return;
         }
-
-        fencer('presavecheck',obj)
-            .then((json) => {
-                if(json && json.data && json.data.suggestions && json.data.suggestions.length) {
-                    this.setState({suggestiondialog: true, suggestions: json.data.suggestions, pendingSave: obj})
-                }
-                else {
-                    this.actualSave(obj)
-                        .then((fencer) => {
-                            this.save(fencer);
-                        });
-                }
-            })
-            .catch(parse_net_error);
-    }
-
-    onPreSaveClose = (itm) => {
-        this.actualSave(itm)
+        this.actualSave(obj)
             .then((fencer) => {
                 this.save(fencer);
-            });
+            })
+            .catch(parse_net_error);
     }
 
     onCancelDialog = (event) => {
@@ -330,7 +313,6 @@ export default class FencerDialog extends React.Component {
     {this.props.allowSearch && this.renderSuggestions()}
     {!this.props.allowSearch && this.renderAdditional()}
     {!this.props.allowSearch && this.renderPicture()}
-    <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.onPreSaveClose(this.state.pendingSave)} onClose={()=>this.close()} />
 </Dialog>
 );
     }
@@ -340,7 +322,7 @@ export default class FencerDialog extends React.Component {
         return (
             <div className="grid">
                 <div className="col-12">
-                    <FencerList basic={this.props.basic} fencers={this.state.suggestions} onSelect={this.onFencerSelect} />
+                    <FencerList basic={this.props.basic} country={this.props.country} fencers={this.state.suggestions} onSelect={this.onFencerSelect} />
                 </div>
         </div>
         );

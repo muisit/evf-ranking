@@ -258,13 +258,16 @@ export default class FencerDialog extends React.Component {
         },{
             name: "Request replacement",
             id: "R"
-        },{
-            name: "None available",
-            id: "N"
         }];
         var picstate = this.props.fencer.picture;
         if(!['Y','N','R','A'].includes(picstate)) {
             picstate='N';
+        }
+        if (picstate == 'N') {
+            approvestates=[{
+                name: 'None available',
+                id: 'N'    
+            }];
         }
         var eventid=this.props.basic.event ? this.props.basic.event.id : -1;
         var uploadDisabled = !this.fencerDataIsComplete();
@@ -282,7 +285,7 @@ export default class FencerDialog extends React.Component {
                 </div>
                 {canapprove && (
                     <div className='approval-dropdown'>
-                    <Dropdown name={'picture'} appendTo={document.body} optionLabel="name" optionValue="id" value={picstate} options={approvestates} onChange={this.onChangeEl} />
+                    <Dropdown name={'picture'} appendTo={document.body} optionLabel="name" optionValue="id" value={picstate} options={approvestates} onChange={this.onChangeEl} disabled={picstate == 'N'}/>
                     </div>
                 )}
                 </div>

@@ -1,6 +1,6 @@
 import { events, competitions } from "../api.js";
-import { DataTable } from 'primereact/components/datatable/DataTable';
-import { Column } from 'primereact/components/column/Column';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import EventDialog from './dialogs/eventdialog';
 import { format_date, parse_date } from '../functions';
 

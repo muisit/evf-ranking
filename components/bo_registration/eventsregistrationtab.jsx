@@ -1,6 +1,6 @@
 import { eventroles, events, sideevents } from "../api.js";
-import { DataTable } from 'primereact/components/datatable/DataTable';
-import { Column } from 'primereact/components/column/Column';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import EventRegistrationDialog from './dialogs/eventregistrationdialog';
 
 import React from 'react';

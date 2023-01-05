@@ -1,6 +1,6 @@
 import { events, weapons, categories, results, result, competitions } from "../api.js";
-import { DataTable } from 'primereact/components/datatable/DataTable';
-import { Column } from 'primereact/components/column/Column';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Slider } from 'primereact/slider';
 import { Paginator } from 'primereact/paginator';

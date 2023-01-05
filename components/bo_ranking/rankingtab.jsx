@@ -1,7 +1,6 @@
 import { events, ranking } from "../api.js";
-import { DataTable } from 'primereact/components/datatable/DataTable';
-import { Column } from 'primereact/components/column/Column';
-import { Dropdown } from 'primereact/dropdown';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import RankingDialog from './dialogs/rankingdialog';
 import PerusalDialog from './dialogs/perusaldialog';
 

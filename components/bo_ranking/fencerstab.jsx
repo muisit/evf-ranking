@@ -1,6 +1,6 @@
 import { fencers, results } from "../api.js";
-import { DataTable } from 'primereact/components/datatable/DataTable';
-import { Column } from 'primereact/components/column/Column';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import FencerDialog from '../dialogs/fencerdialog';
 import MergeFencers from "./dialogs/mergefencers.jsx";
 

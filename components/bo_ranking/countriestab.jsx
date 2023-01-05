@@ -1,11 +1,6 @@
 import { countries, country } from "../api.js";
-import { DataTable } from 'primereact/components/datatable/DataTable';
-import { Column } from 'primereact/components/column/Column';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
-import { Paginator } from 'primereact/paginator';
-import { Toast } from 'primereact/toast';
-
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import React from 'react';
 import PagedTab from '../pagedtab';
 import CountryDialog from './dialogs/countrydialog';

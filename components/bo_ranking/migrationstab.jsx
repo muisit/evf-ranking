@@ -1,12 +1,8 @@
 import React from 'react';
 import { migrations } from "../api.js";
-import { DataTable } from 'primereact/components/datatable/DataTable';
-import { Column } from 'primereact/components/column/Column';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
-import { Paginator } from 'primereact/paginator';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import MigrationDialog from './dialogs/migrationdialog';
-import { Toast } from 'primereact/toast';
 import PagedTab from '../pagedtab';
 
 const fieldToSorterList = {

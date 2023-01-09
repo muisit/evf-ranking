@@ -38,7 +38,7 @@ table.compact { width: auto; }
 .pager { position: relative; }
 .pager .slider { width: 80%; padding-right: 20px; }
 .pager .slider .p-slider { margin-top: -15px; }
-.pager .page { width: 5%; text-align: center; position: relative;top:-7px;}
+.pager .page { text-align: center; position: relative; top:5px;}
 .pager .pagesize { width: 14%; float: right; margin-top: -15px;}
 .pager .pagesize.fixed { margin-top: -10px; }
 .p-tabview .p-tabview-panels { padding: 10px 5px; }

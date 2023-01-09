@@ -81,7 +81,6 @@ export default class EventsTab extends PagedTab {
     ref={this.dt}
     value={this.state.items}
     className="p-datatable-striped"
-    paginator={false}
     header={pager}
     footer={pager}
     onRowDoubleClick={this.onEdit}

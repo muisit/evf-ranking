@@ -146,8 +146,8 @@ export default class PerusalDialog extends React.Component {
         return (
         <div>
           <div className='ranking-select-catwpn'>
-            <Dropdown className='drop catdrop' autoWidth={false} appendTo={document.body} name="category" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.category_id} options={this.state.categories} placeholder="Category" />
-            <Dropdown className='drop wpndrop' autoWidth={false} appendTo={document.body} name="weapon" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.weapon_id} options={this.state.weapons} placeholder="Weapon" />                
+            <Dropdown className='drop catdrop' appendTo={document.body} name="category" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.category_id} options={this.state.categories} placeholder="Category" />
+            <Dropdown className='drop wpndrop' appendTo={document.body} name="weapon" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.weapon_id} options={this.state.weapons} placeholder="Weapon" />
           </div>
           <table className='list'>
             <thead>

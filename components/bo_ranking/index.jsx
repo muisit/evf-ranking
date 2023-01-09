@@ -38,7 +38,7 @@ export default class IndexPage extends React.Component {
             return (<p>initializing... please wait</p>);
         }
         return (
-<TabView id="evfrankingtabs" animate={true} large={true} defaultSelectedTabId="results">
+<TabView id="evfrankingtabs">
     <TabPanel id="results" header="Results"><ResultsTab countries={this.state.countries} /></TabPanel>
     <TabPanel id="ranking" header="Ranking"><RankingTab /></TabPanel>
     <TabPanel id="events" header="Events"><EventsTab  countries={this.state.countries} types={this.state.eventtypes}/></TabPanel>

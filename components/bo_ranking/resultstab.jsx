@@ -202,7 +202,7 @@ export default class ResultsTab extends PagedTab {
             <div>
         <ResultDialog countries={this.props.countries} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />
         <ImportDialog 
-            countries={this.props.countries} competition={this.state.competition} weapons={this.state.weapons}
+            countries={this.props.countries} competition={this.state.competition} event={this.state.event_id} weapons={this.state.weapons}
             onClose={()=>this.onImport('close')} onChange={(itm)=>this.onImport('change',itm)} onSave={()=>this.onImport('save')} 
             value={this.state.importObject} display={this.state.importDialog}
             />
@@ -213,7 +213,7 @@ export default class ResultsTab extends PagedTab {
     renderFilter() {
         return (
             <span className="p-input-icon-left search-input search-input-results">
-                <Dropdown className='evntdrop' autoWidth={false} appendTo={document.body} name="event" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.event_id} options={this.state.events} placeholder="Event" />
+                <Dropdown className='evntdrop' appendTo={document.body} name="event" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.event_id} options={this.state.events} placeholder="Event" />
             </span>
         );
     }

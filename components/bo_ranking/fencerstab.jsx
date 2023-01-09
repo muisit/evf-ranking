@@ -84,7 +84,6 @@ export default class FencersTab extends PagedTab {
     value={this.state.items}
     className="p-datatable-striped"
     lazy={true} onPage={this.onLazyLoad} loading={this.state.loading}
-    paginator={false}
     header={pager}
     footer={pager}
     sortMode="multiple" multiSortMeta={this.state.multiSortMeta} onSort={this.onSort}

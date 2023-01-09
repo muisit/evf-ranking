@@ -80,11 +80,8 @@ export default class RankingTab extends PagedTab {
     }
 
     renderTable(pager) {
-        return (<DataTable
-            ref={this.dt}
-            value={this.state.items}
+        return (<DataTable value={this.state.items}
             className="p-datatable-striped"
-            paginator={true}
             header={pager}
             footer={pager}
             onRowDoubleClick={this.onEdit}

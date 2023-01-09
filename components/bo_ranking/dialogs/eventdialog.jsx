@@ -36,8 +36,8 @@ function Competition(props) {
 
     return (
         <div className='competition'>
-      <Dropdown className='catdrop' autoWidth={false} name={'ccat-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.category} options={props.ddcats} placeholder="Category" />
-      <Dropdown className='wpndrop' autoWidth={false} name={'cwpn-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.weapon} options={props.ddwpns} placeholder="Weapon" />
+      <Dropdown className='catdrop' name={'ccat-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.category} options={props.ddcats} placeholder="Category" />
+      <Dropdown className='wpndrop' name={'cwpn-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.weapon} options={props.ddwpns} placeholder="Weapon" />
       <Calendar name={'copens-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={opens.toDate()} viewDate={vdate1.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
       <Calendar name={'ccheck-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={weapon_check.toDate()} viewDate={vdate2.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
       <span className="p-input-icon-left add-button">

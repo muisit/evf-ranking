@@ -82,8 +82,8 @@ let roletypes = [
 function EventRole(props) {
   return (
     <div className='roletype'>
-      <Dropdown className='userdrop' autoWidth={false} name={'ruser-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.role.user} options={props.users} placeholder="User" />
-      <Dropdown className='roletypedrop' autoWidth={false} name={'rtype-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="code" value={props.role.role_type} options={roletypes} placeholder="Role" />
+      <Dropdown className='userdrop' name={'ruser-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.role.user} options={props.users} placeholder="User" />
+      <Dropdown className='roletypedrop' name={'rtype-' + props.role.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="code" value={props.role.role_type} options={roletypes} placeholder="Role" />
       <span className="p-input-icon-left add-button">
         <i className="pi pi-trash" onClick={() => props.onRemoveRole(props.role)}></i>
       </span>

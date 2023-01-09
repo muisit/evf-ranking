@@ -168,7 +168,7 @@
             $evflogger->log("no fields to save");
         }
         else {
-            $evflogger->log("saving or updating");
+            $evflogger->log("saving or updating ".get_class($this));
             global $wpdb;
             if($this->isNew()) {
                 $evflogger->log("insert into $this->table, ".json_encode($fieldstosave));
@@ -177,6 +177,7 @@
                 $this->_state = "loaded";
             }
             else {
+                $evflogger->log("updating $this->table, ".json_encode($fieldstosave));
                 $retval=$wpdb->update($this->table, $fieldstosave, array($this->pk => $this->getKey()));
                 $this->_state = "loaded";
             }

@@ -1,12 +1,11 @@
 import React from 'react';
-import { country, result } from "../../api.js";
+import { result, singleevent } from "../../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
-import { Dropdown } from 'primereact/dropdown';
 import { InputTextarea } from 'primereact/inputtextarea';
-import { InputNumber } from 'primereact/inputnumber';
-import { Tooltip } from 'primereact/tooltip';
 import SuggestionDialog from './suggestiondialog';
+import { ToggleButton } from 'primereact/togglebutton';
+import { parse_net_error } from '../../functions.js';
 
 export default class ImportDialog extends React.Component {
     constructor(props, context) {
@@ -15,7 +14,8 @@ export default class ImportDialog extends React.Component {
         this.state = {
             loading: false,
             current_check: 0,
-            showDialog:false
+            showDialog:false,
+            includeInRanking: true
         };
 
         this.countryByAbbrev={};
@@ -86,6 +86,13 @@ export default class ImportDialog extends React.Component {
                 .catch((err) => {
                     alert("Import error encountered: ",err);
                 });
+
+            var eventValue = {
+                id: this.props.event,
+                in_ranking: this.state.includeInRanking ? 'Y' : 'N'
+            };
+            singleevent('save',eventValue)
+                .catch(parse_net_error);
         }
     }
 
@@ -312,6 +319,10 @@ export default class ImportDialog extends React.Component {
         if (this.props.onChange) this.props.onChange(item);
     }
 
+    setIncludeInRanking = (val) => {
+        this.setState({includeInRanking: val !== false});
+    }
+
     onSuggest = (tp,itm) => {
         if(tp === 'close') {
             this.setState({showDialog:false,item:null});
@@ -342,6 +353,9 @@ export default class ImportDialog extends React.Component {
     renderImport () {
         return (
             <div>
+                <div>
+                    <ToggleButton onLabel='Include in ranking' offLabel='Do NOT include in ranking' onIcon="pi pi-check" offIcon="pi pi-times" checked={this.state.includeInRanking} onChange={(e) => this.setIncludeInRanking(e.value)} />
+                </div>
                 <table className="resultranking">
                     <thead>
                         <tr>

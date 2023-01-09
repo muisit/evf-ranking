@@ -272,25 +272,25 @@ export default class FencerDialog extends React.Component {
 
         return (<Dialog header="Edit Fencer" position="center" visible={this.props.display} className="fencer-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} >
     <div className="grid">
-      <div className="col-12 col-md-6">
+      <div className="col-12 md:col-6">
         <div className="p-inputgroup">
           <InputText name='name' className="p-inputtext-sm" value={this.props.value.name} placeholder="Surname" onChange={this.onChangeEl} />
         </div>
       </div>
-      <div className="col-12 col-md-6">
+      <div className="col-12 md:col-6">
         <div className="p-inputgroup">
           <InputText name='firstname' className="p-inputtext-sm" value={this.props.value.firstname} placeholder="Firstname" onChange={this.onChangeEl} />
         </div>
       </div>
-      <div className="col-12 col-md-4">
+      <div className="col-12 md:col-4">
         <div className="p-inputgroup">{country}</div>
       </div>
-      <div className="col-12 col-md-4">
+      <div className="col-12 md:col-4">
         <div className="p-inputgroup">
           <InputMask name='birthday' mask="9999-99-99" slotChar="yyyy-mm-dd" value={this.props.value.birthday} onChange={this.onChangeEl}/>
         </div>
       </div>
-      <div className="col-12 col-md-4">
+      <div className="col-12 md:col-4">
         <div className="p-inputgroup">
           <Dropdown name='gender' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.gender} options={genders} placeholder="Gender" onChange={this.onChangeEl}/>
         </div>

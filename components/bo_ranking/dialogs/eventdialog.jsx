@@ -1,5 +1,5 @@
 import React from 'react';
-import { singleevent, weapons, categories } from "../../api.js";
+import { singleevent, weapons, categories, ranking } from "../../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { TabView,TabPanel } from 'primereact/tabview';
@@ -8,6 +8,8 @@ import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
 import { format_date, parse_date } from '../../functions';
+import AddCompetitionDialog from './addcompetitiondialog.jsx';
+import PerusalDialog from './perusaldialog';
 
 function Competition(props) {
     var opens=props.cmp.opens.length ? parse_date(props.cmp.opens) : null;
@@ -53,7 +55,9 @@ export default class EventDialog extends React.Component {
         this.state = {
             compindex: 1,
             weapons: [],
-            categories: []
+            categories: [],
+            peruseDialog: false,
+            addCompetitionDialog: false
         };
 
     }
@@ -148,6 +152,7 @@ export default class EventDialog extends React.Component {
         case 'web':
         case 'location':
         case 'country':
+        case 'factor':
         case 'in_ranking':
         case 'feed':
             console.log('setting ',name, value);
@@ -237,6 +242,60 @@ export default class EventDialog extends React.Component {
         if(this.props.onChange) this.props.onChange(item);
     }
 
+    onRecalculateDialog = () => {
+        ranking("reset",{})
+        .then((res) => {
+            if(res && res.data && res.data.total) {
+                this.props.toast.show({severity:'info',summary:'Rankings Reset',detail:'The points used for calculating the ranking were re-evaluated, ' + res.data.total + ' results are included'});
+            }
+        });
+    }
+
+    onPeruseDialog = () => {
+        this.setState({peruseDialog: true});
+    }
+    onClosePeruseDialog = () => {
+        this.setState({peruseDialog: false});
+    }
+
+    onAddCompetitionDialog = (state) => {
+        this.setState({addCompetitionDialog: state});
+    }
+
+    onSaveAddCompetition = (cats, wpns) => {
+        if (cats.length && wpns.length) {
+            var item=this.props.value;
+            var pushed=item.competitions;
+
+            var pushedByKey = {};
+            pushed.map((comp) => {
+                var key="w_" + comp.weapon + "_c_" + comp.category;
+                pushedByKey[key] = true;
+            });
+
+            var cindex=this.state.compindex;
+            if(!pushed) pushed=[];
+
+            cats.map((catId) => {
+                wpns.map((wpnId) => {
+                    var key="w_" + wpnId + "_c_" + catId;
+                    if (!pushedByKey[key]) {
+                        pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'category':catId,'weapon':wpnId,'opens':this.props.value.opens,'weapon_check':this.props.value.opens});
+                        cindex+=1;
+                        pushedByKey[key] = true; // not needed, but okay...
+                    }
+                });
+            });
+
+            item.competitions=pushed;
+            if(this.props.onChange) this.props.onChange(item);
+            this.setState({'compindex': cindex});                
+        }
+        else {
+            alert("No competitions created");
+        }
+    }
+
     render() {
         var date_opens=parse_date(this.props.value.opens);
         var footer=(<div>
@@ -268,9 +327,11 @@ export default class EventDialog extends React.Component {
         if (isNaN(duration)) duration = 2;
         end.add(duration, 'd');
 
+        var options = [{ name: 'Yes', code: 'Y' }, { name: 'No', code: 'N' }];
+
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
-  <TabView id="eventdialog" animate={true} defaultSelectedTabId="general">
+  <TabView id="eventdialog">
     <TabPanel id='general' header='General'>
       <div>
         <label>Name</label>
@@ -343,14 +404,6 @@ export default class EventDialog extends React.Component {
 
     <TabPanel id='competitions' header='Competitions'>
     <div className='competitions'>
-      <span className="p-input-icon-left add-button">
-        <i className="pi pi-plus-circle"></i>
-        <a onClick={()=>this.addCompetition('one')}>Add</a>
-      </span>
-      <span className="p-input-icon-left add-button">
-        <i className="pi pi-plus-circle"></i>
-        <a onClick={() => this.addCompetition('all')}>Add All</a>
-      </span>
       <div className='competition_list'>
         <div className='competition'>
           <span className='catdrop'><b>Category</b></span>
@@ -364,7 +417,61 @@ export default class EventDialog extends React.Component {
     </div>
 
     </TabPanel>
+
+    <TabPanel id='ranking' header='Ranking'>
+        <div>
+            <label>Factor</label>
+            <div className='input'>
+                <InputNumber className='inputint' name='factor' onChange={this.onChangeEl}
+                    mode="decimal" inputMode='decimal' minFractionDigits={1} maxFractionDigits={5} min={0} useGrouping={false}
+                    value={this.props.value.factor}></InputNumber>
+            </div>
+        </div>
+        <div>
+            <label>In Ranking</label>
+            <div className='input'>
+                <Dropdown name='in_ranking' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.in_ranking} options={options} placeholder="Ranked" onChange={this.onChangeEl}/>
+            </div>
+        </div>
+
+    </TabPanel>
+
+    <TabPanel id='actions' header='Actions'>
+        <div>
+            <label>Ranking</label>
+            <div className='input'>
+                <Button label="Recalculate" icon="pi pi-align-justify" className="p-button p-button-raised p-button-text" onClick={this.onRecalculateDialog} />
+                <p className='small'>
+                    Determines which results for each fencer are included or excluded in the ranking.
+                    Currently, this retains the four (4) highest scoring results of all events that
+                    are included in the ranking.
+                </p>
+            </div>
+        </div>
+        <div>
+            <label>Peruse</label>
+            <div className='input'>
+                <Button label="Peruse ranking" icon="pi pi-search" className="p-button p-button-raised p-button-text" onClick={this.onPeruseDialog} />
+                <p className='small'>
+                    Opens the ranking perusal dialog to skim through the current ranking. This is very similar
+                    to the front end interface.
+                </p>
+            </div>
+        </div>
+        <div>
+            <label>Competitions</label>
+            <div className='input'>
+                <Button label="Add" icon="pi pi-plus" className="p-button p-button-raised p-button-text" onClick={() => this.onAddCompetitionDialog(true)} />
+                <p className='small'>
+                    Allows adding competitions to this event.
+                </p>
+            </div>
+        </div>
+
+    </TabPanel>
   </TabView>
+  <PerusalDialog onClose={this.onClosePeruseDialog} display={this.state.peruseDialog}/>
+  <AddCompetitionDialog categories={this.state.categories} weapons={this.state.weapons} onClose={() => this.onAddCompetitionDialog(false)} onSave={this.onSaveAddCompetition} display={this.state.addCompetitionDialog}/>
 </Dialog>            
 );
     }

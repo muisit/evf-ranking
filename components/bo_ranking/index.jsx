@@ -40,7 +40,6 @@ export default class IndexPage extends React.Component {
         return (
 <TabView id="evfrankingtabs">
     <TabPanel id="results" header="Results"><ResultsTab countries={this.state.countries} /></TabPanel>
-    <TabPanel id="ranking" header="Ranking"><RankingTab /></TabPanel>
     <TabPanel id="events" header="Events"><EventsTab  countries={this.state.countries} types={this.state.eventtypes}/></TabPanel>
     <TabPanel id="fencers" header="Fencers"><FencersTab  countries={this.state.countries}/></TabPanel>
     <TabPanel id="countries" header="Countries"><CountriesTab/></TabPanel>

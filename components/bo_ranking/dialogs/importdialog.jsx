@@ -87,12 +87,12 @@ export default class ImportDialog extends React.Component {
                     alert("Import error encountered: ",err);
                 });
 
-            var eventValue = {
-                id: this.props.event,
-                in_ranking: this.state.includeInRanking ? 'Y' : 'N'
-            };
-            singleevent('save',eventValue)
-                .catch(parse_net_error);
+            //var eventValue = {
+            //    id: this.props.event,
+            //    in_ranking: this.state.includeInRanking ? 'Y' : 'N'
+            //};
+            //singleevent('save',eventValue)
+            //    .catch(parse_net_error);
         }
     }
 
@@ -351,11 +351,11 @@ export default class ImportDialog extends React.Component {
     }
 
     renderImport () {
+        //    <div>
+        //        <ToggleButton onLabel='Include in ranking' offLabel='Do NOT include in ranking' onIcon="pi pi-check" offIcon="pi pi-times" checked={this.state.includeInRanking} onChange={(e) => this.setIncludeInRanking(e.value)} />
+        //    </div>
         return (
             <div>
-                <div>
-                    <ToggleButton onLabel='Include in ranking' offLabel='Do NOT include in ranking' onIcon="pi pi-check" offIcon="pi pi-times" checked={this.state.includeInRanking} onChange={(e) => this.setIncludeInRanking(e.value)} />
-                </div>
                 <table className="resultranking">
                     <thead>
                         <tr>

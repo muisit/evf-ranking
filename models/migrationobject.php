@@ -42,7 +42,6 @@ class MigrationObject extends Migration
 
     public function save()
     {
-        error_log("saving migration object");
         // when we save the MigrationObject, it is always new and unexecuted
         $this->{$this->pk} = null;
         $this->state = 0;
@@ -51,9 +50,7 @@ class MigrationObject extends Migration
 
     public function existsByName()
     {
-        error_log("existsByName $this->name");
         $results = $this->numrows()->where('name', $this->name)->count();
-        error_log("results is ".json_encode($results));
         return $results > 0;
     }
 

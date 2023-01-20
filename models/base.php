@@ -156,31 +156,46 @@
         }
     }
 
-    public function save() {
-        global $evflogger;
-        $fieldstosave=array();
-        foreach($this->fields as $f) {
-            if($this->differs($f)) {
-                $fieldstosave[$f]=$this->$f;
+    private function updateOriginalFields()
+    {
+        foreach ($this->fields as $fld) {
+            if (isset($this->{$fld})) {
+                $this->_ori_fields[$fld] = $this->$fld;
             }
         }
-        if(empty($fieldstosave)) {
+    }
+
+    public function save()
+    {
+        global $evflogger;
+        $fieldstosave = array();
+        foreach ($this->fields as $f) {
+            if ($this->differs($f)) {
+                $fieldstosave[$f] = $this->$f;
+            }
+        }
+        if (empty($fieldstosave)) {
             $evflogger->log("no fields to save");
+            $retval = true;
         }
         else {
-            $evflogger->log("saving or updating ".get_class($this));
+            $evflogger->log("saving or updating " . get_class($this));
             global $wpdb;
-            if($this->isNew()) {
-                $evflogger->log("insert into $this->table, ".json_encode($fieldstosave));
-                $wpdb->insert($this->table,$fieldstosave);
+            if ($this->isNew()) {
+                $evflogger->log("insert into $this->table, " . json_encode($fieldstosave));
+                $retval = $wpdb->insert($this->table, $fieldstosave);
                 $this->{$this->pk} = $wpdb->insert_id;
                 $this->_state = "loaded";
             }
             else {
-                $evflogger->log("updating $this->table, ".json_encode($fieldstosave));
-                $retval=$wpdb->update($this->table, $fieldstosave, array($this->pk => $this->getKey()));
+                $evflogger->log("updating $this->table, " . json_encode($fieldstosave));
+                $retval = $wpdb->update($this->table, $fieldstosave, array($this->pk => $this->getKey()));
                 $this->_state = "loaded";
             }
+        }
+
+        if ($retval !== false) {
+            $this->updateOriginalFields();
         }
         // save attached objects
         $this->postSave(!empty($fieldstosave));
@@ -188,7 +203,8 @@
         return true;
     }
 
-    public function postSave($wassaved) {
+    public function postSave($wassaved)
+    {
         return true;
     }
 
@@ -224,34 +240,37 @@
         return true;
     }
 
-    private function differs($field) {
-        if(!property_exists($this,$field)) {
+    private function differs($field)
+    {
+        if (!property_exists($this, $field)) {
             return false; // unset fields are never different
         }
-        if($field === $this->pk && (!$this->isNew() || $this->{$this->pk} <=0)) {
+        if ($field === $this->pk && (!$this->isNew() || $this->getKey() <= 0)) {
             return false; // cannot reset the PK
         }
-        if(!isset($this->_ori_fields[$field])) {
+        if (!isset($this->_ori_fields[$field])) {
             return true; // no original found, so always different
         }
 
-        $value=$this->$field;
+        $value = $this->$field;
         $original = $this->_ori_fields[$field];
 
-        if(is_bool($value)) {
+        if (is_bool($value)) {
             return !is_bool($original) || ($original !== $value);
         }
-        if(is_numeric($value)) {
+        if (is_numeric($value)) {
             $value = floatval($value);
-            $original=floatval($original);
-            return abs($value-$original) > 0.000000001;
+            $original = floatval($original);
+            return abs($value - $original) > 0.000000001;
         }
         // if we have a null-allowed field and it is filled/cleared, always differs
-        if(  ($value === null && $original !== null)
-          || ($original === null && $value !== null)) {
+        if (
+             ($value === null && $original !== null)
+             || ($original === null && $value !== null)
+        ) {
             return true;
         }
-        return strcmp(strval($value),strval($original)) != 0;
+        return strcmp(strval($value), strval($original)) != 0;
     }
 
     public function delete($id=null) {

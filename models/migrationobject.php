@@ -74,7 +74,9 @@ class MigrationObject extends Migration
     public function rawQuery($txt)
     {
         global $wpdb;
-        return $wpdb->query($txt);
+        if ($wpdb->query($txt) === false) {
+            throw new \Exception("database error");
+        }
     }
 
     public function up()
@@ -96,29 +98,30 @@ class MigrationObject extends Migration
     public function tableExists($tablename)
     {
         global $wpdb;
-        $table_name = $this->tableName($tablename);
-        $query = $wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table_name));
-        return $wpdb->get_var($query) == $table_name;
+        $query = $wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($tablename));
+        return $wpdb->get_var($query) == $tablename;
     }
 
     public function columnExists($tablename, $columnname)
     {
         global $wpdb;
-        $query = $wpdb->prepare('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s AND column_name = %s', $wpdb->esc_like($this->tableName($tablename)), $wpdb->esc_like($columnname));
+        $query = $wpdb->prepare('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s AND column_name = %s', $wpdb->esc_like($tablename), $wpdb->esc_like($columnname));
         return $wpdb->get_var($query) == $columnname;
     }
 
     public function createTable($tablename, $content)
     {
         global $wpdb;
-        $table_name = $this->tableName($tablename);
-        return $wpdb->query("CREATE TABLE $table_name $content;");
+        if ($wpdb->query("CREATE TABLE $tablename $content;") === false) {
+            throw new \Exception("database error");
+        }
     }
 
     public function dropTable($tablename)
     {
         global $wpdb;
-        $table_name = $this->tableName($tablename);
-        return $wpdb->query("DROP TABLE $table_name;");
+        if ($wpdb->query("DROP TABLE $tablename;") === false) {
+            throw new \Exception("database error");
+        }
     }
 }

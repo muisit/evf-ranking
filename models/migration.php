@@ -55,17 +55,10 @@ class Migration extends Base
         }
     }
 
-    public function save()
+    public function postSave($wassaved)
     {
-        if (parent::save() && intval($this->status) == 1) {
-            try {
-                ob_start();
-                $this->execute();
-                ob_end_clean();
-            }
-            catch (Exception $e) {
-                // pass
-            }
+        if (intval($this->status) == 1) {
+            $this->execute(true);
         }
         return true;
     }
@@ -126,7 +119,7 @@ class Migration extends Base
         return $allmigrations;
     }
 
-    public function execute()
+    public function execute($doUp = true)
     {
         $retval = -1;
         ob_start();
@@ -137,24 +130,26 @@ class Migration extends Base
             }
 
             if (!empty($model)) {
-                if (intval($model->status) == 0) {
+                if ($doUp) {
                     if ($model->up()) {
-                        $model->status = 1;
-                        $model->save();
+                        $this->status = 1;
+                        parent::save();
                         $retval = 1;
                     }
                 }
                 else {
                     if ($model->down()) {
-                        $model->status = 0;
-                        $model->save();
+                        $this->status = 0;
+                        parent::save();
                         $retval = 0;
                     }
                 }
             }
         }
-        catch (Exception $e) {
+        catch (\Exception $e) {
             error_log("caught exception on migration: " . $e->getMessage());
+            $this->status = 0;
+            parent::save();
         }
         ob_end_clean();
         return $retval;

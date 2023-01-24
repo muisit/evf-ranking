@@ -52,7 +52,6 @@
             $sql.=" and weapon_id='$wid' ";
         }
         $sql.=" order by result_total_points DESC, event_open DESC, event_name";
-        error_log("sql is $sql");
         $results=$wpdb->get_results($sql);
 
 

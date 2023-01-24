@@ -41,7 +41,7 @@ export default class FEAccreditorTab extends FEBase {
                     this.setState({ summary: json.data,loadid: null });
                     if(firsttime) {
                         this.props.unload("overview",this.props.basic.event.id);
-                        //this.setState({timeout: window.setInterval(()=> this.regularRefresh(), 5000)});
+                        this.setState({timeout: window.setInterval(()=> this.regularRefresh(), 5000)});
                     }
                 })
                 .catch((err) => parse_net_error(err));

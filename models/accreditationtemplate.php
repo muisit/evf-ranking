@@ -402,7 +402,6 @@
             }
         }
 
-        error_log('listing all for event '.$event->getKey());
         $templs = AccreditationTemplate::ListAll($event);
         $model = new AccreditationTemplate();
         $templateByType = array(

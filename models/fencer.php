@@ -170,7 +170,6 @@ class Fencer extends Base {
         $this->fencer_name = Fencer::Sanitize($this->fencer_surname);
         $this->fencer_firstname = Fencer::Sanitize($this->fencer_firstname);
         if (parent::save()) {
-            error_log("making accreditations for fencer dirty " . $this->getKey());
             $accr = new Accreditation();
             $accr->makeDirty($this->getKey());
 
@@ -180,7 +179,6 @@ class Fencer extends Base {
     }
 
     public function filterData($data, $caps) {
-        error_log("filtering data for ".json_encode($caps));
         // filter out irrelevant data depending on the capability
         $retval=array();
         if(in_array($caps, array("accreditation"))) {
@@ -258,12 +256,10 @@ class Fencer extends Base {
     }
 
     public static function Sanitize($value) {
-        //error_log("sanitizing ".json_encode($value));
         // trim whitespace in front and after
         $value = preg_replace("/(^\s+)|(\s+$)/u", "", $value);
         // replace any non-numeric, non-lexical, non-space characters
         $value = preg_replace("/[^- '\p{L}\p{N}]/u", " ", $value);
-        //error_log("returning ".json_encode($value));
         return $value;
     }
 

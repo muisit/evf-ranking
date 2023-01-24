@@ -117,7 +117,6 @@
         if($special) {
             if(is_string($special)) $special = json_decode($special,true);
             if(is_object($special)) $special=(array)$special;
-            error_log("special is ".json_encode($special));
             if(is_array($special)) {
                 if(isset($special["event_id"])) {
                     $qb->where("cm.competition_event",intval($special["event_id"]));
@@ -132,7 +131,6 @@
                     $qb->where("cm.competition_id", intval($special["competition_id"]));
                 }
                 if(isset($special["withevents"])) {
-                    error_log("adding events");
                     $qb->join("TD_Event", "e", "cm.competition_event=e.event_id");
                     $qb->join("TD_Category", "ct", "cm.competition_category=ct.category_id");
                     $qb->join("TD_Weapon", "w", "cm.competition_weapon=w.weapon_id");
@@ -333,11 +331,9 @@
             $acheck='und';
 
             $allbyname = $model->allByName($lastname,$firstname,$gender);
-            //error_log("allbyname says ".json_encode($allbyname));
             // see if anyone of these results matches the country abbreviation
             foreach($allbyname as $fencer) {
                 $values = (array)$fencer;
-                error_log("checking country abbr $country vs ".$values["country_abbr"]);
                 if($values["country_abbr"] === $country) {
                     $fencerid = $values["fencer_id"];
                     $lcheck='ok';
@@ -351,7 +347,6 @@
             
             // no match, but if we found exactly one fencer, it is only a country change
             if(sizeof($allbyname) == 1 && $fencerid < 0) {
-                //error_log("no match on country, but only one match in total");
                 $values=(array)$allbyname[0];
                 $fencerid = $values["fencer_id"];
                 $lcheck='ok';
@@ -363,7 +358,6 @@
             }
 
             if($fencerid<0) {
-                //error_log("fencer id not set, finding suggestions");
                 $suggestions=$model->findSuggestions($firstname, $lastname, $country, $gender);
 
                 if(sizeof($suggestions) == 1) {

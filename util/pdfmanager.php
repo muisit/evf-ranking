@@ -54,18 +54,15 @@ class PDFManager
 
     public static function CheckDocument($doc)
     {
-        error_log("checking document ".$doc->id);
         if (isset($doc->configObject) && is_object($doc->configObject) && isset($doc->configObject->accreditations)) {
             $aids = $doc->configObject->accreditations;
             if (is_array($aids)) {
                 $accreditations = array_map(fn ($aid) => new \EVFRanking\Models\Accreditation($aid,true), $aids);
 
                 list($hash, $files) = self::MakeHash($accreditations);
-                error_log("checking ".$doc->hash . ' vs '.$hash);
                 return $doc->hash == $hash;
             }
         }
-        error_log("something wrong, returning false");
         return false;
     }
 }

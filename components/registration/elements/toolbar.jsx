@@ -27,6 +27,7 @@ export const ToolbarLine = (props) => {
     case "photo": content = (<span className='pi pi-user'> Photo ID</span>); break;
     case "text": content = (<span className='pi pi-align-left'> Text</span>); break;
     case "name": content = (<span className='pi pi-id-card'> Name</span>); break;
+    case "category": content = (<span className='pi pi-eye'> Category designation</span>); break;
     case "country": content = (<span className='pi pi-globe'> Country designation</span>); break;
     case "cntflag": content = (<span className='pi pi-globe'> Country flag</span>); break;
     case "org": content = (<span className='pi pi-globe'> Org designation</span>); break;
@@ -72,6 +73,7 @@ export const Toolbar = (props) => {
         <div className='elements'>
             <ToolbarLine type="photo" element={{ type: "photo" }}/>
             <ToolbarLine type="name" element={{ type: "name" }} />
+            <ToolbarLine type="category" element={{ type: "category" }}/>
             <ToolbarLine type="country" element={{ type: "country" }}/>
             <ToolbarLine type="cntflag" element={{ type: "cntflag" }}/>
             <ToolbarLine type="org" element={{ type: "org" }}/>

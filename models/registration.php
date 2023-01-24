@@ -211,26 +211,22 @@ class Registration extends Base {
 
             return true;
         }
-        error_log("parent save failed");
         return false;
     }
 
     public function delete($id = null)
     {
-        error_log("deleting registration");
         $model = $this;
         if ($id !== null) {
             $model = $this->get($id);
         }
         if (empty($model)) {
-            error_log("deleting non-existing registration");
             // deleting a non-existing registration always succeeds
             return true;
         }
         
         $event = new Event($model->registration_mainevent);
         if (!$event->exists()) {
-            error_log("deleting for non-existing event");
             return false;
         }
 
@@ -248,7 +244,6 @@ class Registration extends Base {
                 return true;
             }
         }
-        error_log("caps $caps not correct");
         return false;
     }
 
@@ -292,7 +287,6 @@ class Registration extends Base {
             foreach ($res as $row) {
                 $c = $row->fencer_country;
                 $ckey = "c" . $c;
-                error_log("ckey is $ckey");
                 if (!isset($retval[$ckey])) {
                     $retval[$ckey] = array();
                 }

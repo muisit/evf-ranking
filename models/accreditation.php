@@ -124,7 +124,7 @@ class Accreditation extends Base {
     private function accreditationIsValid($a,$feid) {
         // check the front-end ID to make sure
         if($a->fe_id != $feid) {
-            error_log("stored fe_id does not match passed value");
+            error_log("stored fe_id does not match passed value " . $feid);
             return false;
         }
 
@@ -190,7 +190,6 @@ class Accreditation extends Base {
         else {
             $eventid = [$eventid];
         }
-        error_log("event id is ".json_encode($eventid));
         $fid = intval($fid);
         $cnt = $this->numrows()->where("fencer_id", $fid)->where_in("event_id", $eventid)->count();
 
@@ -252,7 +251,6 @@ class Accreditation extends Base {
             // as long as we do not process the queue, but as we'll check and reset the flag
             // before processing, the superfluous queue entries will die quickly
             foreach ($res as $row) {
-                error_log("creating new dirty queue item");
                 $job = new \EVFRanking\Jobs\AccreditationDirty();
                 $job->queue->event_id = $row->event_id;
                 $job->create($row->fencer_id);
@@ -381,7 +379,6 @@ class Accreditation extends Base {
 
             while ($queue->tick(60)) {
                 // continue
-                error_log("continuing synchronous queue");
             }
         }
         return array();
@@ -494,7 +491,7 @@ class Accreditation extends Base {
         // create a list of all jobs for this event based on the running jobs in our wordpress queue configuration
         $jobs = array();
         $activequeue = $this->getActiveQueues($event);
-        error_log("activequeues ".json_encode($activequeue));
+
         foreach ($retval["events"] as $ev) {
             $key = $event->getKey() . "_Event_" . $ev["event"];
             if (isset($activequeue[$key])) {

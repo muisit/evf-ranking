@@ -8,6 +8,7 @@ import { TextElement } from "./textelement";
 import { BoxElement } from "./boxelement";
 import { Name } from "./name";
 import { CountryDecl } from "./countrydecl";
+import { CategoryDecl } from "./categorydecl";
 import { CountryFlag } from "./countryflag";
 import { OrgDecl } from "./orgdecl";
 import { Roles } from "./roles";
@@ -57,6 +58,7 @@ function EditorCanvas(props) {
         case "text": return (<TextElement key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement}/>);
         case "name": return (<Name key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement}/>);
         //case "accid": return (<AccID key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement}/>);
+        case "category": return (<CategoryDecl key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement}/>);
         case "country": return (<CountryDecl key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement}/>);
         case "cntflag": return (<CountryFlag key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement}/>);
         case "org": return (<OrgDecl key={key} element={itm} onChange={changeElement} onSelect={selectElement} onDelete={deleteElement}/>);
@@ -127,6 +129,18 @@ export default class TemplateDesigner extends React.Component {
             hasColour: true,
             resizeable: true,
             side: "both"
+        };
+        return element;
+    }
+
+    defaultCategory = () => {
+        var element = {
+            type: "category",
+            text: "2",
+            style: { width: 100, height: 60, left: 0, top: 0, fontSize: 30, fontStyle: "bold", fontFamily: "Helvetica", zIndex: 1, color: "#000000" },
+            hasFontSize: true,
+            hasColour: true,
+            resizeable: true
         };
         return element;
     }
@@ -275,6 +289,7 @@ export default class TemplateDesigner extends React.Component {
             switch(dt.type) {
             case 'photo': el = this.defaultPhoto(); break;
             case 'text': el = this.defaultText(); break;
+            case 'category': el = this.defaultCategory(); break;
             case 'country': el = this.defaultCountry(); break;
             case 'cntflag': el= this.defaultCountryFlag(); break;
             case 'org': el = this.defaultOrg(); break;

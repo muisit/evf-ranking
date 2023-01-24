@@ -65,7 +65,8 @@ class Category extends Base {
         return $this->numrows()->count();
     }
 
-    public function categoryFromYear($year, $wrt) {
+    public static function CategoryFromYear($year, $wrt)
+    {
         $year=intval($year);
         $wrtM=intval(strftime('%m',strtotime($wrt)));
         $wrtY=intval(strftime('%Y', strtotime($wrt)));

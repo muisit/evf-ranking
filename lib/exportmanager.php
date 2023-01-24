@@ -27,6 +27,8 @@
 
 namespace EVFRanking\Lib;
 
+use EVFRanking\Models\Category;
+
 class ExportManager extends BaseLib {
 
     public $filetype;
@@ -248,7 +250,7 @@ class ExportManager extends BaseLib {
                 } 
                 else {
                     $yob = strftime('%Y', strtotime($row['fencer_dob']));
-                    $catnum = $this->category->categoryFromYear($yob, $row['starts']);
+                    $catnum = Category::CategoryFromYear($yob, $row['starts']);
                     if ($catnum < 1) {
                         $retval[] = '(no category)';
                     } 

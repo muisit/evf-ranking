@@ -371,6 +371,7 @@ class PDFCreator {
                 case "text":    $this->addText($el,$content, $data); break;
                 case "name":    $this->addName($el, $content, $data); break;
                 case "accid":   $this->addID($el, $content, $data); break;
+                case "category": $this->addCategory($el, $content, $data); break;
                 case "country": $this->addCountry($el, $content,$data); break;
                 case "cntflag": $this->addCountryFlag($el, $content,$data); break;
                 case "org":     $this->addOrg($el,$content, $data); break;
@@ -478,6 +479,18 @@ class PDFCreator {
         $this->accrid=array("text"=>$txt, "side"=>$side,"options" => array("offset" => $offset, "box" => $size, "size"=>$size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour, "align"=>$align));
     }
 
+    private function addCategory($element,$content, $data) {
+        $colour = $this->getColour($element);
+        $offset = $this->getOffset($element);
+        $size = $this->getSize($element);
+        $fsize = $this->getFontSize($element);
+        $ffamily=$this->getFontFamily($element);
+        $align=$this->getAlign($element);
+        $txt = isset($data["category"]) ? $data["category"] : "";
+        if (strlen(trim($txt))) {
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour, "align"=>$align));
+        }
+    }
 
     private function addCountry($element,$content, $data) {
         $colour = $this->getColour($element);

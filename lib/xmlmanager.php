@@ -181,7 +181,6 @@ class XMLManager extends BaseLib {
     }
 
     private function addFencer($row,$ranking) {
-        error_log("adding fencer using ".json_encode($row));
         $key="fid".$row["registration_fencer"];
         $pos=null;
         $points=null;

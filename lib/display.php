@@ -117,10 +117,8 @@ HEREDOC;
 
         $found=null;
         foreach($events as $e) {
-            error_log("checking event ".json_encode($e->export()));
             // if we have an id, make sure it matches
             if(isset($attributes["id"]) && intval($attributes["id"]) > 0) {
-                error_log("id set");
                 if(intval($attributes["id"]) == intval($e->getKey())) {
                     $found=$e;
                     break;
@@ -128,14 +126,12 @@ HEREDOC;
             }
             // if we have part of a title, make sure it matches
             else if(isset($attributes["name"]) && strlen($attributes["name"])) {
-                error_log("title set to ".$attributes['name']." and checking with ".$e->event_name);
                 if(strpos(strtolower($e->event_name), strtolower($attributes["name"])) !== FALSE) {
                     $found=$e;
                     break;
                 }
             }
             else if(strlen($e->event_feed)) {
-                error_log("feed found, taking first");
                 // take the first event with a live feed url
                 $found=$e;
                 break;
@@ -160,7 +156,7 @@ HEREDOC;
 
         $event = Display::$policy->feEventToBeEvent($eventid);
         if ($event == null) {
-            error_log("no such event");
+            error_log("no such event " . $eventid);
             return null;
         }
 
@@ -209,7 +205,6 @@ HEREDOC;
     // action called from the Event template to generate a button inside the listed event
     public function eventButton($event)
     {
-        error_log("event button");
         $id = is_object($event) ? $event->ID : intval($event);
         if (Display::$policy === null) {
             Display::$policy = new Policy();

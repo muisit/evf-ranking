@@ -102,7 +102,6 @@ class API extends BaseLib {
             $eid = $this->fromGet("mainevent");
             $picture = $this->fromGet("picture");
             $tid = $this->fromGet("template");
-            //error_log("filetype $filetype, sid $sid, eid $eid, picture $picture, tid $tid");
 
             if ((!empty($sid) || !empty($eid)) && in_array($filetype, array("participants","participantsxml"))) {
                 $sideevent = $this->loadModel("SideEvent", $sid);
@@ -585,9 +584,7 @@ class API extends BaseLib {
                 $caps="system";
             }
         }
-        error_log("filtering data");
         $data = $model->filterData($data, $caps);
-        error_log("filtered data is ".json_encode($data));
 
         // make sure to retrieve the current state from the database as value for all
         // fields before validation (before we overwrite the values with whatever is posted)
@@ -601,7 +598,7 @@ class API extends BaseLib {
         }
 
         if(!$model->saveFromObject($data)) {
-            error_log('save failed');
+            error_log('ERROR: save failed');
             $retval["error"]=true;
             $retval["messages"]=$model->errors;
         }
@@ -617,7 +614,7 @@ class API extends BaseLib {
         $model=$model->get($data['id']);
         if(!empty($model) && $model->exists()) {
             if(!$model->delete($data['id'])) {
-                error_log('delete failed');
+                error_log('ERROR: delete failed');
                 $retval["error"]=true;
                 $retval["messages"]=array("Internal database error");
                 if(isset($model->errors) && is_array($model->errors)) {
@@ -666,7 +663,6 @@ class API extends BaseLib {
             $retval["total"] = $total;
         }
         else {
-            error_log('empty result, checking errors');
             global $wpdb;
             $str = mysqli_error( $wpdb->dbh );
             error_log('DB ERROR:' .$str);

@@ -121,12 +121,10 @@ class PDFSummarySplit
         list($documents, $oldDocuments) = $this->createSummaryDocuments($batches, $this->findDocuments());
 
         foreach ($oldDocuments as $doc) {
-            error_log("deleting old, not used documents " . $doc->getKey());
             $doc->delete();
         }
 
         $name = $this->createName();
-        error_log("looping over all documents");
         foreach ($documents as $doc) {
             $doc->name = $name;
             $doc->configObject->event = $this->event->getKey();
@@ -136,10 +134,8 @@ class PDFSummarySplit
             $doc->save();
 
             $doc->path = $this->getPath() . $doc->name . "_" . $doc->getKey() . ".pdf";
-            error_log("doc path is " . $doc->path);
             $doc->save();
         }
-        error_log("end of pdfsummary split");
         return $documents;
     }
 }

@@ -29,6 +29,8 @@
 
 namespace EVFRanking\Jobs;
 
+use EVFRanking\Models\Category;
+
 class AccreditationDirty extends BaseJob
 {
     private $fencer;
@@ -365,7 +367,10 @@ class AccreditationDirty extends BaseJob
 
     private function createTemplate($template, $assignedRoles, $dates)
     {
+        $yob = strftime('%Y', strtotime($this->fencer->fencer_dob));
+        $catnum = Category::CategoryFromYear($yob, $this->event->event_open);
         $accr = array(
+            "category" => $catnum,
             "country" => $this->country->country_abbr,
             "country_flag" => $this->country->country_flag_path,
             "organisation" => "",

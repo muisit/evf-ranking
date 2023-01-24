@@ -242,7 +242,6 @@ class Queue extends Base
                 $yields[] = strftime('%Y-%m-%d %H:%M:%S');
                 $this->setData("yields", $yields);
                 $this->save();
-                error_log("yield exception for queue entry");
                 return true;
             }
             catch (FailException $e) {

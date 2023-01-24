@@ -66,7 +66,7 @@ class Document extends Base
     {
         if (!empty(trim($filter))) {
             $filter = str_replace("%", "%%", $filter);
-            $qb->where("name", "like", "%$filter%");
+            $qb->where("name", "like", "$filter%");
         }
     }
 
@@ -75,6 +75,11 @@ class Document extends Base
         $qb = $this->select('*')->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb, $filter, $special);
         return $qb->get();
+    }
+
+    public function findByName($name)
+    {
+        return array_map(fn ($row) => new Document($row), $this->selectAll(null, null, $name, null, null));
     }
 
     public function count($filter, $special = null)
@@ -87,18 +92,39 @@ class Document extends Base
         return intval($result[0]->cnt);
     }
 
+    public function deleteByName()
+    {
+        // make sure we delete all summary documents for a set if one of them becomes dirty
+        $docs = $this->findByName($this->name);
+        foreach ($docs as $doc) {
+            $doc->delete();
+        }
+    }
+
     public function delete($id = null)
     {
         if ($id === null) $id = $this->getKey();
         $id = intval($id);
-        $model = $this->find($id);
+        $model = $this->get($id);
 
         if ($model->exists()) {
-            $basepath = wp_upload_dir();
-            if (file_exists($basepath . $model->path)) {
-                unlink($basepath . $model->path);
+            if ($model->fileExists()) {
+                $basepath = wp_upload_dir();
+                unlink($basepath['basedir'] . $model->path);
             }
         }
         return parent::delete($id);
     }
+
+    public function fileExists()
+    {
+        return file_exists($this->getPath());
+    }
+
+    public function getPath()
+    {
+        $basepath = wp_upload_dir();
+        return $basepath['basedir'] . $this->path;
+    }
+
 }

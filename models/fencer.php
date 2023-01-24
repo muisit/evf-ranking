@@ -60,6 +60,11 @@ class Fencer extends Base {
         $this->rules["fencer_dob"]["rule"]="date|lt=".strftime('%F',strtotime(time() - 20*365*24*60*60));
     }
 
+    public function getFullName()
+    {
+        return strtoupper($this->fencer_surname) . ", " . $this->fencer_firstname;
+    }
+
     public function delete($id=null) {
         if($id === null) $id = $this->getKey();
 
@@ -160,11 +165,13 @@ class Fencer extends Base {
         return $filename;
     }
 
-    public function save() {
+    public function save()
+    {
         $this->fencer_name = Fencer::Sanitize($this->fencer_surname);
         $this->fencer_firstname = Fencer::Sanitize($this->fencer_firstname);
-        if(parent::save()) {
-            $accr=new Accreditation();
+        if (parent::save()) {
+            error_log("making accreditations for fencer dirty " . $this->getKey());
+            $accr = new Accreditation();
             $accr->makeDirty($this->getKey());
 
             return true;

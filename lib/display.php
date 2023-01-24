@@ -152,19 +152,20 @@ HEREDOC;
     // action called when we move from the Event registration button to the Event registration page
     // Check here if we are already logged in. If not, redirect. If so, display the Event registration
     // frontend page.
-    public function registerRedirect($eventid) {
+    public function registerRedirect($eventid)
+    {
         if (Display::$policy === null) {
             Display::$policy = new Policy();
         }
 
         $event = Display::$policy->feEventToBeEvent($eventid);
-        if($event == null) {
+        if ($event == null) {
             error_log("no such event");
             return null;
         }
 
         // if we are not logged in yet, redirect to the login page
-        if(!is_user_logged_in()) {
+        if (!is_user_logged_in()) {
             global $wp;
             $registrationpage = home_url($wp->request);
             $location = wp_login_url($registrationpage);
@@ -174,7 +175,7 @@ HEREDOC;
         else {
             // logged in, so we can show the React front end
             // this creates the post content and adds the relevant scripts
-            $post = $this->virtualPage("register",$event);
+            $post = $this->virtualPage("register", $event);
             return $post;
         }
         return null;
@@ -206,17 +207,19 @@ HEREDOC;
 
 
     // action called from the Event template to generate a button inside the listed event
-    public function eventButton($event) {
+    public function eventButton($event)
+    {
+        error_log("event button");
         $id = is_object($event) ? $event->ID : intval($event);
-        if(Display::$policy === null) {
-            Display::$policy=new Policy();                
+        if (Display::$policy === null) {
+            Display::$policy = new Policy();
         }
         $event = Display::$policy->feEventToBeEvent($id);
-        if($event != null) {
+        if ($event != null) {
             $caps = Display::$policy->eventCaps($event);
 
             $location = home_url("/register/$id");
-            if(in_array($caps, array("system","organiser","cashier","accreditation"))) {
+            if (in_array($caps, array("system","organiser","cashier","accreditation"))) {
                 echo "<a href='$location'><div class='evfranking-manage'></div><a/>";
             }
             else if (in_array($caps, array("open","registrar","hod","hod-view"))) {
@@ -224,7 +227,7 @@ HEREDOC;
             }
 
             // if the event has a live feed, just display it
-            if(strlen($event->event_feed)) {
+            if (strlen($event->event_feed)) {
                 wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
                 echo "<a href='".addslashes($event->event_feed)."' target='_blank'><div class='evfranking-livefeed'></div></a>";
             }

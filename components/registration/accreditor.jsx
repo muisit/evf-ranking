@@ -41,7 +41,7 @@ export default class FEAccreditorTab extends FEBase {
                     this.setState({ summary: json.data,loadid: null });
                     if(firsttime) {
                         this.props.unload("overview",this.props.basic.event.id);
-                        this.setState({timeout: window.setInterval(()=> this.regularRefresh(), 5000)});
+                        //this.setState({timeout: window.setInterval(()=> this.regularRefresh(), 5000)});
                     }
                 })
                 .catch((err) => parse_net_error(err));
@@ -160,8 +160,8 @@ export default class FEAccreditorTab extends FEBase {
             .catch((err) => parse_net_error(err));
     }
 
-    downloadDoc = function(type,id) {
-        var href = evfranking.url + "&download=summary&type=" + type + "&typeid="+id;
+    downloadDoc = function(doc) {
+        var href = evfranking.url + "&download=summary&id=" + doc.id;
         href += "&mainevent=" + this.props.basic.event.id + "&nonce=" + evfranking.nonce;
         window.open(href);
     }
@@ -183,7 +183,7 @@ export default class FEAccreditorTab extends FEBase {
     }
 
     renderContent () {
-        return (<div>
+        return (<div className='accreditor-tab'>
             {this.renderParticipants()}
             {this.renderSummaryEvent()}
             {this.renderSummaryCountry()}
@@ -236,10 +236,8 @@ export default class FEAccreditorTab extends FEBase {
                             {is_generating && (
                                     <span className='pi pi-spin pi-spinner'> </span>
                             )}
-                            {!is_generating && parseInt(line.accreditations) > 0 && line.available && (
-                                <span className='pi pi-file-pdf' onClick={()=>this.downloadDoc(nameheader, line[idmember])}> {line.doc_size}</span>
-                            )}
-                            {!is_generating && parseInt(line.accreditations) > 0 && !line.available && (
+                            {!is_generating && parseInt(line.accreditations) > 0 && line.documents && line.documents.length > 0 && this.renderDocuments(line)}
+                            {!is_generating && parseInt(line.accreditations) > 0 && (!line.documents || line.documents.length == 0) && (
                                 <span className='pi pi-cog pi-icon-generate' onClick={() => this.generateDoc(nameheader, line[idmember])} data-pr-tooltip='Generate'></span>
                             )}
                         </td>
@@ -247,6 +245,19 @@ export default class FEAccreditorTab extends FEBase {
                 )})}
             </tbody>
         </table>)
+    }
+
+    renderDocuments(line) {
+        return (
+            <div>
+                {line.documents.map((doc) => {
+                    var cname = '.tt-' + doc.id;
+                    return (
+                        <span key={doc.id} title={'document size ' + doc.size} className={cname + ' pi pi-file-pdf summarydoc'} onClick={() => this.downloadDoc(doc)}></span>
+                    )
+                })}
+            </div>
+        )
     }
 
     renderParticipants() {

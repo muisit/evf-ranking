@@ -140,8 +140,13 @@ class Queue extends Base
             if (isset($filter["queue"]) && !empty(trim($filter["queue"]))) {
                 $qb->where("queue", $filter["queue"]);
             }
-            if (isset($filter["model"]) && !empty(trim($filter["model"]))) {
-                $qb->where("model", $filter["model"]);
+            if (isset($filter["model"]) && !empty($filter["model"])) {
+                if (is_array($filter['model'])) {
+                    $qb->where_in("model", $filter["model"]);
+                }
+                else if (!empty(trim($filter['model']))) {
+                    $qb->where("model", trim($filter["model"]));
+                }
             }
         }
 

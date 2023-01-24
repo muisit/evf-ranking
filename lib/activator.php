@@ -24,25 +24,26 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Lib;
 
-namespace EVFRanking\Lib {
+class Activator extends BaseLib
+{
+    const DBVERSION = "1.0.0";
 
-
-class Activator extends BaseLib {
-     const DBVERSION="1.0.0";
-
-    public function deactivate() {
+    public function deactivate()
+    {
         $ts = wp_next_scheduled( 'evfranking_cron_hook' );
-        if ( $ts ) {
+        if ($ts) {
             wp_unschedule_event( $ts, 'evfranking_cron_hook' );
         }
         $ts = wp_next_scheduled( 'evfranking_cron_hook_10m' );
-        if ( $ts ) {
+        if ($ts) {
             wp_unschedule_event( $ts, 'evfranking_cron_hook_10m' );
         }
     }
 
-    public function uninstall() {
+    public function uninstall()
+    {
         $this->deactivate();
         delete_option("evfranking_upgrade");
         delete_option(\EVFRanking\Models\AccreditationTemplate::OPTIONNAME);
@@ -115,27 +116,25 @@ class Activator extends BaseLib {
         $model->checkDirtyAccreditations();
 
         // run the Queue as long as we have a time limit and it doesn't take longer than, say, 9 minutes
-        $start=time();
-        $delta=10*60; // total time we spend
-        $lastjob=0; // time for the last job
+        $start = time();
+        $delta = 10 * 60; // total time we spend
+        $lastjob = 0; // time for the last job
         $queue = new \EVFRanking\Models\Queue();
-        $queue->queue="default"; // run only the default queue
-        while(time() < ($start + $delta - $lastjob)) {
-            $qstart=time();
+        $queue->queue = "default"; // run only the default queue
+        while (time() < ($start + $delta - $lastjob)) {
+            $qstart = time();
             // pass the estimation of the time we have left
-            if(!$queue->tick(($start+$delta) - time())) {
+            if (!$queue->tick(($start + $delta) - time())) {
                 // end of the queue reached
                 break;
             }
-            $qend=time();
+            $qend = time();
             // make sure we take looooong running jobs into account
             // in our estimation of the worst-case delta time for
             // our next job
-            if(($qend - $qstart) > $lastjob) {
-                $lastjob=$qend-$qstart;
+            if (($qend - $qstart) > $lastjob) {
+                $lastjob = $qend - $qstart;
             }
         }
     }
 }
-
-} // namespace

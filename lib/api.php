@@ -139,9 +139,8 @@ class API extends BaseLib {
                             "event" => $event->getKey()
                         )
                     ));
-
                     $em = new ExportManager();
-                    $em->exportSummary($event, $this->fromGet("type"), $this->fromGet("typeid"));
+                    $em->exportSummary($event, $this->fromGet("id"));
                 }
             }
             else if (!empty($eid) && in_array($filetype, array("accreditation"))) {

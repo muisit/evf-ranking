@@ -26,25 +26,38 @@
 
 namespace EVFRanking\Jobs;
 
-class CreateSummary extends BaseJob
+class SetupSummary extends BaseJob
 {
     const QUEUENAME = "evfranking_queued_summary";
 
-    // first argument is the document id
-    // 2nd argument is the queue key
+    private function createSummaryKey($type, $tid)
+    {
+        $eid = intval($this->queue->event_id);
+        return $eid . "_" . $type . "_" . $tid;
+    }
+
+    public function isForType($type, $typeId)
+    {
+        $key = $this->createSummaryKey($type, $typeId);
+        $ourKey = $this->queue->getData('key');
+        return $key == $ourKey;
+    }
+
+    // first argument is an event id, then the selection type and the selection type ID
     public function create()
     {
         $args = func_get_args();
-        $docid = sizeof($args) > 0 ? $args[0] : null;
-        $key = sizeof($args) > 1 ? $args[1] : null;
-        $this->queue->setData("document_id", $docid);
-        $this->queue->setData("key", $key);
+        $type = sizeof($args) > 1 ? $args[1] : null;
+        $typeid = sizeof($args) > 2 ? $args[2] : null;
+        $this->queue->setData("type", $type);
+        $this->queue->setData("type_id", intval($typeid));
+        $this->queue->setData("key", $this->createSummaryKey($type, $typeid));
         parent::create();
     }
 
     public function run()
     {
-        $this->log("running CreateSummary job");
+        $this->log("running SetupSummary job");
         parent::run();
 
         $event = new \EVFRanking\Models\Event($this->queue->event_id, true);
@@ -52,27 +65,12 @@ class CreateSummary extends BaseJob
             $this->fail("Invalid event record, cannot create PDF summary");
         }
 
-        $document = new \EVFRanking\models\Document($this->queue->getData("document_id"));
-        if (!$document->exists()) {
-            $this->fail("Invalid document selected for summary: " . $this->queue->getData("document_id"));
+        $type = $this->queue->getData("type");
+        if (!in_array($type, array("Country","Role","Template","Event"))) {
+            $this->fail("Invalid summary type set");
         }
 
-        $document->configObject = json_decode($document->config);
-        if ($document->configObject === false) {
-            $this->fail("Invalid document, no configuration");
-        }
-
-        $typeid = intval($document->configObject->model ?? -1);
-        $type = $document->configObject->type;
-        $eventid = intval($document->configObject->event ?? -1);
-
-        if ($eventid != $event->getKey()) {
-            $this->fail("Invalid document, event differs from configuration");
-        }
-        if (!in_array($type, array('Country', 'Role', 'Template', 'Event'))) {
-            $this->fail("Invalid document, unsupported model type");
-        }
-
+        $typeid = intval($this->queue->getData("type_id"));
         $model = null;
         switch ($type) {
             case 'Country':
@@ -102,18 +100,21 @@ class CreateSummary extends BaseJob
                 // pass these two non-existing role models
             }
             else {
-                $this->fail("Invalid document, type model does not exist");
+                $this->fail("Invalid type model, cannot create PDF summary for $type/$typeid");
             }
         }
 
-        $creator = new \EVFRanking\Util\PDFSummary($document, $event, $type, $model);
-        $creator->create();
+        $splitter = new \EVFRanking\Util\PDFSummarySplit($event,$type,$model);
+        $documents = $splitter->create();
 
-        if (!file_exists($document->getPath())) {
-            $this->fail("Could not create PDF at " . $document->getPath());
+        foreach ($documents as $doc) {
+            $job = new \EVFRanking\Jobs\CreateSummary();
+            $job->queue->queue = $this->queue->queue; // make sure we stay in the same queue
+            $job->queue->event_id = $event->getKey();
+            $job->create($doc->getKey(), $this->queue->getData('key'));
         }
 
-        $this->log("end of CreateSummary job");
+        $this->log("end of SetupSummary job");
     }
 
     public function fail($msg = null)

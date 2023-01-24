@@ -7,97 +7,47 @@ class PDFSummary
     public $event;
     public $type;
     public $model;
-    public $_path;
+    public $accreditations;
 
-    public function __construct($event, $type, $model)
+    public function __construct($document, $event, $type, $model)
     {
+        $this->document = $document;
         $this->event = $event;
         $this->type = $type;
         $this->model = $model;
+
+        $this->accreditations = array();
+        foreach ($this->document->configObject->accreditations as $aid) {
+            $this->accreditations[] = new \EVFRanking\models\Accreditation($aid, true);
+        }
     }
 
-    public static function CheckPath($eid, $path)
+    public function createHash()
     {
-        // path is summary_<type>_<tid>_<hash>.pdf
-        $elements = explode('_', basename($path));
-        if (sizeof($elements) == 4 && $elements[0] == "summary") {
-            $type = $elements[1];
-            $tid = $elements[2];
-
-            $actualfile = PDFSummary::SearchPath($eid, $type, $tid);
-            if (basename($actualfile) == $path) {
-                return PDFSummary::CheckHash($actualfile, $eid, $type, $tid);
-            }
-        }
-        return false;
-    }
-
-    public static function CheckHash($path, $eid, $type, $tid) {
-        $event=new \EVFRanking\Models\Event($eid,true);
-        $model=null;
-        switch($type) {
-        case 'Country':  $model=new \EVFRanking\Models\Country($tid,true); break;
-        case 'Role':     $model=new \EVFRanking\Models\Country($tid,true); break;
-        case 'Template': $model=new \EVFRanking\Models\AccreditationTemplate($tid,true); break;
-        case 'Event':    $model=new \EVFRanking\Models\SideEvent($tid,true); break;
-        }
-        if(!empty($model) && $model->exists() && $event->exists()) {
-            $accreditations=$model->selectAccreditations($event);
-            if(sizeof($accreditations)==0) return false;
-            list($overallhash,$files)=PDFSummary::CreateHash($accreditations);
-            if(empty($overallhash)) return false;
-            $outputpath = PDFSummary::GetPath($event->getKey(), $type, $tid, $overallhash);
-
-            return $outputpath == $path;
-        }
-        return false;
-    }
-
-    public static function CreateHash($accreditations) {
+        global $evflogger;
         // check that all files exist
-        $files=array();
-        foreach($accreditations as $a) {
-            if($a->isDirty()) {
-                error_log("dirty accreditation prevents summary file");
-                return array("",array());
+        foreach ($this->accreditations as $a) {
+            if ($a->isDirty()) {
+                $evflogger->log("dirty accreditation prevents summary file");
+                return array('',array());
             }
 
-            $path=$a->getPath();
-            if(!file_exists($path)) {
-                error_log("missing PDF $path prevents summary file");
+            $path = $a->getPath();
+            if (!file_exists($path)) {
+                $evflogger->log("missing PDF $path prevents summary file");
                 $a->setDirty();
                 $a->save();
-                return array("", array());
+                return array('',array());
             }
-
-            $hash=$a->file_hash;
-            $fencer=new \EVFRanking\Models\Fencer($a->fencer_id,true);
-
-            $key=$fencer->fencer_surname.",".$fencer->fencer_firstname."~".$a->getKey();
-            $files[$key]=array("file"=>$path,"hash"=>$hash,"fencer"=>$fencer, "accreditation" => $a);
         }
-
-        // sort the files by fencer name
-        // Sorting makes it easier for the end user to find missing accreditations
-        // Also, sorting is vital to make sure the overall hash is created in the 
-        // same way
-        ksort($files, SORT_NATURAL);
-
-        // accumulate all hashes to get at an overall hash
-        $acchash="";
-        foreach($files as $k=>$v) {
-            $acchash.=$v["hash"];
-        }
-        $overallhash=hash('sha256',$acchash);
-        return array($overallhash,$files);
+        return PDFManager::MakeHash($this->accreditations);
     }
 
     public function create()
     {
         global $evflogger;
         // delete any existing document first
-        $outputpath = PDFSummary::SearchPath($this->event->getKey(), $this->type, $this->model->getKey());
-        $evflogger->log("PDFSummary::create at $outputpath");
+        $outputpath = $this->document->path;
         if (file_exists($outputpath)) {
             @unlink($outputpath);
         }
@@ -107,34 +57,37 @@ class PDFSummary
             return;
         }
 
-        $accreditations = $this->accreditations();
+        $accreditations = $this->accreditations;
         if (count($accreditations) == 0) {
             $evflogger->log("PDFSummary::create no accreditations, returning empty file");
             return;
         }
 
-        list($overallhash, $files) = PDFSummary::CreateHash($accreditations);
+        list($overallhash, $files) = $this->createHash($accreditations);
         if (count($files) == 0) {
             $evflogger->log("PDFSummary::create no files found with hashes");
             return;
         }
-        $outputpath = PDFSummary::GetPath($this->event->getKey(), $this->type, $this->model->getKey(), $overallhash);
 
-        if (file_exists($outputpath)) {
-            @unlink($outputpath);
-        }
-        if (file_exists($outputpath)) {
-            // error: unable to delete output, cannot create new file
-            $evflogger->log("PDFSummary::create unable to unlink existing file (again), returning");
-            return;
-        }
+        $this->createPDF($files);
 
+        if ($this->document->fileExists()) {
+            $this->document->hash = $overallhash;
+            $this->document->save();
+        }
+    }
+
+    private function createPDF($files)
+    {
+        global $evflogger;
         do_action('extlibraries_hookup', 'tcpdf');
         do_action('extlibraries_hookup', 'fpdi');
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
         
-        $templates = array();
+        // cache templates
+        $template = array();
+
         // to keep track of the next possible option, we assign 9 different positions:
         // A4 1, 2, 3 and 4
         // A4 landscape 5, 6
@@ -159,215 +112,167 @@ class PDFSummary
                 }
             }
 
+            $evflogger->log('PDFSummary: importing accreditation file ' . $v['file']);
             $pdf->SetSourceFile($v["file"]);
             $templateId = $pdf->importPage(1);
 
-            switch ($pageoption) {
-                default:
-                case 'a4portrait':
-                case 'a4portrait2':
-                case 'a5landscape':
-                case 'a5landscape2':
-                    $size = $pdf->getTemplateSize($templateId, 210);
-                    break;
-                case 'a4landscape':
-                case 'a4landscape2':
-                    $size = $pdf->getTemplateSize($templateId, 297);
-                    break;
-                case 'a6portrait':
-                    $size = $pdf->getTemplateSize($templateId, 105);
-                    break;
-            }
-
-            $thisposition = null;
-            $followingposition = null;
-            switch ($pageoption) {
-                default:
-                case 'a4portrait':
-                    if ($currentposition === null) {
-                        $thisposition = 1;
-                        $followingposition = 3;
-                    }
-                    else if ($currentposition === 3) {
-                        $thisposition = 3;
-                        $followingposition = null;
-                    }
-                    break;
-                case 'a4landscape':
-                    $thisposition = 5;
-                    $followingposition = null;
-                    break;
-                case 'a4portrait2':
-                    // allow 1, 2 and 3
-                    if ($currentposition === null) {
-                        $thisposition = 1;
-                        $followingposition = 2;
-                    }
-                    else if ($currentposition === 2) {
-                        $thisposition = 2;
-                        $followingposition = 3;
-                    }
-                    else if ($currentposition === 3) {
-                        $thisposition = 3;
-                        $followingposition = 4;
-                    }
-                    else if ($currentposition === 4) {
-                        $thisposition = 4;
-                        $followingposition = null;
-                    }
-                    break;
-                case 'a4landscape2':
-                    if ($currentposition === null) {
-                        $thisposition = 5;
-                        $followingposition = null;
-                    }
-                    else if ($currentposition === 6) {
-                        $thisposition = 6;
-                        $followingposition = null;
-                    }
-                    break;
-                case 'a5landscape':
-                    $thisposition = 7;
-                    $followingposition = null;
-                    break;
-                case 'a5landscape2':
-                    if ($currentposition === null) {
-                        $thisposition = 7;
-                        $followingposition = 8;
-                    }
-                    else if ($currentposition === 7) {
-                        $thisposition = 8;
-                        $followingposition = null;
-                    }
-                    break;
-                case 'a6portrait':
-                    $thisposition = 9;
-                    $followingposition = null;
-                    break;
-            }
-
+            list($thisposition, $followingposition) = $this->positionPage($pageoption, $currentposition);
             if ($currentposition === null) {
-                error_log("adding a new page");
+                $evflogger->log("adding a new page");
+                $size = $this->getPageSize($pdf, $pageoption, $templateId);
                 $pdf->AddPage($size['orientation'], $size);
             }
 
-            $x = 0;
-            $y = 0;
-            $w = 210;
-            $h = 297;
-            switch ($thisposition) {
-                case 1:
-                    break; // no adjustments
-                case 2:
-                    $x = 105;
-                    break;
-                case 3:
-                    $y = 148.5;
-                    break;
-                case 4:
-                    $x = 105;
-                    $y = 148.5;
-                    break;
-                case 5:
-                    $x = 43;
-                    $y = 31;
-                    $w = 297;
-                    $h = 210;
-                    break;
-                case 6:
-                    $x = 43 + 105;
-                    $y = 31;
-                    $w = 297;
-                    $h = 210;
-                    break;
-                case 7:
-                    $w = 210;
-                    $h = 148.5;
-                    break;
-                case 8:
-                    $x = 105;
-                    $w = 210;
-                    $h = 148.5;
-                    break;
-                case 9:
-                    $w = 105;
-                    $h = 148.5;
-                    break;
-            }
-
+            list($x, $y, $w, $h) = $this->placePage($thisposition);
             $evflogger->log("importing page at position $thisposition, $x, $y -> $w, $h");
             $pdf->useImportedPage($templateId, $x, $y, $w, $h, false);
-
             $currentposition = $followingposition;
         }
 
-        $pdf->Output($outputpath, 'F');
-        $this->path = $outputpath;
-        $evflogger->log("PDFSummary::create end of create, path at $outputpath");
+        $evflogger->log("PDFSummary: outputting document");
+        $pdf->Output($this->document->getPath(), 'F');
+        $evflogger->log("PDFSummary::create end of create, path at " . $this->document->path);
     }
 
-    public function accreditations()
+    private function positionPage($pageoption, $currentposition)
     {
-        switch ($this->type) {
-            case 'Country':
-            case 'Event':
-            case 'Template':
-            case 'Role':
-                return $this->model->selectAccreditations($this->event);
+        $thisposition = null;
+        $followingposition = null;
+        switch ($pageoption) {
+            default:
+            case 'a4portrait':
+                if ($currentposition === null) {
+                    $thisposition = 1;
+                    $followingposition = 3;
+                }
+                else if ($currentposition === 3) {
+                    $thisposition = 3;
+                    $followingposition = null;
+                }
+                break;
+            case 'a4landscape':
+                $thisposition = 5;
+                $followingposition = null;
+                break;
+            case 'a4portrait2':
+                // allow 1, 2 and 3
+                if ($currentposition === null) {
+                    $thisposition = 1;
+                    $followingposition = 2;
+                }
+                else if ($currentposition === 2) {
+                    $thisposition = 2;
+                    $followingposition = 3;
+                }
+                else if ($currentposition === 3) {
+                    $thisposition = 3;
+                    $followingposition = 4;
+                }
+                else if ($currentposition === 4) {
+                    $thisposition = 4;
+                    $followingposition = null;
+                }
+                break;
+            case 'a4landscape2':
+                if ($currentposition === null) {
+                    $thisposition = 5;
+                    $followingposition = null;
+                }
+                else if ($currentposition === 6) {
+                    $thisposition = 6;
+                    $followingposition = null;
+                }
+                break;
+            case 'a5landscape':
+                $thisposition = 7;
+                $followingposition = null;
+                break;
+            case 'a5landscape2':
+                if ($currentposition === null) {
+                    $thisposition = 7;
+                    $followingposition = 8;
+                }
+                else if ($currentposition === 7) {
+                    $thisposition = 8;
+                    $followingposition = null;
+                }
+                break;
+            case 'a6portrait':
+                $thisposition = 9;
+                $followingposition = null;
                 break;
         }
-        return array();
+        return [$thisposition, $followingposition];
     }
 
-    public static function AllSummaries($eid) {
-        $upload_dir = wp_upload_dir();
-        $path = $upload_dir['basedir'] . "/pdfs/event" . $eid . "/summary_*.pdf";
-        $results=glob($path);
-        $retval=array();
-        if(!empty($results)) {
-            $dir = dirname($path);
-            foreach($results as $r) {
-                $fname = $dir . "/" . basename($r);
-                if(file_exists($fname)) {
-                    $retval[]=$fname;
-                }
-            }
+    private function placePage($thisposition)
+    {
+        $x = 0;
+        $y = 0;
+        $w = 210;
+        $h = 297;
+        switch ($thisposition) {
+            case 1:
+                break; // no adjustments
+            case 2:
+                $x = 105;
+                break;
+            case 3:
+                $y = 148.5;
+                break;
+            case 4:
+                $x = 105;
+                $y = 148.5;
+                break;
+            case 5:
+                $x = 43;
+                $y = 31;
+                $w = 297;
+                $h = 210;
+                break;
+            case 6:
+                $x = 43 + 105;
+                $y = 31;
+                $w = 297;
+                $h = 210;
+                break;
+            case 7:
+                $w = 210;
+                $h = 148.5;
+                break;
+            case 8:
+                $x = 105;
+                $w = 210;
+                $h = 148.5;
+                break;
+            case 9:
+                $w = 105;
+                $h = 148.5;
+                break;
         }
-        return $retval;
+        return [$x, $y, $w, $h];
     }
 
-    public static function SearchPath($eid,$type,$tid) {
-        $path = PDFSummary::GetPath($eid,$type,$tid,"*");
-        $dir=dirname($path);
-        $results=glob($path);
-        if(!empty($results)) {
-            foreach($results as $r) {
-                $fname = $dir . "/" .basename($r);
-                if(file_exists($fname)) {
-                    return $fname;
-                }
-            }
+    private function getPageSize($pdf, $pageoption, $templateId)
+    {
+        $size = 0;
+        switch ($pageoption) {
+            default:
+            case 'a4portrait':
+            case 'a4portrait2':
+            case 'a5landscape':
+            case 'a5landscape2':
+                $size = $pdf->getTemplateSize($templateId, 210);
+                break;
+            case 'a4landscape':
+            case 'a4landscape2':
+                $size = $pdf->getTemplateSize($templateId, 297);
+                break;
+            case 'a6portrait':
+                $size = $pdf->getTemplateSize($templateId, 105);
+                break;
         }
-        return null;
-    }
-
-    public static function GetPath($eid,$type,$tid,$hash) {        
-        if ($type == "Role" && in_array(intval($tid),array(0,-1),true)) {
-            if (intval($tid) == -1) {
-                $tid = "p";
-            } else {
-                $tid = "a";
-            }
-        }
-
-        $upload_dir = wp_upload_dir();
-        $path = $upload_dir['basedir'] . "/pdfs/event" . $eid . "/summary_" . $type ."_".$tid."_".$hash.".pdf";
-        return $path;
-    }
-
-    public static function Exists($eid,$type,$tid) {
-        $path = PDFSummary::SearchPath($eid, $type, $tid);
-        return !($path === null);
+        return $size;
     }
 }
 

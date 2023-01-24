@@ -214,6 +214,8 @@ table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
 .accreditation { width: 100% ; }
 .accreditation img { width: 413px; margin: 0 auto 0 auto; display: block; max-width: 400;  }
 
+.accreditor-tab table tbody td span.pi-file-pdf { padding-right: 8px; color: rgb(202, 21, 21) }
+
 .templateeditor span.pi { font-size: 8pt; }
 .templateeditor .canvas span.pi {z-index: 1000; display: block; margin-right: -10px; float: right;}
 .templateeditor .toolbox { display: block; position: relative; width: 250px; float: left; padding-right: 10px; background-color: white;}

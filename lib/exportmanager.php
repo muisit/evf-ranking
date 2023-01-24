@@ -406,20 +406,28 @@ class ExportManager extends BaseLib {
         exit();
     }
 
-    public function exportSummary($event, $type, $typeid) {
-        $filename = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(),$type,intval($typeid));
-        if(file_exists($filename)) {
-            header('Content-Disposition: inline;');
-            header('Content-Type: application/pdf');
-            header('Expires: ' . (time() + 2 * 24 * 60 * 60));
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Length: ' . filesize($filename));
-            readfile($filename);
-            exit();
+    public function exportSummary($event, $docid) {
+        $document = new \EVFRanking\Models\Document($docid, true);
+        if (!$document->exists() || !$document->fileExists()) {
+            die(403);
         }
-        die(403);
+        $config = json_decode($document->config);
+        if (!is_object($config) || $config->event != $event->getKey()) {
+            die(403);
+        }
+
+        $filename = $document->getPath();
+
+        header('Content-Disposition: inline;');
+        header('Content-Type: application/pdf');
+        header('Expires: ' . (time() + 2 * 24 * 60 * 60));
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($filename));
+        readfile($filename);
+        exit();
     }
+
     public function exportAccreditation($event, $id) {
         $accr=new \EVFRanking\Models\Accreditation($id,true);
         if($accr->exists() && intval($accr->event_id) == intval($event->getKey())) {

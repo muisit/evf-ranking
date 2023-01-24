@@ -322,14 +322,16 @@
         return $this;
     }
 
-    public function or_where($field,$comparison=null,$clause=null) {
+    public function or_where($field, $comparison=null, $clause=null)
+    {
         return $this->andor_where($field, $comparison, $clause, "OR");
     }
 
-    public function where_in($field, $values,$andor="AND") {
-        $this->_where($field,"in",$values,$andor);
+    public function where_in($field, $values, $andor="AND")
+    {
+        $this->_where($field, "in", $values, $andor);
         return $this;
-    }    
+    }
 
     public function where_exists($callable, $andor="AND") {
         $this->_where($callable, "exists",null,$andor);
@@ -339,7 +341,7 @@
     private function _where($field, $comparison, $clause, $andor="AND") {
         if(!empty($comparison) && strtolower($comparison) == "in") {
             if(is_array($clause)) {
-                $clause="'".implode("','",$clause)."'";
+                $clause="'" . implode("','", array_map(fn ($c) => $this->escape($c), $clause)) . "'";
             }
             else if(is_callable($clause)) {
                 $qb = $this->sub();
@@ -483,5 +485,9 @@
         return $this;
     }
 
+    public function escape($v)
+    {
+        return str_replace(['\\', '%'], ['\\\\', '%%'], $v);
+    }
  }
 

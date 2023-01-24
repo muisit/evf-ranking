@@ -28,6 +28,8 @@
 
 namespace EVFRanking\Models;
 
+use EVFRanking\Util\PDFManager;
+
 class Accreditation extends Base {
     public $table = "TD_Accreditation";
     public $pk="id";
@@ -168,36 +170,51 @@ class Accreditation extends Base {
         return !empty($this->is_dirty);
     }
 
-    public function makeDirty($fid,$eventid=null) {
-        if(is_object($eventid) && get_class($eventid) == "EVFRanking\\Models\\Registration") {
+    public function makeDirty($fid, $eventid = null)
+    {
+        if (is_object($eventid) && get_class($eventid) == "EVFRanking\\Models\\Registration") {
             $eventid = $eventid->registration_mainevent;
-        }        
-        $fid=intval($fid);
-        $cnt=$this->numrows()->where("fencer_id",$fid)->where("event_id",$eventid)->count();
-        if($cnt == 0 && !empty($eventid)) {
-            // we create an empty accreditation to signal the queue that this set needs to be reevaluated
-            $dt=new Accreditation();
-            $dt->fencer_id=$fid;
-            $dt->event_id=$eventid;
-            $dt->data=json_encode(array());
-
-            $tmpl=new AccreditationTemplate();
-            $lst = $tmpl->selectAll(0,10000,null,"");
-            if(!empty($lst) && sizeof($lst)) {
-                $dt->template_id = $lst[0]->id;
+        }
+        if (empty($eventid)) {
+            $rows = $this->query()->select('event_id')->from('TD_Event')->where("(ADDDATE(event_open, event_duration + 4 ) > NOW())")->get();
+            if (!empty($rows)) {
+                $eventid = [];
+                foreach ($rows as $row) {
+                    $eventid[] = $row->event_id;
+                }
             }
-            $dt->file_id=null;
-            $dt->generated=null;
-            $dt->is_dirty=strftime('%F %T');
-            $dt->save();
+            if (empty($eventid)) {
+                return; // no pending events to make dirty
+            }
         }
         else {
-            $qb=$this->query()->set("is_dirty",strftime('%F %T'))->where('fencer_id',$fid);
-            if(!empty($eventid)) {
-                $eventid=intval($eventid);
-                $qb->where("event_id",$eventid);
+            $eventid = [$eventid];
+        }
+        error_log("event id is ".json_encode($eventid));
+        $fid = intval($fid);
+        $cnt = $this->numrows()->where("fencer_id", $fid)->where_in("event_id", $eventid)->count();
+
+        foreach ($eventid as $eid) {
+            if ($cnt == 0) {
+                // we create an empty accreditation to signal the queue that this set needs to be reevaluated
+                $dt = new Accreditation();
+                $dt->fencer_id = $fid;
+                $dt->event_id = $eid;
+                $dt->data = json_encode(array());
+
+                $tmpl = new AccreditationTemplate();
+                $lst = $tmpl->selectAll(0, 10000, null, "");
+                if (!empty($lst) && sizeof($lst)) {
+                    $dt->template_id = $lst[0]->id;
+                }
+                $dt->file_id = null;
+                $dt->generated = null;
+                $dt->is_dirty = strftime('%F %T');
+                $dt->save();
             }
-            $qb->update();
+            else {
+                $qb = $this->query()->set("is_dirty", strftime('%F %T'))->where('fencer_id', $fid)->where("event_id", $eid)->update();
+            }
         }
     }
 
@@ -220,13 +237,12 @@ class Accreditation extends Base {
         // there should not be a situation where one row is <10 minutes ago and another is >10 minutes,
         // unless it is exactly around this border (so both < 9.9 minutes)
         $notafter = strftime('%F %T', time() - EVFRANKING_RENEW_DIRTY_ACCREDITATONS * 60);
-        $res = $this->select('TD_Fencer.fencer_id, a.event_id')
-            ->from('TD_Fencer')
-            ->join("TD_Accreditation", "a", "a.fencer_id=TD_Fencer.fencer_id")
-            ->where("a.is_dirty", "<>", null)
-            ->where("a.is_dirty", "<", $notafter)
-            ->groupBy(array("TD_Fencer.fencer_id", "a.event_id")) // make sure we get one entry per fencer/event
-            ->orderBy(array("TD_Fencer.fencer_id", "a.event_id"))
+        $res = $this->select('fencer_id, event_id')
+            ->from('TD_Accreditation')
+            ->where("is_dirty", "<>", null)
+            ->where("is_dirty", "<", $notafter)
+            ->groupBy(array("fencer_id", "event_id")) // make sure we get one entry per fencer/event
+            ->orderBy(array("fencer_id", "event_id"))
             ->get();
 
         // we usually do not expect 2 events to run at the same time, causing additional queue entries
@@ -236,6 +252,7 @@ class Accreditation extends Base {
             // as long as we do not process the queue, but as we'll check and reset the flag
             // before processing, the superfluous queue entries will die quickly
             foreach ($res as $row) {
+                error_log("creating new dirty queue item");
                 $job = new \EVFRanking\Jobs\AccreditationDirty();
                 $job->queue->event_id = $row->event_id;
                 $job->create($row->fencer_id);
@@ -245,12 +262,11 @@ class Accreditation extends Base {
 
     private function checkDirtyAccreditationsForFencer($fid, $eid, $queueid)
     {
-        $res = $this->select('TD_Fencer.fencer_id, a.event_id, a.id')
-            ->from('TD_Fencer')
-            ->join("TD_Accreditation", "a", "a.fencer_id=TD_Fencer.fencer_id")
-            ->where("a.is_dirty", "<>", null)
-            ->where("TD_Fencer.fencer_id", $fid)
-            ->where("a.event_id", $eid)
+        $res = $this->select('fencer_id, event_id, id')
+            ->from('TD_Accreditation')
+            ->where("is_dirty", "<>", null)
+            ->where("fencer_id", $fid)
+            ->where("event_id", $eid)
             ->get();
 
         if (!empty($res)) {
@@ -309,10 +325,11 @@ class Accreditation extends Base {
 
     public function getPath() {
         $upload_dir = wp_upload_dir();
-        return $upload_dir['basedir'] ."/pdfs/event".$this->event_id."/accreditation_".$this->file_id.".pdf";
+        return $upload_dir['basedir'] . "/pdfs/event" . $this->event_id . "/accreditation_" . $this->file_id . ".pdf";
     }
 
-    public function regenerate($eid) {
+    public function regenerate($eid)
+    {
         $retval = array();
         $event = new \EVFRanking\Models\Event($eid, true);
         if ($event->exists()) {
@@ -343,7 +360,7 @@ class Accreditation extends Base {
         $event = new \EVFRanking\Models\Event($eid, true);
         if ($event->exists()) {
             // create a summary document for the given selection
-            $job = new \EVFRanking\Jobs\CreateSummary();
+            $job = new \EVFRanking\Jobs\SetupSummary();
             $job->queue->event_id = $eid;
             $job->create($eid, $type, $typeid);
         }
@@ -376,10 +393,10 @@ class Accreditation extends Base {
         $retval = array();
         $event = new \EVFRanking\Models\Event($eid, true);
         if ($event->exists()) {
-            $allsummaries = \EVFRanking\Util\PDFSummary::AllSummaries($eid);
-            foreach ($allsummaries as $path) {
-                if (!\EVFRanking\Util\PDFSummary::CheckPath($eid, $path)) {
-                    @unlink($path);
+            $allsummaries = PDFManager::AllSummaries($eid);
+            foreach ($allsummaries as $doc) {
+                if (!$doc->fileExists() || !PDFManager::CheckDocument($doc)) {
+                    $doc->deleteByName();
                 }
             }
         }
@@ -449,69 +466,97 @@ class Accreditation extends Base {
         return $retval;
     }
 
-    private function listJobs($retval, $event)
+    private function getActiveQueues($event)
     {
-        // create a list of all jobs for this event based on the running jobs in our wordpress queue configuration
-        $jobs = array();
         $activequeues = Queue::instance()->selectAll(
             0,
             10000,
-            array("event" => $event->getKey(), "queue" => "default", "model" => \EVFRanking\jobs\CreateSummary::class),
+            array(
+                "event" => $event->getKey(),
+                "queue" => "default",
+                "model" => [\EVFRanking\Jobs\CreateSummary::class, \EVFRanking\Jobs\SetupSummary::class]
+            ),
             '',
             array('pending' => true)
         );
         $activequeue = array();
         // the queue field is used to store the summary queue key
         foreach ($activequeues as $q) {
-            $queue = new Queue($q); 
-            $activequeue[$queue->getData('key')] = $queue;
+            $queue = new Queue($q);
+            if (!isset($activequeue[$queue->getData('key')])) $activequeue[$queue->getData('key')] = [];
+            $activequeue[$queue->getData('key')][] = $queue;
         }
+        return $activequeue;
+    }
 
+    private function listJobs($retval, $event)
+    {
+        // create a list of all jobs for this event based on the running jobs in our wordpress queue configuration
+        $jobs = array();
+        $activequeue = $this->getActiveQueues($event);
+        error_log("activequeues ".json_encode($activequeue));
         foreach ($retval["events"] as $ev) {
             $key = $event->getKey() . "_Event_" . $ev["event"];
             if (isset($activequeue[$key])) {
-                if ($this->isValidQueue($activequeue[$key])) {
-                    $jobs[$key] = array("id" => $ev["event"], "start" => $activequeue[$key]->available_at);
-                }
-                else {
-                    unset($activequeue[$key]);
+                foreach ($activequeue[$key] as $queue) {
+                    if ($this->isValidQueue($queue)) {
+                        if (!isset($jobs[$key])) $jobs[$key] = [];
+                        $jobs[$key][] = array("id" => $ev["event"], "start" => $queue->available_at);
+                    }
                 }
             }
         }
         foreach ($retval["countries"] as $dat) {
             $key = $event->getKey() . "_Country_" . $dat["country"];
             if (isset($activequeue[$key])) {
-                if ($this->isValidQueue($activequeue[$key])) {
-                    $jobs[$key] = array("id" => $dat["country"], "start" => $activequeue[$key]->available_at);
-                }
-                else {
-                    unset($activequeue[$key]);
+                foreach ($activequeue[$key] as $queue) {
+                    if ($this->isValidQueue($queue)) {
+                        if (!isset($jobs[$key])) $jobs[$key] = [];
+                        $jobs[$key][] = array("id" => $dat["country"], "start" => $queue->available_at);
+                    }
                 }
             }
         }
         foreach ($retval["roles"] as $dat) {
             $key = $event->getKey() . "_Role_" . $dat["role"];
             if (isset($activequeue[$key])) {
-                if ($this->isValidQueue($activequeue[$key])) {
-                    $jobs[$key] = array("id" => $dat["role"], "start" => $activequeue[$key]->available_at);
-                }
-                else {
-                    unset($activequeue[$key]);
+                foreach ($activequeue[$key] as $queue) {
+                    if ($this->isValidQueue($queue)) {
+                        if (!isset($jobs[$key])) $jobs[$key] = [];
+                        $jobs[$key][] = array("id" => $dat["role"], "start" => $queue->available_at);
+                    }
                 }
             }
         }
         foreach ($retval["templates"] as $dat) {
             $key = $event->getKey() . "_Template_" . $dat["template"];
             if (isset($activequeue[$key])) {
-                if ($this->isValidQueue($activequeue[$key])) {
-                    $jobs[$key] = array("id" => $dat["template"], "start" => $activequeue[$key]->available_at);
-                }
-                else {
-                    unset($activequeue[$key]);
+                if (isset($activequeue[$key])) {
+                    foreach ($activequeue[$key] as $queue) {
+                        if ($this->isValidQueue($queue)) {
+                            if (!isset($jobs[$key])) $jobs[$key] = [];
+                            $jobs[$key][] = array("id" => $dat["template"], "start" => $queue->available_at);
+                        }
+                    }
                 }
             }
         }
         return $jobs;
+    }
+
+    private function findDocuments($event, $type, $model)
+    {
+        $name = PDFManager::SummaryName($event, $type, $model);
+        $docModel = new \EVFRanking\models\Document();
+        $documents = $docModel->findByName($name);
+        return array_map(function ($doc) {
+            $doc->configObject = json_decode($doc->config);
+            if ($doc->configObject == false) $doc->configObject = (object)array();
+            if ($doc->fileExists()) {
+                $doc->humanSize = $this->humanFilesize(filesize($doc->getPath()));
+            }
+            return $doc;
+        }, $documents);
     }
 
     private function overviewForEvents($event, $sids, $templateByType, $roleByType, $rtype)
@@ -584,14 +629,19 @@ class Accreditation extends Base {
             )
             ->where("TD_Event_Side.competition_id", "<>", null)
             ->where("TD_Event_Side.event_id", $event->getKey())
+            ->orderBy("TD_Event_Side.title")
             ->get();
 
         $retval=array();
         foreach($results as $se) {
-            $path= \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Event", $se->id);
-            $available=($path!==null);
-            $docsize=0;
-            if($available) $docsize=$this->humanFilesize(filesize($path));
+            $documents = array_map(function ($d) {
+                return [
+                    "id" => $d->getKey(),
+                    "size" => $d->humanSize,
+                    "available" => $d->fileExists()
+                ];
+            }, $this->findDocuments($event, 'Event', $se->id));
+
             $retval[]=array(
                 "event" => $se->id,
                 "title" => $se->title,
@@ -599,8 +649,7 @@ class Accreditation extends Base {
                 "accreditations" => intval($se->accreditations),
                 "dirty" => intval($se->dirty),
                 "generated" => intval($se->generated),
-                "available" =>$available,
-                "doc_size"=> $docsize
+                "documents" => $documents
             );
         }
         return $retval;
@@ -669,10 +718,13 @@ class Accreditation extends Base {
 
         $retval=array();
         foreach($results as $se) {
-            $path = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Country", $se->country_id);
-            $available = ($path !== null);
-            $docsize = 0;
-            if ($available) $docsize = $this->humanFilesize(filesize($path));
+            $documents = array_map(function ($d) {
+                return [
+                    "id" => $d->getKey(),
+                    "size" => $d->humanSize,
+                    "available" => $d->fileExists()
+                ];
+            }, $this->findDocuments($event, 'Country', $se->country_id));
             $retval[]=array(
                 "country" => $se->country_id,
                 "name" => $se->country_name,
@@ -681,8 +733,7 @@ class Accreditation extends Base {
                 "accreditations" => intval($se->accreditations),
                 "dirty" => intval($se->dirty),
                 "generated" => intval($se->generated),
-                "available" => $available,
-                "doc_size" => $docsize
+                "documents" => $documents
             );
         }
         return $retval;
@@ -764,10 +815,13 @@ class Accreditation extends Base {
             $role=$se->registration_role;
 
             $key="r$role";
-            $path = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Role", $role);
-            $available = ($path !== null);
-            $docsize = 0;
-            if ($available) $docsize = $this->humanFilesize(filesize($path));
+            $documents = array_map(function ($d) {
+                return [
+                    "id" => $d->getKey(),
+                    "size" => $d->humanSize,
+                    "available" => $d->fileExists()
+                ];
+            }, $this->findDocuments($event, 'Role', $role));
 
             $retval[$key]=array(
                 "role" => $role,
@@ -775,8 +829,7 @@ class Accreditation extends Base {
                 "accreditations" => intval($se->accreditations),
                 "dirty" => intval($se->dirty),
                 "generated" => intval($se->generated),
-                "available" => $available,
-                "doc_size" => $docsize
+                "documents" => $documents,
             );
         }
         return array_values($retval);
@@ -813,10 +866,14 @@ class Accreditation extends Base {
 
         $retval=array();
         foreach($results as $se) {
-            $path = \EVFRanking\Util\PDFSummary::SearchPath($event->getKey(), "Template", $se->id);
-            $available = ($path !== null);
-            $docsize = 0;
-            if ($available) $docsize = $this->humanFilesize(filesize($path));
+            $documents = array_map(function ($d) {
+                return [
+                    "id" => $d->getKey(),
+                    "size" => $d->humanSize,
+                    "available" => $d->fileExists()
+                ];
+            }, $this->findDocuments($event, 'Template', $se->id));
+
             $retval[]=array(
                 "template" => $se->id,
                 "name" => $se->name,
@@ -824,8 +881,7 @@ class Accreditation extends Base {
                 "accreditations" => intval($se->accreditations),
                 "dirty" => intval($se->dirty),
                 "generated" => intval($se->generated),
-                "available" => $available,
-                "doc_size" => $docsize
+                "documents" => $documents
             );
         }
         return $retval;

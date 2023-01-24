@@ -34,8 +34,8 @@ class Migration20230120Documents extends MigrationObject
         (
             `id` int(11) NOT NULL AUTO_INCREMENT,
             `name` varchar(200) NOT NULL,
-            `path` text NOT NULL,
-            `hash` varchar(260) NOT NULL,
+            `path` text NULL,
+            `hash` varchar(260) NULL,
             `config` text NOT NULL,
             PRIMARY KEY (`id`)
         )

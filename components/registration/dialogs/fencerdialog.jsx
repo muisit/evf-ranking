@@ -210,28 +210,30 @@ export default class FencerDialog extends React.Component {
     autocomplete = (evt) => {
         var item=this.props.fencer;
         item.name = evt.target.value;
-        if (this.props.onChange) this.props.onChange(item, false);
+        if (this.props.onChange) this.props.onChange(item, !this.props.allowSearch);
 
-        var thistarget=evt.target.value;
-        if(thistarget.length > 1) {
-            var filters = { name: evt.target.value};
-            if(this.props.country && is_valid(this.props.country)) {
-                filters.country=this.props.country;
+        if (this.props.allowSearch) {
+            var thistarget=evt.target.value;
+            if(thistarget.length > 1) {
+                var filters = { name: evt.target.value};
+                if(this.props.country && is_valid(this.props.country)) {
+                    filters.country=this.props.country;
+                }
+                fencers(0, 10000, filters, "nf")
+                    .then((json) => {
+                        if(this.props.fencer && this.props.fencer.name == thistarget) {
+                            var fencers=[];
+                            json.data.list.map((itm)=> {
+                                itm = adjustFencerData(itm, this.props.basic.event);
+                                fencers.push(itm);
+                            });
+                            this.setState({suggestions: this.addNewFencerToSuggestionList(fencers) });
+                        }
+                    });
             }
-            fencers(0, 10000, filters, "nf")
-                .then((json) => {
-                    if(this.props.fencer && this.props.fencer.name == thistarget) {
-                        var fencers=[];
-                        json.data.list.map((itm)=> {
-                            itm = adjustFencerData(itm, this.props.basic.event);
-                            fencers.push(itm);
-                        });
-                        this.setState({suggestions: this.addNewFencerToSuggestionList(fencers) });
-                    }
-                });
-        }
-        else {
-            this.setState({ suggestions: this.addNewFencerToSuggestionList([]) });
+            else {
+                this.setState({ suggestions: this.addNewFencerToSuggestionList([]) });
+            }
         }
     }
 

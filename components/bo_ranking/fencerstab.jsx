@@ -50,14 +50,14 @@ export default class FencersTab extends PagedTab {
     onEdit = (event)=> {
         results(0,10000,{id: event.data.id},"D",{"withevents":true})
             .then((json) => {
-                this.setState({item: Object.assign({},event.data, {results: json.data.list}), displayDialog:true });
+                this.setState({item: Object.assign({},event.data, {results: json.data.list})}, () => this.props.onAction({event: 'openDialog'}));
             });
         return false;
     }
 
     renderDialog() {
         return (<div>
-            <FencerDialog countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />
+            <FencerDialog countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />
             <MergeFencers countries={this.props.countries} display={this.state.displayMergeDialog} onClose={()=> { this.setState({displayMergeDialog:false}, this.loadItemPage); }} />
             </div>
         );

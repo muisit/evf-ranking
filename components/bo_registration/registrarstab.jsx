@@ -37,7 +37,7 @@ export default class RegistrarsTab extends PagedTab {
     }
 
     renderDialog() {
-        return (<RegistrarDialog users={this.props.users} countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />);
+        return (<RegistrarDialog users={this.props.users} countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />);
     }
 
     renderTable(pager) {

@@ -37,7 +37,7 @@ export default class RoleTypeTab extends PagedTab {
     }
 
     renderDialog() {
-        return (<RoleTypeDialog onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />);
+        return (<RoleTypeDialog onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />);
     }
 
     renderTable(pager) {

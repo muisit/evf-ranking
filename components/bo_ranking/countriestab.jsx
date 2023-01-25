@@ -36,7 +36,7 @@ export default class CountriesTab extends PagedTab {
     }
 
     renderDialog() {
-        return (<CountryDialog countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />);
+        return (<CountryDialog countries={this.props.countries} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />);
     }
 
     renderTable(pager) {

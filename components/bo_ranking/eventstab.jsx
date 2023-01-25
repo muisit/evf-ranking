@@ -45,7 +45,7 @@ export default class EventsTab extends PagedTab {
             competition_fee: 30.0, 
             duration: 2,
             opens: format_date(dt)
-        }, displayDialog: true });
+        }}, () => this.props.onAction({event: 'openDialog'}));
     }
 
     onEdit = (event)=> {
@@ -53,12 +53,15 @@ export default class EventsTab extends PagedTab {
             .then((cmp) => {
                 if(cmp) {
                     var item = Object.assign({competitions: cmp.data.list},event.data);
-                    this.setState({item: item, displayDialog:true });                    
+                    this.setState({item: item }, () => this.props.onAction({event: 'openDialog'}));                    
                 }
             });
         return false;
     }
 
+    importResults = (value) => {
+        this.props.onAction({event: 'import', value: this.state.item.id});
+    }
 
     toastMessage = (type,item) => {
         if(type == "save") {
@@ -72,7 +75,7 @@ export default class EventsTab extends PagedTab {
 
     renderDialog() {
         return (
-            <EventDialog toast={this.toast} countries={this.props.countries} types={this.props.types} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item}/>
+            <EventDialog toast={this.toast} countries={this.props.countries} types={this.props.types} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} importResults={this.importResults}/>
         );
     }
 

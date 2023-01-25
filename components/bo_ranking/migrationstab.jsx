@@ -29,7 +29,7 @@ export default class MigrationsTab extends PagedTab {
     }
 
     onEdit = (event) => {
-        this.setState({ item: Object.assign({old_status: event.data.status}, event.data), displayDialog: true });
+        this.setState({ item: Object.assign({old_status: event.data.status}, event.data)}, () => this.props.onAction({event: 'openDialog'}));
         return false;
     }
 
@@ -46,7 +46,7 @@ export default class MigrationsTab extends PagedTab {
 
     renderDialog() {
         return (
-            <MigrationDialog onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item}/>
+            <MigrationDialog onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item}/>
         );
     }
 

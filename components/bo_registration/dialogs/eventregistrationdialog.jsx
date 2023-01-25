@@ -171,7 +171,6 @@ export default class EventRegistrationDialog extends React.Component {
             name = els[0];
             id=els[1];
         }
-        //console.log("event ",name,id,value,event);
 
         switch (name) {
         case 'allow_registration_lower_age':

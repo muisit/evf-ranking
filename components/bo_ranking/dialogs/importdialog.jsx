@@ -166,10 +166,8 @@ export default class ImportDialog extends React.Component {
 
     splitLine = (line) => {
         // we expect a tab separated document
-        //console.log("spliting ",line);
         var fields=line.split('\t');
         if(fields.length >= 4) {
-            //console.log("line is tab separated");
             return fields;
         }
 
@@ -177,28 +175,21 @@ export default class ImportDialog extends React.Component {
         // try regular whitespace (result from copying)
         fields = line.split(/\s+/);
         if(fields.length == 4) {
-            //console.log("line seems space separated");
             return fields;
         }
 
         // if we have more fields, it could be that we have a name containing a space.
         // Retry with at least 2 spaces between the fields
         if(fields.length>4) {
-            //console.log("too many fields, splitting on double spaces");
             fields = line.split(/\s\s+/);
             if(fields.length==4) {
-                //console.log("line seems double-space separated");
-                //console.log("returning ",fields);
                 return fields;
             }
         }
 
         // if we have too few fields, see if we need comma separation
-        //console.log("trying comma separation");
         var fields2=line.split(',');
         if(fields2.length>3) {
-            //console.log("line seems comma separated");
-            //console.log("returning ",fields2);
             return fields2;
         }
 
@@ -210,30 +201,24 @@ export default class ImportDialog extends React.Component {
         }
 
         if(fields.length <4) {
-            //console.log("too few fields, testing first field ",fields[0]);
             // perhaps the first field contains <pos><space><name> with only one
             // space between position and name
             var flds1=fields[0].split(/\s/,2);
             if(flds1.length==2 && !isNaN(parseInt(flds1[0]))) {
-                //console.log("first field seems to contain position and a name");
                 fields.shift();
                 fields = [flds1[0],flds1[1],...fields];
-                //console.log("fields is now ",fields);
             }
         }
 
         if(fields.length < 4) {
-            //console.log("too few fields, testing last field of ",fields[fields.length-1]);
             // we expect the country to be the non-spaced last element
             var flds2=fields[fields.length-1].split(/\s/);
             if(flds2.length>1) {
-                //console.log("last field seems to contain two fields at least ",flds2);
                 fields.pop();
                 var country=flds2.pop();
                 fields=fields.concat([flds2.join(' '),country]);
             }
         }
-        //console.log("returning ",fields);
         return fields;
     }
 

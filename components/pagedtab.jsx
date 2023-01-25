@@ -24,7 +24,6 @@ export default class PagedTab extends React.Component {
             page: 0,
             noslider: false,
             filterTimeId:null,
-            displayDialog: false,
             item: {},
         };
     }
@@ -109,12 +108,12 @@ export default class PagedTab extends React.Component {
     }
 
     onEdit = (event)=> {
-        this.setState({item: Object.assign({},event.data), displayDialog:true });
+        this.setState({item: Object.assign({},event.data)}, () => this.props.onAction({event: 'openDialog'}));
         return false;
     }
 
     onAdd = (event) => {
-        this.setState({item: {id:-1},displayDialog:true});
+        this.setState({item: {id:-1}}, () => this.props.onAction({event: 'openDialog'}));
     }
 
     onChange = (item) => {
@@ -127,7 +126,7 @@ export default class PagedTab extends React.Component {
     }
 
     onClose = () => {
-        this.setState({displayDialog:false});
+        this.props.onAction({event: 'closeDialog'});
     }
 
     onLoad = (state) => {
@@ -135,7 +134,7 @@ export default class PagedTab extends React.Component {
     }
 
     onDelete = (item) => {
-        this.setState({ displayDialog: false });
+        this.onClose();
         this.loadItemPage();
         this.toast.show(this.toastMessage("delete",item));
     }

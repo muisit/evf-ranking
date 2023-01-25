@@ -1,4 +1,5 @@
 import { events, weapons, categories, results, result, competitions } from "../api.js";
+import { is_valid } from "../functions";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -24,7 +25,6 @@ export default class ResultsTab extends PagedTab {
     constructor(props, context) {
         super(props, context);
         this.state = {
-            event_id: 0,
             competition: {},
             events:[],
             weapons:{},
@@ -37,6 +37,7 @@ export default class ResultsTab extends PagedTab {
             filter: "",
             items: [],
             competitions: [],
+            loadedFor: -1,
             count: 0,
             pagesize: 20,
             offset: 0,
@@ -78,6 +79,10 @@ export default class ResultsTab extends PagedTab {
         });
     }
 
+    componentDidUpdate = () => {
+        this.checkState();
+    }
+
     fieldToSorter = (fld) => {
         if(fieldToSorterList[fld])  return fieldToSorterList[fld];
         return "id";
@@ -115,8 +120,9 @@ export default class ResultsTab extends PagedTab {
             var special = JSON.stringify({ competition_id: this.state.competition.id });
             return results(o, p, f, s, special);
         }
-        else if(this.state.event_id > 0) {
-            return competitions(this.state.event_id)
+        else if(is_valid(this.props.eventId)) {
+            this.setState({loadedFor: this.props.eventId});
+            return competitions(this.props.eventId)
             .then((cmp) => {
                 if(cmp) {
                     var cmps = cmp.data.list.map((itm,idx) => {
@@ -146,7 +152,7 @@ export default class ResultsTab extends PagedTab {
     }
 
     checkState = () => {
-        if (this.state.event_id > 0) {
+        if (is_valid(this.props.eventId) && this.props.eventId != this.state.loadedFor) {
             this.loadItemPage();
         }
     }
@@ -155,13 +161,15 @@ export default class ResultsTab extends PagedTab {
         var name = ev.target.name;
         var value = ev.target.value;
         if(name == "event") {
-            this.setState({event_id: value, items:[], competition:{}, competitions:[]}, this.checkState);
+            this.setState({items:[], competition:{}, competitions:[]}, () => {
+                this.props.onAction({event: "select", value: value}, () => this.checkState());
+            });
         }
     }
 
     onImport = (tp, itm) => {
         if(tp==='open') {
-            var evname=this.state.events.filter((e) => e.id == this.state.event_id).map((e)=> e.name);
+            var evname=this.state.events.filter((e) => e.id == this.props.eventId).map((e)=> e.name);
             var comptitle=''+evname +' ' + this.state.competition.weapon_name + " " + this.state.competition.category_name;
             this.setState({importObject: {'text':"","object":{ranking:[], competition_id: this.state.competition.id },title: comptitle}, importDialog:true});
         }
@@ -200,9 +208,9 @@ export default class ResultsTab extends PagedTab {
     renderDialog() {
         return (
             <div>
-        <ResultDialog countries={this.props.countries} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.state.displayDialog} value={this.state.item} />
+        <ResultDialog countries={this.props.countries} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />
         <ImportDialog 
-            countries={this.props.countries} competition={this.state.competition} event={this.state.event_id} weapons={this.state.weapons}
+            countries={this.props.countries} competition={this.state.competition} event={this.props.eventId} weapons={this.state.weapons}
             onClose={()=>this.onImport('close')} onChange={(itm)=>this.onImport('change',itm)} onSave={()=>this.onImport('save')} 
             value={this.state.importObject} display={this.state.importDialog}
             />
@@ -213,7 +221,7 @@ export default class ResultsTab extends PagedTab {
     renderFilter() {
         return (
             <span className="p-input-icon-left search-input search-input-results">
-                <Dropdown className='evntdrop' appendTo={document.body} name="event" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.event_id} options={this.state.events} placeholder="Event" />
+                <Dropdown className='evntdrop' appendTo={document.body} name="event" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.props.eventId} options={this.state.events} placeholder="Event" />
             </span>
         );
     }
@@ -221,7 +229,7 @@ export default class ResultsTab extends PagedTab {
     renderAdd() {
         if(this.state.competition.id) {
             return (<span className="p-input-icon-left add-button">
-                <i className="pi pi-plus-circle"></i><a onClick={()=>this.onImport('open')}>Import</a>
+                <i className="pi pi-file-import"></i><a onClick={()=>this.onImport('open')}>Import</a>
                 <i className="pi pi-trash"></i><a onClick={()=>this.onImport('clear')}>Clear</a>
                 <i className="pi pi-replay"></i><a onClick={()=>this.onImport('recalc')}>Recalculate</a>
                 <i className="pi pi-caret-left"></i><a onClick={()=>this.setState({competition: {}, items: [1]}) }>Back</a>
@@ -259,7 +267,7 @@ export default class ResultsTab extends PagedTab {
     }
 
     renderResultTable(pager) {
-        var evname=this.state.events.filter((e) => e.id == this.state.event_id).map((e)=> e.name);
+        var evname=this.state.events.filter((e) => e.id == this.props.eventId).map((e)=> e.name);
         var comptitle=''+evname +' ' + this.state.competition.weapon_name + " " + this.state.competition.category_name;
 
         return (<div>

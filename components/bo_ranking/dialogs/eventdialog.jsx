@@ -9,7 +9,6 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
 import { format_date, parse_date } from '../../functions';
 import AddCompetitionDialog from './addcompetitiondialog.jsx';
-import PerusalDialog from './perusaldialog';
 
 function Competition(props) {
     var opens=props.cmp.opens.length ? parse_date(props.cmp.opens) : null;
@@ -132,7 +131,6 @@ export default class EventDialog extends React.Component {
     }
 
     onChangeEl = (event,attrvalue) => {
-        console.log(event, attrvalue);
         var item=this.props.value;
         var name=attrvalue ? event : (event.target ? event.target.name : event.originalEvent.target.name);
         var value=attrvalue ? attrvalue : (event.target ? event.target.value : event.value);
@@ -155,7 +153,6 @@ export default class EventDialog extends React.Component {
         case 'factor':
         case 'in_ranking':
         case 'feed':
-            console.log('setting ',name, value);
             item[name] = value;
             break;
         case 'opens':
@@ -242,24 +239,13 @@ export default class EventDialog extends React.Component {
         if(this.props.onChange) this.props.onChange(item);
     }
 
-    onRecalculateDialog = () => {
-        ranking("reset",{})
-        .then((res) => {
-            if(res && res.data && res.data.total) {
-                this.props.toast.show({severity:'info',summary:'Rankings Reset',detail:'The points used for calculating the ranking were re-evaluated, ' + res.data.total + ' results are included'});
-            }
-        });
-    }
-
-    onPeruseDialog = () => {
-        this.setState({peruseDialog: true});
-    }
-    onClosePeruseDialog = () => {
-        this.setState({peruseDialog: false});
-    }
 
     onAddCompetitionDialog = (state) => {
         this.setState({addCompetitionDialog: state});
+    }
+
+    onImportResults = () => {
+        this.props.importResults();
     }
 
     onSaveAddCompetition = (cats, wpns) => {
@@ -412,10 +398,12 @@ export default class EventDialog extends React.Component {
           <span className='p-calendar-span'><b>Check</b></span>
         </div>
         {this.props.value && this.props.value.competitions && this.props.value.competitions.map((cmp,idx) => (
-            <Competition cmp={cmp} ddwpns={ddwpns} ddcats={ddcats} start={start} end={end} key={idx} onChangeEl={this.onChangeEl} onRemoveCompetition={this.removeCompetition}/>))}
+            <Competition cmp={cmp} ddwpns={ddwpns} ddcats={ddcats} start={start} end={end} key={idx} onChangeEl={this.onChangeEl} onRemoveCompetition={this.removeCompetition}/>)
+        )}
       </div>
     </div>
-
+    <Button label="Add" icon="pi pi-plus" className="p-button p-button-raised p-button-text" onClick={() => this.onAddCompetitionDialog(true)} />
+    <Button label="Import" icon="pi pi-file-import" className="p-button p-button-raised p-button-text" onClick={() => this.onImportResults()} />
     </TabPanel>
 
     <TabPanel id='ranking' header='Ranking'>
@@ -435,42 +423,7 @@ export default class EventDialog extends React.Component {
         </div>
 
     </TabPanel>
-
-    <TabPanel id='actions' header='Actions'>
-        <div>
-            <label>Ranking</label>
-            <div className='input'>
-                <Button label="Recalculate" icon="pi pi-align-justify" className="p-button p-button-raised p-button-text" onClick={this.onRecalculateDialog} />
-                <p className='small'>
-                    Determines which results for each fencer are included or excluded in the ranking.
-                    Currently, this retains the four (4) highest scoring results of all events that
-                    are included in the ranking.
-                </p>
-            </div>
-        </div>
-        <div>
-            <label>Peruse</label>
-            <div className='input'>
-                <Button label="Peruse ranking" icon="pi pi-search" className="p-button p-button-raised p-button-text" onClick={this.onPeruseDialog} />
-                <p className='small'>
-                    Opens the ranking perusal dialog to skim through the current ranking. This is very similar
-                    to the front end interface.
-                </p>
-            </div>
-        </div>
-        <div>
-            <label>Competitions</label>
-            <div className='input'>
-                <Button label="Add" icon="pi pi-plus" className="p-button p-button-raised p-button-text" onClick={() => this.onAddCompetitionDialog(true)} />
-                <p className='small'>
-                    Allows adding competitions to this event.
-                </p>
-            </div>
-        </div>
-
-    </TabPanel>
   </TabView>
-  <PerusalDialog onClose={this.onClosePeruseDialog} display={this.state.peruseDialog}/>
   <AddCompetitionDialog categories={this.state.categories} weapons={this.state.weapons} onClose={() => this.onAddCompetitionDialog(false)} onSave={this.onSaveAddCompetition} display={this.state.addCompetitionDialog}/>
 </Dialog>            
 );

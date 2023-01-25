@@ -148,6 +148,7 @@ then
     echo "rm -rf $DEPLOYDIR"
     echo "mkdir -p $DEPLOYDIR/dist"
     echo "mkdir -p $DEPLOYDIR/models"
+    echo "mkdir -p $DEPLOYDIR/models/migrations"
     echo "mkdir -p $DEPLOYDIR/lib"
     echo "mkdir -p $DEPLOYDIR/jobs"
     echo "mkdir -p $DEPLOYDIR/css"
@@ -156,6 +157,7 @@ then
 else
     rm -rf $DEPLOYDIR
     mkdir -p $DEPLOYDIR/models
+    mkdir -p $DEPLOYDIR/models/migrations
     mkdir -p $DEPLOYDIR/lib
     mkdir -p $DEPLOYDIR/jobs
     mkdir -p $DEPLOYDIR/dist
@@ -174,13 +176,22 @@ do
     fi
 done
 
-for i in `find ./ -type f -path ./models/\*`
+for i in `find ./models -type f -maxdepth 1`
 do
     if [[ "x$DRY" = "x1" ]]
     then
         echo "cp -v $i $DEPLOYDIR/models"
     else
         cp -v $i $DEPLOYDIR/models
+    fi
+done
+for i in `find ./models/migrations -type f  -maxdepth 1`
+do
+    if [[ "x$DRY" = "x1" ]]
+    then
+        echo "cp -v $i $DEPLOYDIR/models/migrations"
+    else
+        cp -v $i $DEPLOYDIR/models/migrations
     fi
 done
 for i in `find ./ -type f -path ./lib/\*`

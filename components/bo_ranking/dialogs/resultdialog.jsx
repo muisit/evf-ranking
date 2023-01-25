@@ -5,6 +5,7 @@ import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
+import { Checkbox } from 'primereact/checkbox';
 
 export default class ResultDialog extends React.Component {
     constructor(props, context) {
@@ -56,11 +57,21 @@ export default class ResultDialog extends React.Component {
         this.close();
     }    
 
-    onChangeEl = (event) => {
+    onChangeEl = (event, val) => {
         var item=this.props.value;
         var item = this.props.value;
-        var name = event.target ? event.target.name : event.originalEvent.target.name;
-        var value = event.target ? event.target.value : event.value;
+        var name = event;
+        var value = val;
+
+        if (event.target) {
+            name = event.target.name;
+            value = event.target.value;
+        }
+        else if (event.originalEvent) name = event.originalEvent.target.name;
+
+        if (event.value && !val) {
+            value = event.value;
+        }
 
         switch(name) {
         case 'ranked':
@@ -194,10 +205,19 @@ export default class ResultDialog extends React.Component {
                         value={this.props.value.total_points}></InputNumber>
                 </div>
             </div>
+            {this.props.value.ranked != 'E' && (
+                <div>
+                    <label>Included in ranking</label>
+                    <div className='input'>
+                        {this.props.value.ranked == 'Y' && (<span>Yes</span>)}
+                        {this.props.value.ranked == 'N' && (<span>No</span>)}
+                    </div>
+                </div>
+            )}
             <div>
-                <label>Include in ranking</label>
+                <label htmlFor='excludeFromRanking'>Exclude permanently</label>
                 <div className='input'>
-                    <Dropdown name='ranked' appendTo={document.body} optionLabel="label" optionValue="value" value={this.props.value.ranked} options={rankedValues} placeholder="Include" onChange={this.onChangeEl} />
+                    <Checkbox inputId={'excludeFromRanking'} onChange={(e) => this.onChangeEl('ranked', e.checked ? 'E' : 'N')} checked={this.props.value.ranked == 'E'}/>
                 </div>
             </div>
         </Dialog>);

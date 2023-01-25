@@ -3,7 +3,6 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
-import { InputMask } from 'primereact/inputmask';
 import FencerDialog from '../../dialogs/fencerdialog';
 
 export default class SuggestionDialog extends React.Component {

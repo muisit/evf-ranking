@@ -281,6 +281,7 @@ export default class ResultsTab extends PagedTab {
             <Column field="country" header="Country" sortable={true} />
             <Column field="points" header="Points" sortable={true} />
             <Column field="total_points" header="Total" sortable={true} />
+            <Column field="ranked" header="Rnk" />
         </DataTable>
         </div>);
     }

@@ -3,8 +3,6 @@ import { ranking, weapons,categories } from "../../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
-import { InputNumber } from 'primereact/inputnumber';
 
 export default class PerusalDialog extends React.Component {
     constructor(props, context) {

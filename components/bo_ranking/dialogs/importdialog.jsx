@@ -1,11 +1,9 @@
 import React from 'react';
-import { result, singleevent } from "../../api.js";
+import { result } from "../../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputTextarea } from 'primereact/inputtextarea';
 import SuggestionDialog from './suggestiondialog';
-import { ToggleButton } from 'primereact/togglebutton';
-import { parse_net_error } from '../../functions.js';
 
 export default class ImportDialog extends React.Component {
     constructor(props, context) {

@@ -399,7 +399,7 @@ class Validator {
                 }
                 break;
             case 'url':
-                $retval = filter_var($value, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED);
+                $retval = filter_var($value, FILTER_VALIDATE_URL);
                 if ($msg === null) {
                     $msg = "{label} is not a correct website";
                 }

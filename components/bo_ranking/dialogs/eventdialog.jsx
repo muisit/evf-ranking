@@ -86,8 +86,9 @@ export default class EventDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        singleevent('save',this.props.value)
+        return singleevent('save',this.props.value)
             .then((json) => {
+                this.loading(false);
                 if(json) {
                     this.save(this.props.value);
                 }
@@ -245,7 +246,10 @@ export default class EventDialog extends React.Component {
     }
 
     onImportResults = () => {
-        this.props.importResults();
+        this.onCloseDialog()
+            .then(() => {
+                this.props.importResults();
+            });
     }
 
     onSaveAddCompetition = (cats, wpns) => {

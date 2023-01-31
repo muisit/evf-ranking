@@ -67,9 +67,26 @@
         return $this->select('*')->where("competition_event",intval($event))->orderBy(array("competition_weapon","competition_category"))->get();
     }
 
-    public function abbreviation() {
-        $cat = new Category($this->competition_category,true);
-        $wpn = new Weapon($this->competition_weapon,true);
+    public function getWeapon()
+    {
+        return new Weapon($this->competition_weapon,true);
+    }
+
+    public function getCategory()
+    {
+        return new Category($this->competition_category,true);
+    }
+
+    public function getSideEvent()
+    {
+        $model = new SideEvent();
+        return $model->getByCompetition($this);
+    }
+
+    public function abbreviation()
+    {
+        $cat = $this->getCategory();
+        $wpn = $this->getWeapon();
         if($cat->category_type != 'T') {
             return $wpn->weapon_abbr . $cat->category_abbr;
         }

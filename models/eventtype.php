@@ -44,7 +44,7 @@ class EventType extends Base {
         "event_type_group" => "trim"
     );     
 
-    public function selectAll($offset=0,$pagesize=0,$filter=null,$sort=null,$special) {
+    public function selectAll($offset=0,$pagesize=0,$filter=null,$sort=null,$special=null) {
         return $this->select('*')->orderBy('event_type_name')->get();
     }
 

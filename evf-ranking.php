@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             1.6.14
+ * Version:             1.6.15
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag
@@ -38,15 +38,15 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 define('EVFRANKING_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('EVFRANKING_VERSION',"1.6.14");
+define('EVFRANKING_VERSION',"1.6.15");
 
 if(defined('WP_DEBUG')) {
     // wait time before we automatically refresh a dirty accreditation
     // Set this to something like 600 seconds in production. For DEV, this can 
     // be set at 0.
-    define('EVFRANKING_RENEW_DIRTY_ACCREDITATONS',0); 
+    define('EVFRANKING_RENEW_DIRTY_ACCREDITATONS', 0);
     // wait time for the 10-minute-queue. On dev, we don't want to wait that long
-    define('EVFRANKING_CRON_WAIT_HOOK','1_second');
+    define('EVFRANKING_CRON_WAIT_HOOK', '1_second');
 
 }
 else {
@@ -138,18 +138,23 @@ function evfranking_feed_shortcode($atts) {
     return $actor->feedShortCode($atts);
 }
 
-function evfranking_rewrite_add_rewrites() {
+function evfranking_rewrite_add_rewrites()
+{
+    error_log('adding rewrites');
     // should match the event button link in \EVFRanking\Lib\Display
     add_rewrite_rule('register/(\d+)/?$', 'index.php?suppress_filters=1&evfranking_register=$matches[1]', 'top');
     // should match the accreditation ID link in \EVFRanking\Util\PDFCreator
     add_rewrite_rule('accreditation/([-0-9]+)/?$', 'index.php?suppress_filters=1&evfranking_accredit=$matches[1]', 'top');
+    // should match the event button link in \EVFRanking\Lib\Display
+    add_rewrite_rule('entries/(\d+)/?$', 'index.php?suppress_filters=1&evfranking_entries=$matches[1]', 'top');
 }
 
-function simpleBT() {
-    $vals=debug_backtrace();
-    $retval="";
-    foreach($vals as $v) {
-        $retval.=basename($v["file"]).":".$v["line"]." ".$v["function"]."\r\n";
+function simpleBT()
+{
+    $vals = debug_backtrace();
+    $retval = "";
+    foreach ($vals as $v) {
+        $retval .= basename($v["file"]) . ":" . $v["line"] . " " . $v["function"] . "\r\n";
     }
     return $retval;
 }
@@ -183,44 +188,47 @@ function evfranking_add_cron_interval( $schedules ) {
 }
 
 if (defined('ABSPATH')) {
-    register_activation_hook( __FILE__, 'evfranking_activate' );
-    register_deactivation_hook( __FILE__, 'evfranking_deactivate' );
+    register_activation_hook(__FILE__, 'evfranking_activate');
+    register_deactivation_hook(__FILE__, 'evfranking_deactivate');
     register_uninstall_hook(__FILE__, 'evfranking_uninstall');
     add_action('plugins_loaded', 'evfranking_plugins_loaded');
-    add_action('upgrader_process_complete', 'evfranking_plugins_upgraded',10,2);
+    add_action('upgrader_process_complete', 'evfranking_plugins_upgraded', 10, 2);
 
-    add_action( 'admin_enqueue_scripts', 'evfranking_enqueue_scripts' );
-    add_action( 'admin_menu', 'evfranking_admin_menu' );
-    add_action( 'wp_ajax_evfranking', 'evfranking_ajax_handler' );
-    add_action( 'wp_ajax_nopriv_evfranking', 'evfranking_ajax_handler' );
-    add_action( 'evfranking_cron_hook', 'evfranking_cron_exec' );
-    add_action( 'evfranking_cron_hook_10m', 'evfranking_cron_exec_10m' );
+    add_action('admin_enqueue_scripts', 'evfranking_enqueue_scripts');
+    add_action('admin_menu', 'evfranking_admin_menu');
+    add_action('wp_ajax_evfranking', 'evfranking_ajax_handler');
+    add_action('wp_ajax_nopriv_evfranking', 'evfranking_ajax_handler');
+    add_action('evfranking_cron_hook', 'evfranking_cron_exec');
+    add_action('evfranking_cron_hook_10m', 'evfranking_cron_exec_10m');
 
-    add_shortcode( 'evf-ranking', 'evfranking_ranking_shortcode' );
-    add_shortcode( 'evf-results', 'evfranking_results_shortcode' );
-    add_shortcode( 'evf-feed', 'evfranking_feed_shortcode' );
+    add_shortcode('evf-ranking', 'evfranking_ranking_shortcode');
+    add_shortcode('evf-results', 'evfranking_results_shortcode');
+    add_shortcode('evf-feed', 'evfranking_feed_shortcode');
 
-    add_filter( 'cron_schedules', 'evfranking_add_cron_interval' );
+    add_filter('cron_schedules', 'evfranking_add_cron_interval');
 
     add_filter('posts_pre_query', function ($posts, $q) {
+        error_log('post pre query' . json_encode($q->query));
+        $post = null;
         if (empty($posts) && isset($q->query["evfranking_register"])) {
             $actor = \EVFRanking\Lib\Display::Instance();
             $post = $actor->registerRedirect($q->query["evfranking_register"]);
-            if($post != null) {
-                $posts=array();
-                $posts[]=$post;
-            }
         }
         if (empty($posts) && isset($q->query["evfranking_accredit"])) {
             $actor = \EVFRanking\Lib\Display::Instance();
-            $post = $actor->registerAccreditRedirect($q->query["evfranking_accredit"]);
-            if($post != null) {
-                $posts=array();
-                $posts[]=$post;
-            }
+            $post = $actor->accreditRedirect($q->query["evfranking_accredit"]);
+        }
+        if (empty($posts) && isset($q->query["evfranking_entries"])) {
+            error_log('getting overview page');
+            $actor = \EVFRanking\Lib\Display::Instance();
+            $post = $actor->overviewRedirect($q->query["evfranking_entries"]);
+        }
+        if (!empty($post)) {
+            $posts = array();
+            $posts[] = $post;
         }
         return $posts;
-    },2,99);
+    }, 2, 99);
 
     // add the rewrite rules on every init
     add_action('init', function () {
@@ -231,6 +239,7 @@ if (defined('ABSPATH')) {
     add_filter('query_vars', function ($query_vars) {
         $query_vars[] = 'evfranking_register';
         $query_vars[] = 'evfranking_accredit';
+        $query_vars[] = 'evfranking_entries';
         return $query_vars;
     });
 

@@ -72,8 +72,8 @@
     public static function BaseRegistrationSelection($obj) {
         $qb=new QueryBuilder($obj);
         return $qb->select(array(
-                'TD_Registration.*', 'f.fencer_surname', 'f.fencer_firstname', 'f.fencer_dob', 'fencer_gender',
-                'c.country_name', 'c.country_abbr',
+                'TD_Registration.*', 'f.fencer_id', 'f.fencer_surname', 'f.fencer_firstname', 'f.fencer_dob', 'fencer_gender',
+                'c.country_name', 'c.country_abbr', 'c.country_flag_path',
                 'es.starts', 'es.costs','es.title','es.competition_id',
                 'e.event_base_fee','e.event_competition_fee','e.event_name',
                 'r.role_name', 'rt.org_declaration',
@@ -105,6 +105,16 @@
                 $qb->select("*")->from("TD_Competition")->where("competition_id=TD_Event_Side.competition_id");
             })->get();
         return $events;
+    }
+
+    public function getByCompetition($comp)
+    {
+        $compid = is_object($comp) ? $comp->getKey() : intval($comp);
+        $rows = $this->select('*')->where('competition_id', $compid)->get();
+        if (!empty($rows) && count($rows) == 1) {
+            return new SideEvent($rows[0]);
+        }
+        return null;
     }
 
     public function selectAccreditations($event) {

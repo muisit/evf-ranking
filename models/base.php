@@ -319,10 +319,11 @@
         return null;
     }
 
-    public function prepare($query,$values) {
+    public function prepare($query, $values)
+    {
         global $wpdb;
 
-        if(empty($values)) {
+        if (empty($values)) {
             global $evflogger;
             $evflogger->log("SQL: $query");
             return $wpdb->get_results($query);
@@ -366,7 +367,7 @@
 
         global $evflogger;
         $evflogger->log("SQL: $query");
-        $evflogger->log("VAL: ".json_encode($replvals));
+        $evflogger->log("VAL: " . json_encode($replvals));
         $prepared = $wpdb->prepare($query,$replvals);
         return $wpdb->get_results($prepared);
     }

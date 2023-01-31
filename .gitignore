@@ -27,7 +27,7 @@ node_modules/
 src/version.js
 
 dist/
-deploy/
+_deploy/
 assets/
 yarn.lock
 tests/expected_output_pdfs

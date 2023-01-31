@@ -161,8 +161,7 @@ class OverviewPage extends VirtualPage
         }
 
         $output = <<< DOC
-        <a name='top'><h1>$title</h1></a>
-        <h3>Overview</h3>
+        <a name='top'><h3>Overview</h3></a>
         <table style='width: auto;'>
             <thead>
               <tr>

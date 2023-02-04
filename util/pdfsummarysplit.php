@@ -24,7 +24,7 @@ class PDFSummarySplit
 
     private function getPath()
     {
-        return "/pdfs/event" . $this->event->getKey() . "/";
+        return PDFManager::PDFPath($this->event->getKey(), true);
     }
 
     private function findDocuments()

@@ -115,6 +115,9 @@ class Activator extends BaseLib
         $model = new \EVFRanking\Models\Accreditation();
         $model->checkDirtyAccreditations();
 
+        $model = new \EVFRanking\Models\Event();
+        $model->cleanEvents();
+
         // run the Queue as long as we have a time limit and it doesn't take longer than, say, 9 minutes
         $start = time();
         $delta = 10 * 60; // total time we spend

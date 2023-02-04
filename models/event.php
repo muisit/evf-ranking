@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Event extends Base {
+class Event extends Base
+{
     public $table = "TD_Event";
     public $pk="event_id";
     public $fields=array("event_id","event_name","event_open","event_registration_open","event_registration_close","event_year", 
@@ -118,10 +119,7 @@
 
     public function postProcessing($data)
     {
-        global $evflogger;
-        $evflogger->log("postProcessing event using ".json_encode($data));
         if (!empty($data) && isset($data["full"]) && $data["full"]) {
-            $evflogger->log("full is set");
             $this->basic = array();
             $this->basic["countries"] = \EVFRanking\Models\Country::ExportAll();
             $this->basic['weapons'] = \EVFRanking\Models\Weapon::ExportAll();
@@ -258,26 +256,38 @@
         return $model->roleOfUser($this->getKey(),intval($userid));
     }
 
+    private function getConfig()
+    {
+        if (!isset($this->_config)) {
+            $this->_config = json_decode($this->event_config, true);
+            if ($this->_config === false) {
+                $this->_config = array();
+            }
+        }
+        return $this->_config;
+    }
+
     public function save() {
         // check the config array, only allow settings we use
         // this avoids allowing hackers to enter arbitrary data in this database field
-        $cfg=json_decode($this->config, true);
+        $cfg = json_decode($this->config, true);
         if($cfg!==false && is_array($cfg)) {
             $allowed = array(
                 "allow_registration_lower_age" => "bool",
-                "allow_more_teams" => "bool"
+                "allow_more_teams" => "bool",
+                "no_accreditations" => "bool"
             );
-            $cfg=array_intersect_keys($allowed,$cfg);
+            $cfg = array_intersect_keys($allowed, $cfg);
 
             // make sure each value is correctly typed
-            foreach($cfg as $key=>$val) {
-                if($allowed[$key] == "bool") $cfg[$key]=boolval($val);
+            foreach ($cfg as $key => $val) {
+                if ($allowed[$key] == "bool") $cfg[$key] = boolval($val);
             }
         }
         else {
-            $cfg=array();
+            $cfg = array();
         }
-        $this->config=json_encode($cfg);
+        $this->config = json_encode($cfg);
         return parent::save();
     }
 
@@ -396,6 +406,47 @@
         return $now >= $closes;
     }
 
+    public function isPassed()
+    {
+        $now = time();
+        // we take a grace period of 1 day between closing date and 'passed' status
+        $closes = strtotime($this->event_open) + ((intval($this->event_duration) + 1) * 24 * 60 * 60);
+        return $now >= $closes;
+    }
+
+    public function cleanEvents()
+    {
+        // find all events in the future
+        $opens = strftime('%F', time() - 24 * 60 * 60);
+        $res = $this->select('*')->where("event_open", ">", $opens)->get();
+        if (!empty($res) && count($res)) {
+            foreach ($res as $row) {
+                $event = new Event($row);
+                $config = $event->getConfig();
+                if ($event->exists() && isset($config['no_accreditations']) && $config['no_accreditations']) {
+                    $job = new \EVFRanking\Jobs\CleanAccreditations();
+                    $job->queue->event_id = $event->getKey();
+                    $job->create();
+                }
+            }
+        }
+
+        // then find all events in the past that still have files
+        // We take all events that have closed at least a month
+        $opens = strftime('%F', time() - 30 * 24 * 60 * 60);
+        $res = $this->select('*')->where("event_open", "<", $opens)->get();
+        if (!empty($res) && count($res)) {
+            foreach ($res as $row) {
+                $path = \EVFRanking\Util\PDFManager::PDFPath($row->event_id);
+                if (file_exists($path) && is_dir($path)) {
+                    $job = new \EVFRanking\Jobs\CleanAccreditations();
+                    $job->queue->event_id = $row->event_id;
+                    $job->create();
+                }
+            }
+        }
+    }
+
     public function findOpenEvents() {
         // allow events one day ahead and 2 days behind
         $opens=strftime('%F', time()+24*60*60);
@@ -474,6 +525,4 @@
         $qb = SideEvent::BaseRegistrationSelection($this);
         return $qb->where("TD_Registration.registration_mainevent", $this->getKey())->get();
     }
-
- }
- 
+}

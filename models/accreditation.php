@@ -321,9 +321,18 @@ class Accreditation extends Base {
         }
     }
 
-    public function getPath() {
-        $upload_dir = wp_upload_dir();
-        return $upload_dir['basedir'] . "/pdfs/event" . $this->event_id . "/accreditation_" . $this->file_id . ".pdf";
+    public function getPath()
+    {
+        $basedir = \EVFRanking\Util\PDFManager::PDFPath($this->event_id);
+        return $basedir . "accreditation_" . $this->file_id . ".pdf";
+    }
+
+    public function clean($eid)
+    {
+        $event = new \EVFRanking\Models\Event($eid, true);
+        if ($event->exists()) {
+            $this->query()->from("TD_Accreditation")->where("event_id", $event->getKey())->delete();
+        }
     }
 
     public function regenerate($eid)

@@ -4,6 +4,34 @@ namespace EVFRanking\util;
 
 class PDFManager
 {
+    public static function PDFPath($eid, $doRelative = false)
+    {
+        $path = "/pdfs/event" . intval($eid) . '/';
+        if (!$doRelative) {
+            $upload_dir = wp_upload_dir();
+            $path = $upload_dir['basedir'] . $path;
+        }
+        return $path;
+    }
+
+    public static function CleanPath($eid)
+    {
+        // see https://stackoverflow.com/questions/3349753/delete-directory-with-files-in-it
+        $path = self::PDFPath($eid);
+        if (file_exists($path) && is_dir($path)) {
+            $it = new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS);
+            $files = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($files as $file) {
+                if ($file->isDir()) {
+                    @rmdir($file->getRealPath());
+                } else {
+                    @unlink($file->getRealPath());
+                }
+            }
+            @rmdir($path);
+        }
+    }
+
     public static function SummaryName($event, $type, $model)
     {
         $eid = is_object($event) ? $event->getKey() : intval($event);

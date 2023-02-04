@@ -87,7 +87,7 @@ export default class RegistrationIndexPage extends React.Component {
         if(this.state.initializing) {
             return (<p>initializing... please wait</p>);
         }
-        return (<div>{JSON.stringify(this.state.dialogs)}
+        return (<div>
 <TabView id="evfrankingtabs">
     <TabPanel id="events" header="Events"><EventsRegistrationTab users={this.state.users} countries={this.state.countries} types={this.state.eventtypes}  displayDialog={this.state.dialogs.events}  onAction={(f,c) => this.onAction('events', f, c)} /></TabPanel>
     <TabPanel id="registrars" header="Registrars"><RegistrarsTab users={this.state.users} countries={this.state.countries} displayDialog={this.state.dialogs.registrars}  onAction={(f,c) => this.onAction('registrars', f, c)} /></TabPanel>

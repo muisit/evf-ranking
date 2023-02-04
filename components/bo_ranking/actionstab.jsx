@@ -63,16 +63,16 @@ export default class ActionsTab extends React.Component {
                 </p>
             </div>
         </div>
-        <div className='row'>
-            <div className='col-2'>
-                <label>Events</label>
-            </div>
-            <div className='col-10'>
-                <Button label="Add" icon="pi pi-plus" className="p-button p-button-raised p-button-text" onClick={this.onCreateEvent} />
-            </div>
-        </div>
     </div>
     <PerusalDialog onClose={this.onClosePeruseDialog} display={this.state.peruseDialog}/>
 </div>);
+//        <div className='row'>
+//        <div className='col-2'>
+//            <label>Events</label>
+//        </div>
+//        <div className='col-10'>
+//            <Button label="Add" icon="pi pi-plus" className="p-button p-button-raised p-button-text" onClick={this.onCreateEvent} />
+//        </div>
+//    </div>
     }
 }

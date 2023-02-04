@@ -71,15 +71,15 @@ thead.with-sort tr th .pi-icon { padding-left: 5px;}
 /* generic input width, old-style */
 .p-dialog-mask { z-index: 2000; }
 .p-dialog-content { position: relative; }
-.p-dialog-content label { display: block; width: 10vw; height: 2.5rem; line-height: 2.5rem; font-weight: 700; float: left; clear: both;}
-.p-dialog-content label.wide { width: 38vw; }
+.p-dialog-content label { display: block; width: 14vw; height: 2.5rem; line-height: 2.5rem; font-weight: 700; float: left; clear: both; white-space: nowrap;}
+.p-dialog-content label.wide { width: 32vw; }
 .p-dialog-content label.header { width: 100%; }
 .p-dialog-content label.checkbox { float: none; clear: none; width: auto; display: inline-flex; padding-left: 10px; }
-.p-dialog-content div div.input { width: 38vw; float: left; display: flex;align-items: center; flex-wrap: wrap; }
-.p-dialog-content div div.input .p-inputtext { width: 35vw; }
-.p-dialog-content div div.input .p-dropdown { width: 35vw; }
+.p-dialog-content div div.input { width: 32vw; float: left; display: flex;align-items: center; flex-wrap: wrap; }
+.p-dialog-content div div.input .p-inputtext { width: 32vw; }
+.p-dialog-content div div.input .p-dropdown { width: 32vw; }
 .p-dialog-content div div.input .p-checkbox { vertical-align: middle; }
-.p-dialog-content div div.input .inputint input { width: 5vw; }
+.p-dialog-content div div.input .inputint input { width: 8vw; }
 .p-dialog-content div div.input .config { width: 100%; }
 
 /* specific settings for fencer-dialog */

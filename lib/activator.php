@@ -107,6 +107,10 @@ class Activator extends BaseLib
         // clear out Queue entries that are too old
         $model = new \EVFRanking\Models\Queue();
         $model->cleanup();
+
+        // clear out accreditations and documents no longer needed
+        $model = new \EVFRanking\Models\Event();
+        $model->cleanEvents();
     }
 
     // every 10 minutes
@@ -114,9 +118,6 @@ class Activator extends BaseLib
         
         $model = new \EVFRanking\Models\Accreditation();
         $model->checkDirtyAccreditations();
-
-        $model = new \EVFRanking\Models\Event();
-        $model->cleanEvents();
 
         // run the Queue as long as we have a time limit and it doesn't take longer than, say, 9 minutes
         $start = time();

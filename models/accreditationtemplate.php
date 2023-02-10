@@ -301,14 +301,15 @@
         $event = new \EVFRanking\Models\Event();
         $event->event_name = "Test Event";
         $accreditation = new \EVFRanking\Models\Accreditation();
+        $accreditation->fe_id = '783-242';
         $accreditation->data = json_encode(array(
+            "category" => 2,
             "firstname" => $fencer->fencer_firstname,
             "lastname" => $fencer->fencer_surname,
             "organisation" => $country->country_name,
             "country" => $country->country_abbr,
-            "roles"=> array("Athlete WS4", "Team Armourer", "Head of Delegation", "Referee"),
+            "roles" => array("Athlete WS4", "Team Armourer", "Head of Delegation", "Referee"),
             "dates" => array("07 WED","21 SUN"),
-            "accid" => "783-242",
             "created" => 1000,
             "modified" => 2000
         ));

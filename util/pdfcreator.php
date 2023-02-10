@@ -329,7 +329,8 @@ class PDFCreator {
         $this->pdf->Output($path, 'F');
     }
 
-    private function applyTemplate() {
+    private function applyTemplate()
+    {
         global $evflogger;
         $data=json_decode($this->accreditation->data, true);
 
@@ -361,25 +362,25 @@ class PDFCreator {
             }
         }
 
-        $keys=array_keys($layers);
+        $keys = array_keys($layers);
         natsort($keys);
-        foreach($keys as $key) {
-            foreach($layers[$key] as $el) {
-                $evflogger->log("layer $key, element ".$el["type"]);
-                switch($el["type"]) {
-                case "photo":   $this->addPhoto($el, $content,$data); break;
-                case "text":    $this->addText($el,$content, $data); break;
+        foreach ($keys as $key) {
+            foreach ($layers[$key] as $el) {
+                $evflogger->log("layer $key, element " . $el["type"]);
+                switch ($el["type"]) {
+                case "photo":   $this->addPhoto($el, $content, $data); break;
+                case "text":    $this->addText($el, $content, $data); break;
                 case "name":    $this->addName($el, $content, $data); break;
                 case "accid":   $this->addID($el, $content, $data); break;
                 case "category": $this->addCategory($el, $content, $data); break;
-                case "country": $this->addCountry($el, $content,$data); break;
-                case "cntflag": $this->addCountryFlag($el, $content,$data); break;
-                case "org":     $this->addOrg($el,$content, $data); break;
-                case "roles":   $this->addRoles($el,$content, $data); break;
-                case "dates":   $this->addDates($el,$content, $data); break;
-                case "box":     $this->addBox($el,$content, $data); break;
-                case "img":     $this->addImage($el,$content, $data, $pictures); break;
-                case 'qr':      $this->addQRCode($el,$content,$data); break;
+                case "country": $this->addCountry($el, $content, $data); break;
+                case "cntflag": $this->addCountryFlag($el, $content, $data); break;
+                case "org":     $this->addOrg($el, $content, $data); break;
+                case "roles":   $this->addRoles($el, $content, $data); break;
+                case "dates":   $this->addDates($el, $content, $data); break;
+                case "box":     $this->addBox($el, $content, $data); break;
+                case "img":     $this->addImage($el, $content, $data, $pictures); break;
+                case 'qr':      $this->addQRCode($el, $content, $data); break;
                 }
             }
         }
@@ -588,10 +589,10 @@ class PDFCreator {
 
     private function addQRCode($element, $content, $data) {
         global $evflogger;
-        $evflogger->log("adding qr code");
         $offset = $this->getOffset($element);
         $size = $this->getSize($element);
-        $link = isset($element["link"]) ? $element["link"] : "";
+        $link = $this->replaceParametersInLink(isset($element["link"]) ? $element["link"] : "", $data);
+        $evflogger->log("adding qr code to $link");
         if(strlen(trim($link))) {
             $evflogger->log("offset " . json_encode($offset) . " size " . json_encode($size));
             $this->putQRCodeAt($link, array("offset"=>$offset, "size"=>$size));
@@ -1149,5 +1150,32 @@ class PDFCreator {
             return $outputname;
         }
         return null;
+    }
+
+    private function replaceParametersInLink($link, $data)
+    {
+        return str_replace(
+            [
+                "%i",
+                "%e",
+                "%a",
+                "%c",
+                "%v",
+                "%o",
+                "%l",
+                "%f"
+            ],
+            [
+                $this->fencer->fencer_id,
+                $this->event->event_id,
+                isset($this->accreditation->fe_id) ? $this->accreditation->fe_id : "",
+                isset($data['country']) ? $data['country'] : '',
+                isset($data['category']) ? $data['category'] : '',
+                isset($data['organisation']) ? $data['organisation'] : '',
+                isset($data['lastname']) ? $data['lastname'] : '',
+                isset($data['firstname']) ? $data['firstname'] : ''
+            ],
+            $link
+        );
     }
 }

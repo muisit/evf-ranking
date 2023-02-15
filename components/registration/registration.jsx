@@ -265,6 +265,11 @@ export default class FERegistrationTab extends FEBase {
         });
 
         var addcountries=[this.state.country_item];
+        if (is_organiser()) {
+            addcountries = this.props.basic.countries.filter((item) => {
+                return item.name != 'Organisers';
+            });
+        }
 
         return (<div>
             {!is_hod_view() && this.renderHeader(addcountries)}

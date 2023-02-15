@@ -135,6 +135,7 @@ export default class FEBase extends React.Component {
         var countries=this.props.basic.countries.slice();
         // add an Organisation at the top to allow all organisation-role fencers
         countries.splice(0,0,{id:-1,name:'Organisation'});
+        countries = countries.filter((item) => item.name != 'Organisers');
         var country = (
             <div className='row'>
               <div className='col-4 vertcenter'>Select a country:</div>

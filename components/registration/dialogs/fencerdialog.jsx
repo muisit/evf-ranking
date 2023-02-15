@@ -338,7 +338,7 @@ export default class FencerDialog extends React.Component {
         let genders = [{ name: 'M', code: 'M' }, { name: 'W', code: 'F' }];
 
         var country = (
-          <Dropdown name='country' optionLabel="name" optionValue="id" value={this.props.fencer.country} options={this.props.basic.countries} placeholder="Country" onChange={this.onChangeEl}  style={{color: 'red', zIndex: 20000}}/>
+          <Dropdown name='country' optionLabel="name" optionValue="id" value={this.props.fencer.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl}  style={{color: 'red', zIndex: 20000}}/>
         );
         if(is_hod() || is_hod_view()) {
             var cname = "Organisation";

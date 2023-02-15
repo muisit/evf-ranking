@@ -285,6 +285,7 @@ export default class TemplateDesigner extends React.Component {
             });
         }
         else {
+            // dropping a new item into the template from the toolbox
             var el={};
             switch(dt.type) {
             case 'photo': el = this.defaultPhoto(); break;
@@ -303,8 +304,22 @@ export default class TemplateDesigner extends React.Component {
                 if(dt.file_id && dt.file_name) {
                     el = this.defaultImage(); 
                     el.ratio = parseFloat(dt.width) / parseFloat(dt.height);
+                    el.hasRatio = true;
+
+                    if (dt.width > 420 || dt.height > 594) {
+                        var ratio = dt.width / dt.height;
+                        if (dt.width > 420) {
+                            dt.height = 420 / ratio;
+                            dt.width = 420;
+                        }
+                        if (dt.height > 594) {
+                            dt.width = 594 * ratio;
+                            dt.height = 594;
+                        }
+                    }
                     el.style.width = dt.width;
                     el.style.height = dt.height;
+
                     el.file_id = dt.file_id;
                 }
                 break;

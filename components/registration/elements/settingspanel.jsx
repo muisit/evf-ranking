@@ -113,7 +113,7 @@ export function SettingsPanel(props) {
             return (
                 <div>
                     <div>
-                        <label>Size</label>
+                        <label>Height</label>
                         <div className="input">
                             <InputNumber useGrouping={false} className='inputint' min={1} max={m1} value={val} onChange={(e) => set("ratio", e.value)} />
                         </div>

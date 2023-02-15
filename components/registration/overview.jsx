@@ -91,7 +91,7 @@ export default class FEOverviewTab extends FEBase {
                     }
                 }
             }
-            else if(this.props.basic.countriesById[c]) {
+            else if(this.props.basic.countriesById[c] && sides && Object.keys(sides).length > 0) {
                 // list of sideevents
                 var obj = { "country": this.props.basic.countriesById[c]};
 

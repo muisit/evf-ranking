@@ -1,7 +1,6 @@
 import { is_valid, parse_date } from "../../../functions";
 
 export function sortFencers (fencerList, sortingOrder, config) {
-    console.log('sorting on ',sortingOrder);
     // sort based on role (athletes or non-athletes) and name
     fencerList.sort((a1, a2) => {
         for (var i = 0; i < sortingOrder.length; i++) {

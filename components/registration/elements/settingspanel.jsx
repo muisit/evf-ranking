@@ -116,6 +116,9 @@ export function SettingsPanel(props) {
                         <label>Height</label>
                         <div className="input">
                             <InputNumber useGrouping={false} className='inputint' min={1} max={m1} value={val} onChange={(e) => set("ratio", e.value)} />
+                            <span style={{float: 'left', fontSize: 'x-small'}}>
+                                (max: {m1.toFixed(2)})
+                            </span>
                         </div>
                     </div>
                 </div>

@@ -351,6 +351,12 @@ class API extends BaseLib {
                     $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
                     $retval=array_merge($retval, $this->listResults($model, $model->roles($id), null, TRUE));
                 }
+                else if($path[0] == 'events' && isset($path[1]) && $path[1] == "statistics") {
+                    // list a bunch of statistics for this event, useful for accreditors and organisers
+                    $this->checkPolicy("statistics","view", array("filter" => $filter, "model" => $modeldata));
+                    $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
+                    $retval=array_merge($retval, $model->statistics($id));
+                }
                 else if($path[0] == 'results' && isset($path[1]) && $path[1] == "importcheck") {
                     $this->checkPolicy("results","misc", array("filter" => $filter, "model" => $modeldata));
                     $ranks=isset($modeldata["ranking"]) ? $modeldata["ranking"] : array();

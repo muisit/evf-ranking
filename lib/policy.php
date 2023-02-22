@@ -148,6 +148,7 @@ class Policy extends BaseLib {
             "registration" => array( "rlist", "rlist",    "rsave",           "rdel",     "noone"    ),
             "accreditation" => array("vaccr", "vaccr",    "noone",           "noone",    "noone"    ),
             "picture" => array(      "pview", "pview",    "psave",           "noone",    "noone"    ),
+            "statistics" => array(   "sview", "sview",    "noone",           "noone",    "noone"    ),
 
             # base tables
             "weapons" => array(      "any",   "rank",     "rank",            "rank",     "noone"    ),
@@ -217,6 +218,8 @@ class Policy extends BaseLib {
         case 'pview': return $this->hasCapaViewPicture($userdata, $data);
         // special capa for uploading pictures, which can be done after registration closes
         case 'psave': return $this->hasCapaSavePicture($userdata, $data);
+        // special capa for seeing event statistics
+        case 'sview': return $this->hasCapaViewStatistics($userdata, $data);
         default: break;
         }
 
@@ -326,6 +329,26 @@ class Policy extends BaseLib {
         return $this->isValidHod($cid);
     }
 
+    private function hasCapaViewStatistics($userdata, $data)
+    {
+        global $evflogger;
+        list($sideevent, $event2, $event, $fencer) = $this->loadModelsForPolicy($data, "Event");
+
+        // if we have no template, we need an event
+        if (empty($event) || !$event->exists()) {
+            $evflogger->log("no event specified (1)");
+            return false;
+        }
+
+        $caps = $event->eventCaps();
+        $isorganiser = in_array($caps, array("system", "organiser", "accreditation", "registrar", "cashier"));
+
+        if (!$isorganiser) {
+            $evflogger->log("no organiser ($caps) (4)");
+            return false;
+        }
+        return true;
+    }
 
     private function hasCapaEaccr($userdata, $data)
     {

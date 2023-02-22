@@ -6,6 +6,7 @@ import FEAccreditorTab from './accreditor';
 import FEAccrTemplateTab from './accreditationtemplate';
 import FEOverviewTab from "./overview";
 import FEAccreditationTab from './accreditation';
+import ActionsTab from './actions';
 import { Loading } from './elements/loading';
 
 import { countries, singleevent, weapons, categories, roles, competitions, sideevents } from "../api.js";
@@ -302,11 +303,15 @@ export default class RegistrationPage extends React.Component {
         var accrtab2 = (<TabPanel id="accrtemplates" header="Templates">
             <FEAccrTemplateTab basic={this.state.basicdata} onload={this.onload} unload={this.unload} />
         </TabPanel>);
+        var actionstab = (<TabPanel id="actions" header="Actions">
+            <ActionsTab basic={this.state.basicdata} onload={this.onload} unload={this.unload} />
+        </TabPanel>);
 
         var canregister = (is_sysop() || is_organiser() || is_registrar() || is_hod());
         var cancashier = (is_sysop() || is_organiser() || is_cashier() || is_hod());
         var canaccredit = (is_sysop() || is_organiser() || is_accreditor());
         var canaccredit2 = (is_sysop() || is_organiser());
+        var useaccredit = (this.state.event && this.state.event.config && this.state.event.config.use_accreditation);
 
         return (<div>
             <div className='version'>v{this.props.version}</div>
@@ -314,8 +319,9 @@ export default class RegistrationPage extends React.Component {
                 {overviewtab}
                 {canregister && regtab}
                 {cancashier && cashiertab}
-                {canaccredit && accrtab1}
+                {canaccredit && useaccredit && accrtab1}
                 {canaccredit && accrtab}
+                {canaccredit && actionstab}
                 {canaccredit2 && accrtab2}
             </TabView>
         </div>);

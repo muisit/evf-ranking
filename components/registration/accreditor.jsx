@@ -19,7 +19,6 @@ export default class FEAccreditorTab extends FEBase {
             loadid: null,
             timeout:null
         });
-
     }
 
     componentDidMount = () => {
@@ -56,101 +55,6 @@ export default class FEAccreditorTab extends FEBase {
         return (null);
     }
 
-    redirectList = (event, type) => {
-        var href = evfranking.url + "&download=" + type;
-        
-        if(!event) {
-            href += "&mainevent=" + this.props.basic.event.id + "&nonce=" + evfranking.nonce;
-        }
-        else {
-            href += "&event=" + event.id + "&nonce=" + evfranking.nonce;
-        }
-        window.open(href);
-    }
-
-    doGetPendingPhotos = (cid, doclear) => {
-        return registrations(0, 10000, { country: cid, event: this.props.basic.event.id },"cnf",{photoid:true})
-            .then((cmp) => this.parseRegistrations(cmp.data.list, doclear));
-    }
-
-    findFencerWithPicture = (startwith, direction) => {
-        return this.doGetPendingPhotos()
-            .then(() => {
-                return this.doFindFencerWithPicture(startwith,direction);
-            });
-    }
-
-    doFindFencerWithPicture = (startwith,direction) => {
-        var startfound=false;
-        var prevfencer=null;
-        var nextfencer=null;
-
-        if(!startwith) startfound=true;
-
-        console.log("looping over all fencers, looking in direction ",direction," starting with ",startwith);
-        Object.keys(this.state.registered).map((key) => {
-            var fencer=this.state.registered[key];
-            if(startwith && startwith.id == fencer.id) {
-                startfound=true;
-            }
-            else if(fencer.picture == 'Y' || fencer.picture=='R') {
-                if(!startfound) {
-                    prevfencer=fencer;
-                }
-                else if(nextfencer === null) {
-                    nextfencer = fencer;
-                }
-            }
-        });
-
-        if(direction == "prev") {
-            return prevfencer;
-        }
-        else {
-            return nextfencer;
-        }
-    }
-
-    onDialog = (itm, dt) => {
-        switch(itm) {
-            case 'open':
-                this.findFencerWithPicture(null)
-                    .then((fencer) => {
-                        if (fencer) {
-                            this.setState({ displayDialog: true, fencer_object: fencer });
-                        }
-                        else {
-                            alert("All pictures have been approved");
-                        }
-                    });
-                break;
-            case 'close':
-                this.setState({displayDialog: false});
-                break;
-            case 'save':
-                // skip
-                break;
-            case 'change':
-                var newlist = updateFencerRegistrations(this.state.registered, dt);
-                this.setState({ fencer_object: dt, registered: newlist });
-                break;
-            case 'goto':
-                this.findFencerWithPicture(this.state.fencer_object, dt)
-                    .then((fencer) => {
-                        if (fencer) {
-                            this.setState({ fencer_object: fencer });
-                        }
-                        else if (dt == "prev") {
-                            alert("No previous fencer found");
-                        }
-                        else {
-                            alert("No remaining fencer found, all done");
-                        }
-                    });
-                break;
-        }
-    }
-
     generateDoc = function(type, id) {
         var self=this;
         accreditation("generate", { event: this.props.basic.event.id, type:type, type_id:id })
@@ -184,7 +88,6 @@ export default class FEAccreditorTab extends FEBase {
 
     renderContent () {
         return (<div className='accreditor-tab'>
-            {this.renderParticipants()}
             {this.renderSummaryEvent()}
             {this.renderSummaryCountry()}
             {this.renderSummaryRole()}
@@ -258,52 +161,6 @@ export default class FEAccreditorTab extends FEBase {
                 })}
             </div>
         )
-    }
-
-    renderParticipants() {
-        return (
-            <div className='row'>
-                <div className='col-12'>
-                    <span className='small right'>
-                    Queue status: {this.state.summary.queue}
-                    </span>
-                </div>
-                <div className='col-12'>
-                    <table className='cashier style-stripes-body'>
-                        <thead>
-                            <tr>
-                            <th>Competitions and Side Events</th>
-                            <th className='textcenter'>Participants</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {this.props.basic.sideevents.map((event,idx) => (
-                            <tr key={'f'+event.id}>
-                              <td>{event.title}</td>
-                              <td className='textcenter'>
-                                    <i className='pi pi-list' onClick={() => this.redirectList(event, "participants")}></i>
-                                    <i className='pi pi-file-excel' onClick={() => this.redirectList(event, "participantsxml")}></i>
-                              </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-                {is_organisation() && (
-                <div className='col-12'>
-                    <div className='textcenter'>
-                        <i className='pi pi-download' onClick={() => this.redirectList(null,"participants")}> All Participants</i>
-                    </div>
-                </div>
-                )}
-                <div className='col-12'>
-                    <div className='textcenter'>
-                        <span className='pi pi-search' onClick={() => this.onDialog('open')}>&nbsp;Inspect Photos</span>
-                    </div>
-                </div>
-                <AccreditationDialog event={this.props.basic.event} value={this.state.fencer_object} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} goTo={(itm) => this.onDialog('goto',itm)} />
-            </div>
-        );
     }
 
     renderSummaryEvent() {

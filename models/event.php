@@ -521,8 +521,51 @@ class Event extends Base
     }
 
     // this is similar to SideEvents::registrations except it selects on the overall event
-    public function registrations() {
+    public function registrations()
+    {
         $qb = SideEvent::BaseRegistrationSelection($this);
         return $qb->where("TD_Registration.registration_mainevent", $this->getKey())->get();
+    }
+
+    public function statistics($id)
+    {
+        $retval = array();
+        $event = new self($id, true);
+        if (!$event->exists()) {
+            return $retval;
+        }
+
+        // total number of athletes, support-roles and officials
+        $result = $this->query()->select("IFNULL(rt.org_declaration, 'Athlete') as tp, COUNT(*) as cnt")
+            ->from("TD_Registration r")
+            ->join("TD_Fencer", "f", "r.registration_fencer=f.fencer_id")
+            ->join("TD_Role", "rl", "rl.role_id = r.registration_role")
+            ->join("TD_Role_Type", "rt", "rt.role_type_id = rl.role_type")
+            ->join("TD_Accreditation", "a", "a.fencer_id=r.registration_fencer AND a.event_id=r.registration_mainevent")
+            ->groupBy("IFNULL(rt.org_declaration, 'Athlete')")
+            ->where("r.registration_mainevent", $event->getKey())
+            ->get();
+
+        $retval["participants"] = array();
+        foreach ($result as $row) {
+            $retval["participants"][$row->tp] = $row->cnt;
+        }
+
+        $result = $this->query()->select("IFNULL(f.fencer_picture, 'N') as state,  COUNT(*) as cnt")
+            ->from("TD_Registration r")
+            ->join("TD_Fencer", "f", "r.registration_fencer=f.fencer_id")
+            ->groupBy("IFNULL(f.fencer_picture, 'N')")
+            ->where("r.registration_mainevent", $event->getKey())
+            ->get();
+
+        $retval["pictures"] = array();
+        foreach ($result as $row) {
+            $retval["pictures"][$row->state] = $row->cnt;
+        }
+    
+        $queue = new Queue();
+        $retval["queue"] = $queue->count(null, ["waiting" => true]);
+
+        return $retval;
     }
 }

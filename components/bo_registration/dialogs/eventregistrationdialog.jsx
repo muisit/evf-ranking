@@ -176,6 +176,7 @@ export default class EventRegistrationDialog extends React.Component {
         case 'allow_registration_lower_age':
         case 'allow_more_teams':
         case 'no_accreditations':
+        case 'use_accreditation':
             // checkbox configuration value
             var isset = event.checked;
             if(!item.config) {
@@ -356,6 +357,7 @@ export default class EventRegistrationDialog extends React.Component {
         var allow_lower_reg = (cfg && cfg.allow_registration_lower_age) ? true : false;
         var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
         var no_accreditations = (cfg && cfg.no_accreditations) ? true : false;
+        var use_accreditation = (cfg && cfg.use_accreditation) ? true : false;
 
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
@@ -397,6 +399,10 @@ export default class EventRegistrationDialog extends React.Component {
           <div className='config'>
             <Checkbox inputId='cfg3' name={'no_accreditations'} onChange={this.onChangeEl} checked={no_accreditations} /> 
             <label className='checkbox' htmlFor="cfg3">Do not generate accreditation badges</label>
+          </div>
+          <div className='config'>
+            <Checkbox inputId='cfg4' name={'use_accreditation'} onChange={this.onChangeEl} checked={use_accreditation} /> 
+            <label className='checkbox' htmlFor="cfg4">Use accreditation interface</label>
           </div>
         </div>
       </div>

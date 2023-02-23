@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Ranking extends Base {
+class Ranking extends Base
+{
     public $table = "VW_Ranking";
     public $pk="result_id";
     public $fields=array("event_id","competition_id","category_id","weapon_id","fencer_id","result_id");
@@ -226,5 +227,4 @@
         }
         return $totalresults;
     }
- }
- 
+}

@@ -568,4 +568,23 @@ class Event extends Base
 
         return $retval;
     }
+
+
+    public function listRankedEvents()
+    {
+        $row = $this->select('event_open')->where('event_in_ranking', 'Y')->orderBy('event_open asc')->first();
+        error_log("row is ".json_encode($row));
+        return $this->select('*')->where('event_open', '>=', $row->event_open)->orderBy('event_open')->get();
+    }
+
+    public function setRanking($id, $in_ranking)
+    {
+        $event = new Event($id, true);
+        if ($event->exists()) {
+            $event->event_in_ranking = in_array($in_ranking, array('Y','N')) ? $in_ranking : 'N';
+            $event->save();
+            return array("success" => true);
+        }
+        return array("error" => true);
+    }
 }

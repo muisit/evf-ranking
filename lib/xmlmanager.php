@@ -24,11 +24,10 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 namespace EVFRanking\Lib;
 
-class XMLManager extends BaseLib {
-
+class XMLManager extends BaseLib
+{
     public $sideevent;
     public $sideevents;
     public $event;
@@ -39,18 +38,19 @@ class XMLManager extends BaseLib {
     public $root;
     public $doc;
 
-    public function export($filetype, $sideevent,$event) {
+    public function export($filetype, $sideevent, $event)
+    {
         $this->sideevent = $sideevent;
         $this->event = $event;
-        $this->filetype=$filetype;
+        $this->filetype = $filetype;
         $this->category = null;
-        $this->weapon=null;
+        $this->weapon = null;
 
         $this->sideevents = $this->event->sides();
-        if(!empty($this->sideevent) && !$this->sideevent->isNew()) {
+        if (!empty($this->sideevent) && !$this->sideevent->isNew()) {
             $data = $this->sideevent->registrations();
             $this->competition = new \EVFRanking\Models\Competition($this->sideevent->competition_id,true);
-            if(!$this->competition->exists()) {
+            if (!$this->competition->exists()) {
                 $this->competition = null;
             }
             else {
@@ -60,40 +60,49 @@ class XMLManager extends BaseLib {
         }
         else {
             $data = $this->event->registrations();
-            $this->sideevent=null;
+            $this->sideevent = null;
         }
         
         $this->dom = new \DOMDocument();
-		$this->dom->encoding = 'utf-8';
-		$this->dom->xmlVersion = '1.0';
-		$this->dom->formatOutput = true;
-	    $xml_file_name = $this->event->event_name;
-        if(!empty($this->sideevent)) {
-            $xml_file_name.=".".$this->sideevent->title;
+        $this->dom->encoding = 'UTF-8';
+        $this->dom->xmlVersion = '1.0';
+        $this->dom->formatOutput = true;
+        $xml_file_name = $this->event->event_name;
+        if (!empty($this->sideevent)) {
+            $xml_file_name .= "." . $this->sideevent->title;
         }
-        $xml_file_name.=".xml";
+        $xml_file_name .= ".xml";
 
-        if(!empty($this->category)) {
-            if($this->category->category_type == 'T') {
+        $implementation = new \DOMImplementation();
+        if (!empty($this->category)) {
+            if ($this->category->category_type == 'T') {
                 $this->root = $this->dom->createElement('BaseCompetitionParEquipes');
                 $this->fillDataEquipe($data);
+                $doctype = $implementation->createDocumentType('BaseCompetitionParEquipes');
             }
             else {
                 $this->root = $this->dom->createElement('BaseCompetitionIndividuelle');
                 $this->fillDataIndividual($data);
+                $doctype = $implementation->createDocumentType('BaseCompetitionIndividuelle');
             }
         }
         else {
             $this->root = $this->dom->createElement('BaseCompetitionIndividuelle');
+            $doctype = $implementation->createDocumentType('BaseCompetitionIndividuelle');
             $this->fillDataIndividual($data);
         }
+        $this->dom->appendChild($doctype);
+
+        $this->root->setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
+        $this->root->setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
         $this->dom->appendChild($this->root);
 
-        header('Content-Disposition: attachment; filename="'.$xml_file_name.'";');
+        header('Content-Disposition: attachment; filename="' . $xml_file_name . '";');
         header('Content-Type: text/xml; charset=UTF-8');
+        echo "\xEF\xBB\xBF"; // echo a BOM for Windows purposes
         echo $this->dom->saveXML();
         ob_flush();
-        exit();        
+        exit();
     }
 
     private function fillDataEquipe($data) {
@@ -126,41 +135,50 @@ class XMLManager extends BaseLib {
         }
     }
 
-    private function fillDataIndividual($data) {
-        $this->doc=$this->root;
+    private function fillDataIndividual($data)
+    {
+        $this->doc = $this->root;
         $this->setYear()->setWeapon()->setCategory()->setDates()->setEventData();
 
         $this->addFencers($data);
     }
 
-    private function addFencers($data) {
-        $currentranking=array();
-        if(!empty($this->competition)) {
+    private function addFencers($data)
+    {
+        $currentranking = array();
+        if (!empty($this->competition)) {
             $ranking = new \EVFRanking\Models\Ranking();
-            $results = $ranking->listResults($this->weapon->getKey(),$this->category->category_value);
-            foreach($results as $row) {
-                $key="fid".$row["id"];
-                $currentranking[$key]=$row;
+            $results = $ranking->listResults($this->weapon->getKey(), $this->category);
+            foreach ($results as $row) {
+                $key = "fid" . $row["id"];
+                $currentranking[$key] = $row;
             }
         }
         $tireurs = $this->dom->createElement("Tireurs");
         $this->root->appendChild($tireurs);
-        $this->doc=$tireurs;
-        foreach($data as $row) {
-            $this->addFencer((array)$row,$currentranking);
+        $this->doc = $tireurs;
+        foreach ($data as $row) {
+            $this->addFencer((array)$row, $currentranking);
         }
     }
 
-    private function addEquipe($team,$regs) {
+    private function addEquipe($team, $regs)
+    {
         $equipe = $this->dom->createElement("Equipe");
-        $firstreg=$regs[0]; // must be at least 1 registration
+        $firstreg = $regs[0]; // must be at least 1 registration
 
-        if(!empty($pos)) $tireur->setAttribute("Classement",$pos);
-        $equipe->setAttribute("ID",$team);
-        $equipe->setAttribute('Nation',$firstreg["country_abbr"]);
-        $equipe->setAttribute('Nom',$firstreg["country_name"]." ".$firstreg["registration_team"]);
-        if($firstreg['fencer_gender'] == 'M') $equipe->setAttribute('Sexe','M');
-        else $equipe->setAttribute('Sexe','F');
+        if (!empty($pos)) {
+            $tireur->setAttribute("Classement", $pos);
+        }
+        $equipe->setAttribute("ID", $team);
+        $equipe->setAttribute('Nation', $firstreg["country_abbr"]);
+        $equipe->setAttribute('Nom', $firstreg["country_name"] . " " . $firstreg["registration_team"]);
+        if ($firstreg['fencer_gender'] == 'M') {
+            $equipe->setAttribute('Sexe', 'M');
+        }
+        else {
+            $equipe->setAttribute('Sexe', 'F');
+        }
 
         // According to Ophardt, Tireur do not need to be included in Equipe, the Equipe-attribute of
         // the original Tireur is sufficient.
@@ -171,50 +189,57 @@ class XMLManager extends BaseLib {
         //}
         //$this->doc=$oridoc;
 
-        $this->doc->appendChild($equipe);      
+        $this->doc->appendChild($equipe);
     }
 
-    private function addFencerRef($row) {
+    private function addFencerRef($row)
+    {
         $tireur = $this->dom->createElement("Tireur");
-        $tireur->setAttribute("REF",$row["registration_fencer"]);
+        $tireur->setAttribute("REF", $row["registration_fencer"]);
         $this->doc->appendChild($tireur);
     }
 
-    private function addFencer($row,$ranking) {
-        $key="fid".$row["registration_fencer"];
-        $pos=null;
-        $points=null;
-        if(isset($ranking[$key])) {
+    private function addFencer($row, $ranking)
+    {
+        $key = "fid" . $row["registration_fencer"];
+        $pos = null;
+        $points = null;
+        if (isset($ranking[$key])) {
             $pos = $ranking[$key]["pos"];
             $points = $ranking[$key]["points"];
         }
         $tireur = $this->dom->createElement("Tireur");
-        // skip Arme, used for mixed competitions
-        if(!empty($pos)) $tireur->setAttribute("Classement",$pos);
-        // skip Club
-        $tireur->setAttribute("DateNaissance",strftime('%d.%m.%Y',strtotime($row["fencer_dob"])));
-        // skip Dossard... mask number
-        if(!empty($row["registration_team"])) $tireur->setAttribute("Equipe",$row["country_abbr"].$row["registration_team"]);
-        $tireur->setAttribute("ID",$row["registration_fencer"]);
+        $tireur->setAttribute("ID", $row["registration_fencer"]);
+        $tireur->setAttribute('Nom', $row["fencer_surname"]);
+        $tireur->setAttribute('Prenom', $row["fencer_firstname"]);
+        $tireur->setAttribute("DateNaissance", strftime('%d.%m.%Y', strtotime($row["fencer_dob"])));
+        $tireur->setAttribute('Nation', $row["country_abbr"]);
+
+        if ($row['fencer_gender'] == 'M') $tireur->setAttribute('Sexe', 'M');
+        else $tireur->setAttribute('Sexe', 'F');
+
         // Lateralite is required, but we do not have it
-        $tireur->setAttribute('Lateralite','D');
+        $tireur->setAttribute('Lateralite', 'D');
+
+        if (!empty($pos)) $tireur->setAttribute("Classement", $pos);
+        if (!empty($pos)) $tireur->setAttribute("Points", $points);
+
+        if (!empty($row["registration_team"])) $tireur->setAttribute("Equipe", $row["country_abbr"] . $row["registration_team"]);
+
+        // skip Arme, used for mixed competitions
+        // skip Club
+        // skip Dossard... mask number
         // skip Licence
         // skip LicenceNat
         // skip Ligue
-        $tireur->setAttribute('Nation',$row["country_abbr"]);
         // skip NbMatches
         // skip NbVictoires
         // skip NoDansLaPoule
-        $tireur->setAttribute('Nom',$row["fencer_surname"]);
-        $tireur->setAttribute('Prenom',$row["fencer_firstname"]);
         // skip PhotoURL, privacy issue
-        if(!empty($pos)) $tireur->setAttribute("Points",$points);
         // skip RangFinal
         // skip RangInitial
         // skip RangPoule
         // skip Score
-        if($row['fencer_gender'] == 'M') $tireur->setAttribute('Sexe','M');
-        else $tireur->setAttribute('Sexe','F');
         // skip Statut
         // skip TD
         // skip TR

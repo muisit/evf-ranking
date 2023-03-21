@@ -88,7 +88,7 @@ class ExportManager extends BaseLib {
         $csv = array_map(array($this,"header_map"), array_filter($data, array($this,"header_filter") ));
         usort($csv, array($this,"header_sort"));
         $csv = array_merge(array($this->headers), $csv);
-        $this->createCSV($csv, $this->filetype . "_" . $this->sideevent->title . ".csv", ",");
+        $this->createCSV($csv, $this->filetype . "_" . $this->sideevent->title . ".csv", ";");
         return true;
     }
 

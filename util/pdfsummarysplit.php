@@ -8,7 +8,7 @@ class PDFSummarySplit
     public $type;
     public $model;
 
-    const ACCREDITATIONS_PER_DOC = 100;
+    const ACCREDITATIONS_PER_DOC = 50;
 
     public function __construct($event, $type, $model)
     {

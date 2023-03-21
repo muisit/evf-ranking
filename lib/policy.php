@@ -265,13 +265,6 @@ class Policy extends BaseLib {
             return false;
         }
 
-        $cid = isset($data["model"]["country"]) ? $data["model"]["country"] : -1;
-        $country = new \EVFRanking\Models\Country($cid, true);
-        if (!$country->exists()) {
-            $evflogger->log("Policy: invalid country, but fencer should be linked to a valid country");
-            return false;
-        }
-
         $caps = $event->eventCaps();
         $isorganiser = in_array($caps, array("system", "organiser", "registrar", "accreditation"));
         $ishod = in_array($caps, array("hod","hod-view"));
@@ -285,6 +278,14 @@ class Policy extends BaseLib {
             $evflogger->log("not a HoD, not an organiser, no registration-capa: not allowed to save fencer");
             return false;
         }
+
+        $cid = isset($data["model"]["country"]) ? $data["model"]["country"] : -1;
+        $country = new \EVFRanking\Models\Country($cid, true);
+        if (!$country->exists()) {
+            $evflogger->log("Policy: invalid country, but fencer should be linked to a valid country");
+            return false;
+        }
+
         return $this->isValidHod($country->getKey());
     }
 

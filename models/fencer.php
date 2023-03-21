@@ -243,12 +243,16 @@ class Fencer extends Base {
                 if(intval($model1->getKey()) < intval($model2->getKey())) {
                     // keep the one linked to the newest entry
                     @rename($model2->getPath(),$model1->getPath());
+                    $model1->fencer_picture = $model2->fencer_picture;
+                    $model1->save();
                 }
             }
             // else don't do anything, the file for model1 is kept
         }
         else if(file_exists($model2->getPath())) {
             @rename($model2->getPath(),$model1->getPath());
+            $model1->fencer_picture = $model2->fencer_picture;
+            $model1->save();
         }
 
         $this->query()->from("TD_Fencer")->where("fencer_id",$model2->getKey())->delete();

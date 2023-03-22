@@ -33,7 +33,7 @@ export function FencerList(props) {
                             {is_valid(fencer.id) && (<td>{fencer.fullgender}</td>)}
                             {is_valid(fencer.id) && (<td>{fencer.birthyear}</td>)}
                             {is_valid(fencer.id) && (<td>{fencer.category}</td>)}
-                            {!is_valid(fencer.id) && (<td colSpan='5' style={{textAlign:'center'}}>&lt; add a new entry &gt;</td>)}
+                            {!is_valid(fencer.id) && (<td colSpan='4' style={{textAlign:'center'}}>&lt; add a new entry &gt;</td>)}
                             <td><i className='pi pi-chevron-circle-right'></i></td>
                         </tr>
                     ))}

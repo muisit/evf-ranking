@@ -116,6 +116,7 @@ export default class FEBase extends React.Component {
                 if(doclear) this.props.unload("registrations",cid);
                 if(lst.data.list) {
                     this.parseRegistrations(lst.data.list,doclear);
+                    if (this.postRegistrations) this.postRegistrations(cid);
                 }
             });
     }

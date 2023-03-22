@@ -138,6 +138,22 @@ export default class FencerDialog extends React.Component {
             alert("Please set the surname and firstname");
             return;
         }
+
+        var found = false;
+        this.state.suggestions.map((fencer) => {
+            if (   fencer.name.toLowerCase() == obj.name.toLowerCase()
+                && fencer.firstname.toLowerCase() == obj.firstname.toLowerCase()
+                && (fencer.birthday == obj.birthday || fencer.birthday == null || fencer.birthday == '' || obj.birthday == null || obj.birthday == '')
+                && fencer.id != obj.id) {
+                found = true;
+            }
+        });
+
+        if (found) {
+            alert("A fencer with this exact same name and date of birth is already in the system. Please pick that fencer from the suggestion list instead, or change the name instead.");
+            return;
+        }
+
         this.actualSave(obj)
             .then((fencer) => {
                 this.save(fencer);
@@ -215,26 +231,48 @@ export default class FencerDialog extends React.Component {
         if (this.props.allowSearch) {
             var thistarget=evt.target.value;
             if(thistarget.length > 1) {
-                var filters = { name: evt.target.value};
-                if(this.props.country && is_valid(this.props.country)) {
-                    filters.country=this.props.country;
+                if (!this.props.fencers || this.props.fencers.length == 0) {
+                    var filters = { name: evt.target.value};
+                    if(this.props.country && is_valid(this.props.country)) {
+                        filters.country=this.props.country;
+                    }
+                    fencers(0, 10000, filters, "nf")
+                        .then((json) => {
+                            if(this.props.fencer && this.props.fencer.name == thistarget) {
+                                var fencerList=[];
+                                json.data.list.map((itm)=> {
+                                    itm = adjustFencerData(itm, this.props.basic.event);
+                                    fencerList.push(itm);
+                                });
+                                this.setState({suggestions: this.addNewFencerToSuggestionList(fencerList) });
+                            }
+                        });
                 }
-                fencers(0, 10000, filters, "nf")
-                    .then((json) => {
-                        if(this.props.fencer && this.props.fencer.name == thistarget) {
-                            var fencers=[];
-                            json.data.list.map((itm)=> {
-                                itm = adjustFencerData(itm, this.props.basic.event);
-                                fencers.push(itm);
-                            });
-                            this.setState({suggestions: this.addNewFencerToSuggestionList(fencers) });
-                        }
-                    });
+                else {
+                    var fencerList = this.filterSuggestionsFromFencerList(thistarget, this.props.fencers);
+                    this.setState({suggestions:  this.addNewFencerToSuggestionList(fencerList)});
+                }
             }
             else {
                 this.setState({ suggestions: this.addNewFencerToSuggestionList([]) });
             }
         }
+    }
+
+    filterSuggestionsFromFencerList = (name, fencers) => {
+        console.log('filtering suggestions from fencer list ', name);
+        var lowername=name.toLowerCase();
+        var suggestions = fencers.map((fencer) => {
+            if (   fencer.name.length >= lowername.length
+                && fencer.name.substring(0,lowername.length).toLowerCase() == lowername) {
+                return fencer;
+            }
+            else {
+                return null;
+            }
+        }).filter((fencer) => fencer != null);
+        console.log(suggestions);
+        return suggestions;
     }
 
     addNewFencerToSuggestionList = (lst) => {

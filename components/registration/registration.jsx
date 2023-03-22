@@ -2,8 +2,8 @@ import { fencers, accreditation } from "../api.js";
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
-import { parse_date, format_date, 
-         is_organisation, is_sysop, is_hod, is_accreditor, is_organiser, is_hod_view } from '../functions';
+import { parse_date, format_date, is_valid,
+         is_organisation, is_sysop, is_hod, is_accreditor, is_organiser, is_hod_view, parse_net_error } from '../functions';
 import React from 'react';
 import FencerDialog from './dialogs/fencerdialog';
 import FencerSelectDialog from './dialogs/fencerselectdialog';
@@ -27,6 +27,7 @@ export default class FERegistrationTab extends FEBase {
             displaySelectDialog: false,
             addingNewRegistration: false,
             searchingForFencer: true,
+            allfencers: [],
             accreditations: [],
             fencer_events: [], // sideevents with fencer-specific convenience data
             displayUploadDialog: false,
@@ -36,6 +37,26 @@ export default class FERegistrationTab extends FEBase {
     onCountrySelect = (val) => {
         // retrieve the list of registrations for the selected country
         this.setState({ 'country': val, "country_item": this.countryFromId(val) }, this.getRegistrations);
+    }
+
+    postRegistrations = (cid) => {
+        if (is_valid(cid)) {
+            fencers(0,100000, {country: cid})
+                .then((json) => {
+                    this.setState({allfencers: []});
+                    if (json.data.list) {
+                        var fencers = json.data.list.map((data) => {
+                            var fencer = adjustFencerData(data, this.props.basic.event);
+                            return fencer;
+                        })
+                        this.setState({allfencers: fencers});
+                    }
+                })
+                .catch(parse_net_error);
+        }
+        else {
+            this.setState({allfencers: []});
+        }
     }
 
     uploadCSV = () => {
@@ -282,7 +303,7 @@ export default class FERegistrationTab extends FEBase {
         return (<div className='row topmargin'>
             <div className='col-6 vertcenter'>
                 <Button label="Add Registration" icon="pi pi-plus" className="p-button-raised cright" onClick={this.addFencer} />
-                <FencerDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm, doSelect) => this.onFencer('change', itm, doSelect)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} fencer={this.state.fencer_object} allowSearch={this.state.searchingForFencer} />
+                <FencerDialog basic={this.props.basic} country={this.state.country} countries={addcountries} onClose={() => this.onFencer('close')} onChange={(itm, doSelect) => this.onFencer('change', itm, doSelect)} onSave={(itm) => this.onFencer('save', itm)} delete={false} display={this.state.displayFencerDialog} fencer={this.state.fencer_object} fencers={this.state.allfencers} allowSearch={this.state.searchingForFencer} />
             </div>
             <div className='col-3 offset-3 vertcenter'>
                 <Button label="Upload CSV" icon="pi pi-upload" className="p-button-raised cright" onClick={this.uploadCSV} />

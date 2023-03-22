@@ -131,8 +131,8 @@ class Policy extends BaseLib {
 
         $policies = array(        // List     View        Update/Create      Delete      Misc
             # Common tables
-            "fencers" => array(      "any",   "any",      "fsave",           "rank",     "noone"    ),
-            "events" => array(       "any",   "any",      "reg",             "rank",     "noone"    ),
+            "fencers" => array(      "auth",  "auth",     "fsave",           "rank",     "noone"    ),
+            "events" => array(       "auth",  "auth",     "reg",             "rank",     "noone"    ),
             "audit" => array(        "eaccr", "eaccr",    "noone",           "noone",    "noone"    ),
 
             # Results and Rankings
@@ -141,7 +141,7 @@ class Policy extends BaseLib {
             "competitions" => array( "any",   "any",      "rank",            "rank",     "noone"    ),
 
             # Registration and Accreditation
-            "sides" => array(        "any",   "any",      "reg",             "reg",      "noone"    ),
+            "sides" => array(        "auth",  "auth",     "reg",             "reg",      "noone"    ),
             "eventroles" => array(   "reg",   "reg",      "reg",             "reg",      "noone"    ),
             "registrars" => array(   "reg",   "reg",      "reg",             "reg",      "noone"    ),
             "templates" => array(    "eaccr", "eaccr",    "eaccr",           "eaccr",    "reg"      ),
@@ -183,6 +183,7 @@ class Policy extends BaseLib {
 
         $evflogger->log("Policy: base capa to test is $base");
         if ($base == "any") return true;
+        if ($base == "auth") return !empty(wp_get_current_user());
         if ($base == "noone") return false;
 
         return $this->hasCapa($base, $data);

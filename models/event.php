@@ -536,13 +536,13 @@ class Event extends Base
         }
 
         // total number of athletes, support-roles and officials
-        $result = $this->query()->select("IFNULL(rt.org_declaration, 'Athlete') as tp, COUNT(*) as cnt")
+        $result = $this->query()->select("CASE WHEN se.competition_id IS NULL THEN IFNULL(rt.org_declaration, 'Other') ELSE IFNULL(rt.org_declaration, 'Athlete') END as tp, COUNT(*) as cnt")
             ->from("TD_Registration r")
             ->join("TD_Fencer", "f", "r.registration_fencer=f.fencer_id")
             ->join("TD_Role", "rl", "rl.role_id = r.registration_role")
             ->join("TD_Role_Type", "rt", "rt.role_type_id = rl.role_type")
-            ->join("TD_Accreditation", "a", "a.fencer_id=r.registration_fencer AND a.event_id=r.registration_mainevent")
-            ->groupBy("IFNULL(rt.org_declaration, 'Athlete')")
+            ->join("TD_Event_Side", "se", "se.id = r.registration_event")
+            ->groupBy("tp")
             ->where("r.registration_mainevent", $event->getKey())
             ->get();
 

@@ -188,13 +188,13 @@ class API extends BaseLib {
                     $pm->template($template, $picture);
                 }
             }
-            else if (!empty($sid) && is_numeric($picture)) {
+            else if (is_numeric($picture)) {
                 $event = $this->loadModel("Event", $sid);
                 $fencer = $this->loadModel("Fencer", $picture);
 
                 if ($fencer->exists()) {
-                    $sideevent = new \EVFRanking\Models\SideEvent();
-                    if ($event->exists()) {
+                    $sideevent = new \EVFRanking\Models\SideEvent($sid, true);
+                    if (!$sideevent->exists() && $event->exists()) {
                         $sides = $event->sides();
                         if (!empty($sides)) {
                             $sideevent = $this->loadModel("SideEvent", $sides[0]); // pick any sideevent

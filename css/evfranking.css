@@ -321,3 +321,6 @@ table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
 
 
 img.photoid { max-width: 400; min-width:200; }
+
+/* overview page */
+.overview-page .competition .list tbody td { white-space: nowrap;}

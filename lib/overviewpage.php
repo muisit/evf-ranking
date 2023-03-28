@@ -60,7 +60,7 @@ class OverviewPage extends VirtualPage
         foreach ($this->competitions as $competition) {
             $output .= $this->renderCompetition($competition);
         }
-        return $output;
+        return "<div class='overview-page'>" . $output . "</div>";
     }
 
     private function createCaches($event)
@@ -137,6 +137,7 @@ class OverviewPage extends VirtualPage
         }
 
         $rows = '';
+        $totals=['MF' => 0, 'FF' => 0, 'ME' => 0, 'FE' => 0, 'MS' => 0, 'FS' => 0];
         foreach ($catsAvailable as $category) {
             $rows .= "<tr><td>" . $category . "</td>";
             foreach ($weaponsAvailable as $weapon) {
@@ -149,16 +150,37 @@ class OverviewPage extends VirtualPage
                         $comp = $competitions['M'];
                         $link = '<a href="#' . $comp['anchor'] . '">Men<br/>' . $comp['count'] . '</a>';
                         $rows .= '<td class="textcenter">' . $link . '</td>';
+                        $totals['M' . $weapon] += $comp['count'];
                     }
                     if (isset($competitions['F'])) {
                         $comp = $competitions['F'];
                         $link = '<a href="#' . $comp['anchor'] . '">Women<br/>' . $comp['count'] . '</a>';
                         $rows .= '<td class="textcenter">' . $link . '</td>';
+                        $totals['F' . $weapon] += $comp['count'];
                     }
                 }
             }
             $rows .= "</tr>";
         }
+        $me = isset($totals['ME']) ? $totals['ME'] : 0;
+        $fe = isset($totals['FE']) ? $totals['FE'] : 0;
+        $mf = isset($totals['MF']) ? $totals['MF'] : 0;
+        $ff = isset($totals['FF']) ? $totals['FF'] : 0;
+        $ms = isset($totals['MS']) ? $totals['MS'] : 0;
+        $fs = isset($totals['FS']) ? $totals['FS'] : 0;
+        $gt = $me + $fe + $mf + $ff + $ms + $fs;
+        $rows .= <<< DOC
+        <tr>
+          <td>Total</td>
+          <td class='textcenter'>$me</td>
+          <td class='textcenter'>$fe</td>
+          <td class='textcenter'>$mf</td>
+          <td class='textcenter'>$ff</td>
+          <td class='textcenter'>$ms</td>
+          <td class='textcenter'>$fs</td>
+          <td class='textcenter'><b>$gt</b></td>
+        </tr>
+        DOC;
 
         $output = <<< DOC
         <a name='top'><h3>Overview</h3></a>
@@ -191,12 +213,12 @@ class OverviewPage extends VirtualPage
             </div>
             <div class='col-4 textright'><a href='#top'><span class='pi pi-icon pi-caret-up' style='margin-top: 2rem;'> back to top</span></a></div>
           </div>
-          <table>
+          <table class='list' style='width: auto;'>
             <thead>
               <tr>
                 <th style='width: 30px;'>#</th>
+                <th style='min-width: 50px'>Country</th>
                 <th>Name</th>
-                <th style='width: 200px'>Country</th>
                 <th style='width: 50px'>Ranking</th>
               </tr>
             </thead>
@@ -248,8 +270,8 @@ class OverviewPage extends VirtualPage
         return <<<DOC
               <tr>
                 <td class='textright'>$index</td>
-                <td class='textleft'>$surname, $name</td>
                 <td class='textleft'><img style='height: 1.1rem;' src='$path'> $country</td>
+                <td class='textleft'>$surname, $name</td>
                 <td class='textright'>$position</td>
               </tr>
         DOC;

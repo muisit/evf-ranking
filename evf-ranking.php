@@ -140,7 +140,6 @@ function evfranking_feed_shortcode($atts) {
 
 function evfranking_rewrite_add_rewrites()
 {
-    error_log('adding rewrites');
     // should match the event button link in \EVFRanking\Lib\Display
     add_rewrite_rule('register/(\d+)/?$', 'index.php?suppress_filters=1&evfranking_register=$matches[1]', 'top');
     // should match the accreditation ID link in \EVFRanking\Util\PDFCreator
@@ -208,7 +207,6 @@ if (defined('ABSPATH')) {
     add_filter('cron_schedules', 'evfranking_add_cron_interval');
 
     add_filter('posts_pre_query', function ($posts, $q) {
-        error_log('post pre query' . json_encode($q->query));
         $post = null;
         if (empty($posts) && isset($q->query["evfranking_register"])) {
             $actor = \EVFRanking\Lib\Display::Instance();
@@ -219,7 +217,6 @@ if (defined('ABSPATH')) {
             $post = $actor->accreditRedirect($q->query["evfranking_accredit"]);
         }
         if (empty($posts) && isset($q->query["evfranking_entries"])) {
-            error_log('getting overview page');
             $actor = \EVFRanking\Lib\Display::Instance();
             $post = $actor->overviewRedirect($q->query["evfranking_entries"]);
         }

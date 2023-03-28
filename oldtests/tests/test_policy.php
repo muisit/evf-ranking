@@ -17,7 +17,7 @@ class Test_Policy extends BaseTest {
             TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,  // ranking
             TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, // register
             TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, // unpriv
-            TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, // anonymous
+            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, // anonymous
         ));
     }
 
@@ -27,7 +27,7 @@ class Test_Policy extends BaseTest {
             TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
             TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
             TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
-            TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
+            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
         ));
     }
 
@@ -66,7 +66,7 @@ class Test_Policy extends BaseTest {
             TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
             TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
             TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
-            TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
+            FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
         ));
     }
     public function test_policy_eventroles()

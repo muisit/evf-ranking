@@ -49,11 +49,16 @@ export default class FencerDialog extends React.Component {
     onFileChange = (event) => {
         if (this.fencerDataIsComplete()) {
             if (!is_valid(this.props.fencer.id)) {
-                this.actualSave(this.props.fencer)
-                    .then((fencer) => {
-                        if (this.props.onChange) this.props.onChange(fencer, true);
-                        this.onFileChange(event);
-                    });
+                if (!this.hasDuplicateSuggestion(this.props.fencer)) {
+                    this.actualSave(this.props.fencer)
+                        .then((fencer) => {
+                            if (this.props.onChange) this.props.onChange(fencer, true);
+                            this.onFileChange(event);
+                        });
+                }
+                else {
+                    alert("Unable to store the image: a fencer with the exact same name and date of birth is already registered in the system. Please close this dialog, then add a new registration and pick this fencer from the list of suggestions instead.");
+                }
             }
             else {
                 var selectedFile=event.target.files[0];
@@ -80,9 +85,9 @@ export default class FencerDialog extends React.Component {
     }
 
     fencerDataIsComplete = () => {
-        if (  (this.props.fencer.name && this.props.fencer.name.length > 1)
-           && (this.props.fencer.firstname && this.props.fencer.firstname.length > 0)
-           && (this.props.fencer.gender && ['M','F'].includes(this.props.fencer.gender))
+        if (  this.hasValidName(this.props.fencer.name, this.props.fencer.firstname)
+           && this.hasValidGender(this.props.fencer.gender)
+           && this.hasValidBirthday(this.props.fencer.birthday)
            && is_valid(this.props.fencer.country)
         ) {
             return true;
@@ -106,6 +111,25 @@ export default class FencerDialog extends React.Component {
             .catch(parse_net_error);
     }
 
+    hasValidBirthday = (bday) => {
+        if (bday && bday.length > 0) {
+            var yob=get_yob(bday);
+            var now=get_yob();
+            if(now - yob < 10 || now - yob > 120) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    hasValidGender = (gender) => {
+        return gender == 'M' || gender == 'F';
+    }
+
+    hasValidName = (name, firstname) => {
+        return name.length >= 2 && firstname.length >= 2;
+    }
+
     onCloseDialog = (event) => {
         this.loading(true);
 
@@ -121,36 +145,23 @@ export default class FencerDialog extends React.Component {
             event: this.props.basic.event ? this.props.basic.event.id : -1,
         };
 
-        if(obj.gender != 'M' && obj.gender != 'F') {
+        if (!this.hasValidGender(obj.gender)) {
             alert('Please select the proper gender');
             return;
         }
-        if (obj.birthday && obj.birthday.length > 0) {
-            var yob=get_yob(obj.birthday);
-            var now=get_yob();
-            if(now-yob < 10 || now-yob > 120) {
-                alert('Please select a proper date of birth');
-                return;
-            }
+        if (!this.hasValidBirthday(obj.birthday)) {
+            alert('Please select a proper date of birth');
+            return;
         }
 
-        if(obj.name.length<2 || obj.firstname.length<2) {
+        if (!this.hasValidName(obj.name, obj.firstname)) {
             alert("Please set the surname and firstname");
             return;
         }
 
-        var found = false;
-        this.state.suggestions.map((fencer) => {
-            if (   fencer.name.toLowerCase() == obj.name.toLowerCase()
-                && fencer.firstname.toLowerCase() == obj.firstname.toLowerCase()
-                && (fencer.birthday == obj.birthday || fencer.birthday == null || fencer.birthday == '' || obj.birthday == null || obj.birthday == '')
-                && fencer.id != obj.id) {
-                found = true;
-            }
-        });
-
+        var found = this.hasDuplicateSuggestion(fencer);
         if (found) {
-            alert("A fencer with this exact same name and date of birth is already in the system. Please pick that fencer from the suggestion list instead, or change the name instead.");
+            alert("Unable to save data: a fencer with this exact same name and date of birth is already in the system. Please close this dialog, then add a new registration and pick that fencer from the suggestion list instead, or change the name or birthday instead.");
             return;
         }
 
@@ -159,6 +170,21 @@ export default class FencerDialog extends React.Component {
                 this.save(fencer);
             })
             .catch(parse_net_error);
+    }
+
+    hasDuplicateSuggestion = (obj) => {
+        var found = false;
+        if (this.state.suggestions && this.state.suggestions.length > 0) {
+            this.state.suggestions.map((fencer) => {
+                if (   fencer.name.toLowerCase() == obj.name.toLowerCase()
+                    && fencer.firstname.toLowerCase() == obj.firstname.toLowerCase()
+                    && (fencer.birthday == obj.birthday || fencer.birthday == null || fencer.birthday == '' || obj.birthday == null || obj.birthday == '')
+                    && fencer.id != obj.id) {
+                    found = true;
+                }
+            });
+        }
+        return found;
     }
 
     onCancelDialog = (event) => {
@@ -260,7 +286,6 @@ export default class FencerDialog extends React.Component {
     }
 
     filterSuggestionsFromFencerList = (name, fencers) => {
-        console.log('filtering suggestions from fencer list ', name);
         var lowername=name.toLowerCase();
         var suggestions = fencers.map((fencer) => {
             if (   fencer.name.length >= lowername.length
@@ -271,7 +296,6 @@ export default class FencerDialog extends React.Component {
                 return null;
             }
         }).filter((fencer) => fencer != null);
-        console.log(suggestions);
         return suggestions;
     }
 

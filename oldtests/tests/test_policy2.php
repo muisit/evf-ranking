@@ -10,13 +10,13 @@ class Test_Policy2 extends BaseTest {
 
     public function test_policy_combinations() {
         $cases=array(
-            "fencers"=>array(true,true,"fsave","rank",false,false),
-            "events"=>array(true,true,"reg","rank",false,false),
+            "fencers"=>array(false,false,"fsave","rank",false,false),
+            "events"=>array(false,false,"reg","rank",false,false),
             "audit"=>array("eaccr","eaccr",false,false,false,false),
             "results"=>array(true,true,"rank","rank","rank",false),
             "ranking"=>array(true,true,"rank","rank","rank",false),
             "competitions"=>array(true,true,"rank","rank",false,false),
-            "sides"=>array(true,true,"reg","reg",false,false),
+            "sides"=>array(false,false,"reg","reg",false,false),
             "eventroles"=>array("reg","reg","reg","reg",false,false),
             "registrars"=>array("reg","reg","reg","reg",false,false),
             "templates"=>array("eaccr","eaccr","eaccr","eaccr","reg",false),

@@ -3,6 +3,7 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
+import { InputMask } from 'primereact/inputmask';
 import FencerDialog from '../../dialogs/fencerdialog';
 
 export default class SuggestionDialog extends React.Component {
@@ -118,12 +119,11 @@ export default class SuggestionDialog extends React.Component {
         var closebutton=(<Button label="Cancel" icon="pi pi-times" className="p-button-raised p-button-text" onClick={this.onCancelDialog} />);
         var savebutton=(<Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />);
         var newbutton =(<Button label="Add" icon="pi pi-file-o" className="p-button-raised p-button-text" onClick={this.onNew} />);
-        var updatebutton="";
         if(this.props.value.fencer_id > 0) {
-          updatebutton =(<Button label="Update" icon="pi pi-file-o" className="p-button-raised p-button-text" onClick={this.onUpdate} />);
+          newbutton =(<Button label="Update" icon="pi pi-file-o" className="p-button-raised p-button-text" onClick={this.onUpdate} />);
         }
 
-        var footer=(<div>{newbutton}{updatebutton}{closebutton}{savebutton}</div>);
+        var footer=(<div>{newbutton}{closebutton}{savebutton}</div>);
         let genders = [{ name: 'Male', code: 'M' }, { name: 'Female', code: 'F' }];
 
         return (<Dialog header="Adjust Fencer Data" position="center" visible={this.props.display} style={{ width: '75vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
@@ -143,6 +143,18 @@ export default class SuggestionDialog extends React.Component {
             <label>Country</label>
             <div className='input'>
             <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country_id} options={this.props.countries} placeholder="Country"  readOnly={true}/>
+            </div>
+          </div>
+          <div>
+            <label>Birthday</label>
+            <div className="input">
+              <InputMask name='birthday' mask="9999-99-99" slotChar="yyyy-mm-dd" value={this.props.value.birthday} readOnly={true}/>
+            </div>
+          </div>
+          <div>
+            <label>Gender</label>
+            <div className="input">
+              <Dropdown name='gender' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.gender} options={genders} placeholder="Gender" readOnly={true}/>
             </div>
           </div>
           {this.props.value.suggestions.length > 0 && (

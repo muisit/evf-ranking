@@ -25,9 +25,11 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Result extends Base {
+use \DateTimeImmutable;
+
+class Result extends Base {
     public $table = "TD_Result";
     public $pk="result_id";
     public $fields=array(
@@ -309,90 +311,99 @@
         $model = new Fencer();
         $competition = new Competition(intval($cid));
                 
-        $retval=array("ranking"=>array());
-        if(!$competition->exists()) return $retval;
+        $retval = array("ranking" => array());
+        if (!$competition->exists()) return $retval;
 
-        $weapon = new Weapon($competition->competition_weapon);
-        $gender=$weapon->weapon_gender;
+        $weapon = $competition->getWeapon();
+        $gender = $weapon->weapon_gender;
+        $category = $competition->getCategory();
+        $minDate = DateTimeImmutable::createFromFormat('Y-m-d', $category->getMinimalDate());
+        $maxDate = DateTimeImmutable::createFromFormat('Y-m-d', $category->getMaximalDate());
 
-        foreach($ranking as $entry) {
+        foreach ($ranking as $entry) {
             // we leave 'position' as it is: an integer front-end check can be done there without problem
             $lastname = Fencer::Sanitize($entry["lastname"]);
             $firstname = Fencer::Sanitize($entry["firstname"]);
             $country = Fencer::Sanitize($entry["country"]);
 
-            $fencerid=-1;
-            $suggestions=null;
-            $ltext='';
-            $lcheck='und';
-            $ftext='';
-            $fcheck='und';
-            $ctext='';
-            $ccheck='und';
-            $atext='';
-            $acheck='und';
+            $fencerid = -1;
+            $suggestions = null;
+            $ltext = '';
+            $lcheck = 'und';
+            $ftext = '';
+            $fcheck = 'und';
+            $ctext = '';
+            $ccheck = 'und';
+            $atext = '';
+            $acheck = 'und';
 
-            $allbyname = $model->allByName($lastname,$firstname,$gender);
+            $allbyname = $model->allByName($lastname, $firstname, $gender);
+            $suggestions = [];
             // see if anyone of these results matches the country abbreviation
-            foreach($allbyname as $fencer) {
+            foreach ($allbyname as $fencer) {
                 $values = (array)$fencer;
-                if($values["country_abbr"] === $country) {
-                    $fencerid = $values["fencer_id"];
-                    $lcheck='ok';
-                    $fcheck='ok';
-                    $ccheck='ok';
-                    $acheck='ok';
-                    $suggestions=array($model->export($values));
-                    break;
+                if ($values["country_abbr"] === $country && $this->matchDates($values['fencer_dob'], $minDate, $maxDate)) {
+                    $suggestions[] = $model->export($values);
                 }
+            }
+
+            if (count($suggestions) == 1) {
+                // we found one exact match
+                $fencerid = $suggestions[0]['id'];
+                $lcheck = 'ok';
+                $fcheck = 'ok';
+                $ccheck = 'ok';
+                $acheck = 'ok';
             }
             
             // no match, but if we found exactly one fencer, it is only a country change
-            if(sizeof($allbyname) == 1 && $fencerid < 0) {
-                $values=(array)$allbyname[0];
-                $fencerid = $values["fencer_id"];
-                $lcheck='ok';
-                $fcheck='ok';
-                $ccheck='nok';
-                $ctext='Incorrect country';
-                $acheck='nok';
-                $suggestions=array($model->export($values));
+            if (sizeof($allbyname) == 1 && $fencerid < 0) {
+                $values = (array) $allbyname[0];
+                if ($this->matchDates($values['fencer_dob'], $minDate, $maxDate)) {
+                    $fencerid = $values["fencer_id"];
+                    $lcheck = 'ok';
+                    $fcheck = 'ok';
+                    $ccheck = 'nok';
+                    $ctext = 'Incorrect country';
+                    $acheck = 'nok';
+                    $suggestions[] = $model->export($values);
+                }
             }
 
-            if($fencerid<0) {
-                $suggestions=$model->findSuggestions($firstname, $lastname, $country, $gender);
+            if (count($suggestions) == 0) {
+                $suggestions = $model->findSuggestions($firstname, $lastname, $country, $gender, $minDate, $maxDate);
 
-                if(sizeof($suggestions) == 1) {
+                if (count($suggestions) == 1) {
                     // only 1 suggestion means we are more or less sure this 'is the one'
                     // but indicate the failing fields to be sure
                     $key = $keys[0];
                     $fencer = $values[$key];
-                    $fencerid=$fencer["fencer_id"];
-                    if(!isset($ln[$key])) {
-                        $lcheck='nok';
-                        $ltext='No match on last name';
+                    $fencerid = $fencer["fencer_id"];
+                    if (!isset($ln[$key])) {
+                        $lcheck = 'nok';
+                        $ltext = 'No match on last name';
                     }
-                    if(!isset($fn[$key])) {
-                        $fcheck='nok';
-                        $ftext='No match on first name';
+                    if (!isset($fn[$key])) {
+                        $fcheck = 'nok';
+                        $ftext = 'No match on first name';
                     }
-                    if(!isset($cn[$key])) {
-                        $ccheck='nok';
-                        $ctext='No match on country';
+                    if (!isset($cn[$key])) {
+                        $ccheck = 'nok';
+                        $ctext = 'No match on country';
                     }
-                    $acheck='nok';
-                    $atext='at least one field did not match properly';
+                    $acheck = 'nok';
+                    $atext = 'at least one field did not match properly';
                 }
                 else {
                     // more than 1 suggestion means the user needs to pick
-                    $lcheck='nok';
-                    $ltext=sizeof($suggestions)>0 ? 'Please pick a suggestion' : 'not found';
-                    $fcheck='nok';
-                    $ftext=sizeof($suggestions)>0 ? 'Please pick a suggestion' : 'not found';
-                    $ccheck='nok';
-                    $ctext=sizeof($suggestions)>0 ? 'Please pick a suggestion' : 'not found';
-                    $acheck='nok';
-                    $atext=sizeof($suggestions)>0 ? 'Please pick a suggestion' : 'not found';
+                    $lcheck = 'nok';
+                    $ltext = sizeof($suggestions) > 0 ? 'Please pick a suggestion' : 'not found';
+                    $fcheck = 'nok';
+                    $ftext = sizeof($suggestions) > 0 ? 'Please pick a suggestion' : 'not found';
+                    $ccheck = 'nok';
+                    $ctext = sizeof($suggestions) > 0 ? 'Please pick a suggestion' : 'not found';
+                    $acheck = 'nok';
+                    $atext = sizeof($suggestions) > 0 ? 'Please pick a suggestion' : 'not found';
                 }
             }
             
@@ -409,8 +420,14 @@
                 "all_text" => $atext,
                 "all_check" => $acheck
             );
-            $retval["ranking"][]=$values;
+            $retval["ranking"][] = $values;
         }
         return $retval;
+    }
+
+    private function matchDates($dt, $min, $max)
+    {
+        $tm1 = DateTimeImmutable::createFromFormat('Y-m-d', $dt);
+        return $tm1 >= $min && $tm1 < $max;
     }
 }

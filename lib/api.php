@@ -666,14 +666,14 @@ class API extends BaseLib {
     }
 
     protected function listResults($model, $lst,$total=null, $noexport=FALSE) {
-        if($total === null) {
+        if ($total === null) {
             $total = sizeof($lst);
         }
 
         $retval=array();
         $retval["list"]=array();
 
-        if(!empty($lst) && is_array($lst)) {
+        if (!empty($lst) && is_array($lst)) {
             array_walk($lst,function($v,$k) use (&$retval,$model,$noexport) {
                 $retval["list"][]=$noexport ? $v : $model->export($v);
             });
@@ -682,7 +682,9 @@ class API extends BaseLib {
         else {
             global $wpdb;
             $str = mysqli_error( $wpdb->dbh );
-            error_log('DB ERROR:' .$str);
+            if (strlen($str)) {
+                error_log('DB ERROR:' .$str);
+            }
             $retval['list']=array();
             $retval['total']=0;
         }

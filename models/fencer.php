@@ -24,7 +24,6 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 namespace EVFRanking\Models;
 
 use \DateTimeImmutable;
@@ -407,7 +406,7 @@ class Fencer extends Base {
         return $retval;
     }
 
-    public function findSuggestions($firstname, $lastname, $country, $gender)
+    public function findSuggestions($firstname, $lastname, $country, $gender, $minDate = null, $maxDate = null)
     {
         $retval = array();
         $allbylastname = $this->allByLastNameSound($lastname, $gender);
@@ -417,17 +416,29 @@ class Fencer extends Base {
         $ln = array();
         foreach ($allbylastname as $f) {
             $v = (array)$f;
-            $ln["f_" . $v["fencer_id"]] = $v;
+            $tm = DateTimeImmutable::createFromFormat('Y-m-d', $v['fencer_dob']);
+            //error_log("checking " . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate->format('Y-m-d') . ' / ' . $maxDate->format('Y-m-d'));
+            if ($tm === false || (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+                $ln["f_" . $v["fencer_id"]] = $v;
+            }
         }
         $fn = array();
         foreach ($allbyfirstname as $f) {
             $v = (array)$f;
-            $fn["f_" . $v["fencer_id"]] = $v;
+            $tm = DateTimeImmutable::createFromFormat('Y-m-d', $v['fencer_dob']);
+            //error_log("checking " . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate->format('Y-m-d') . ' / ' . $maxDate->format('Y-m-d'));
+            if ($tm === false || (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+                $fn["f_" . $v["fencer_id"]] = $v;
+            }
         }
         $cn = array();
         foreach ($allbycountry as $f) {
             $v = (array)$f;
-            $cn["f_" . $v["fencer_id"]] = $v;
+            $tm = DateTimeImmutable::createFromFormat('Y-m-d', $v['fencer_dob']);
+            //error_log("checking " . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate->format('Y-m-d') . ' / ' . $maxDate->format('Y-m-d'));
+            if ($tm === false || (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+                $cn["f_" . $v["fencer_id"]] = $v;
+            }
         }
 
         // find out the records that match 2 out of 3 fields
@@ -469,9 +480,9 @@ class Fencer extends Base {
             $pos = strpos($date, $sep);
         }
         if ($pos === false) {
-            return strtotime($date);
+            $format = 'Y#m#d';
         }
-        if ($pos > 2) {
+        else if ($pos > 2) {
             // first digit is too wide, expect YYYY/M/D
             $format = 'Y#m#d';
         }
@@ -491,14 +502,12 @@ class Fencer extends Base {
         else {
             $format = 'Y#m#d';
         }
-        global $evflogger;
-        $evflogger->log("parsing $date using $format ($pos, '$sep')");
+
         $date = DateTimeImmutable::createFromFormat($format, $date);
         $time = strtotime($date->format('Y-m-d'));
         if ($time > time() && strpos($format, $y) !== false) {
             // in case we used 'y', it is interpreted as between 1970 and 2069, but we need to shift that
             // to the past. So we reformat the date into the 19-hundreds
-            $evflogger->log('reformatting date to 20th century: ' . '19' . $date->format('y-m-d'));
             $date = DateTimeImmutable::createFromFormat('Y-m-d', '19' . $date->format('y-m-d'));
         }
         return $date;

@@ -75,12 +75,54 @@ class Category extends Base {
         if($wrtM > 7) {
             $diff += 1; // people start fencing in the older category as of august
         }
-        if ($diff >= 80 ) return 5;
-        if ($diff >= 70 ) return 4;
-        if ($diff >= 60 ) return 3;
-        if ($diff >= 50 ) return 2;
-        if ($diff >= 40 ) return 1;
+        if ($diff >= 80) return 5;
+        if ($diff >= 70) return 4;
+        if ($diff >= 60) return 3;
+        if ($diff >= 50) return 2;
+        if ($diff >= 40) return 1;
         return -1;
     }
- }
- 
+
+    public function getMaximalDate()
+    {
+        $catval = intval($this->category_value);
+        $year = date('Y');
+        switch ($catval)
+        {
+        default:
+        case 1:
+            $year -= 40; break;
+        case 2:
+            $year -= 50; break;
+        case 3:
+            $year -= 60; break;
+        case 4:
+            $year -= 70; break;
+        case 5:
+            $year -= 80; break;
+        }
+        return date('Y-m-d', strtotime(($year) . '-01-01'));
+    }
+
+    public function getMinimalDate()
+    {
+        error_log("cat value " . $this->category_value);
+        $catval = intval($this->category_value);
+        $year = date('Y');
+        switch ($catval)
+        {
+        default:
+        case 1:
+            $year -= 50; break;
+        case 2:
+            $year -= 60; break;
+        case 3:
+            $year -= 70; break;
+        case 4:
+            $year -= 199; break; // no max for cat 4 since we stopped cat 5
+        case 5:
+            $year -= 199; break;
+        }
+        return date('Y-m-d', strtotime(($year) . '-01-01'));
+    }
+}

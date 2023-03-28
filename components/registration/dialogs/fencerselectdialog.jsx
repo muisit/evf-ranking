@@ -30,6 +30,16 @@ export default class FencerSelectDialog extends React.Component {
         if(this.props.onChange) this.props.onChange(item);
     }
 
+    findEvent = (sideeventid) => {
+        for (var r in this.props.events) {
+            var event = this.props.events[r];
+            if (event.id == sideeventid) {
+                return event;
+            }
+        }
+        return null;
+    }
+
     findRegistration = (sideeventid, roleid) => {
         for(var r in this.props.value.registrations) {
             var reg = this.props.value.registrations[r];
@@ -269,8 +279,12 @@ export default class FencerSelectDialog extends React.Component {
             else selectThisOne = (value != "0"); 
 
             var selectedItem=this.findRegistration(id); // this is the side-event registration
+            var selectedEvent = this.findEvent(id);
 
             if(selectThisOne) {
+                if (selectedEvent && !selectedEvent.is_athlete_event && !selectedEvent.is_sideevent) {
+                    return; // bail out from registering for unavailable events
+                }
                 if(selectedItem === null) {
                     // create a new registration for this item
                     selectedItem = {
@@ -433,6 +447,7 @@ export default class FencerSelectDialog extends React.Component {
     }
 
     renderRoles(overallroles) {
+        var goodstates=["save","saved","error2",""];
         // filter out valid roles for the capabilities
         var as_organiser = !this.props.country || !is_valid(this.props.country.id);
         var roles = this.props.basic.roles.filter((itm) => {
@@ -477,7 +492,7 @@ export default class FencerSelectDialog extends React.Component {
                     var reg = selectedRolesById['r' + role.id];
                     var name = role.name;
 
-                    var is_registered = reg != undefined;
+                    var is_registered = reg != undefined && (!reg.pending || goodstates.includes(reg.pending));
                     var is_error = reg && (reg.pending == "error1" || reg.pending == "error2");
                     var is_success = reg && (reg.pending == "saved" || reg.pending == "deleted");
                     var is_saving = reg && (reg.pending == "save" || reg.pending == "delete");
@@ -521,7 +536,7 @@ export default class FencerSelectDialog extends React.Component {
         // filter out all events this fencer cannot participate in due to category and gender mismatch
         // If we are looking from an Organisation view, do not allow selection of events
         var events = this.props.events.filter((ev) => {
-            if (!(ev.is_athlete_event || ev.is_sideevent)) return false;
+            if (!(ev.is_athlete_event || ev.is_sideevent || ev.is_registered)) return false;
 
             // if we are organisation, allow selecting the side-events, but not the competitions
             if(this.props.country.id <= 0 && !ev.is_sideevent) return false;

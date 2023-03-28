@@ -141,6 +141,17 @@ export default class FERegistrationTab extends FEBase {
         }
     }
 
+    fencerIsRegisteredForEvent = (event, fencer) => {
+        var retval = false;
+        fencer.registrations.map((ev) => {
+            // skip registrations for roles, only look at side events
+            if (is_valid(ev.sideevent) && ev.sideevent == event.id) {
+                retval = true;
+            }
+        });
+        return retval;
+    }
+
     selectEventsForFencer = (fencer) => {
         // filter the available events based on category and gender
         var events=[];
@@ -174,6 +185,7 @@ export default class FERegistrationTab extends FEBase {
                 ev.is_team_event = false; // is this a competition event selectable for this specific athlete AND a team event
                 ev.default_role = "0"; // regular participant
                 ev.is_sideevent=false; // is this a non-competition event
+                ev.is_registered = this.fencerIsRegisteredForEvent(event, fencer);
 
                 if (ev.competition) {
                     ev.default_role = roles[0].id; // any non-athlete role

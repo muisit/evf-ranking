@@ -233,6 +233,14 @@ export default class FencerSelectDialog extends React.Component {
         }
     }
 
+    onUnregister = () => {
+        if (confirm('Do you want to completely unregister this participant from this event?')) {
+            this.props.value.registrations.map((ev) => {
+                this.deleteRegistration(ev);
+            });
+        }
+    }
+
     onCancelDialog = (event) => {
         this.close();
     }    
@@ -339,6 +347,7 @@ export default class FencerSelectDialog extends React.Component {
         }
         var footer=(<div>
         {genbutton}
+        <Button label="Unregister" icon="pi pi-refresh" className="p-button-raised" onClick={this.onUnregister} />
         <Button label="Close" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
 

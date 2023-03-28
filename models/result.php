@@ -99,6 +99,8 @@
             case 'C': $orderBy[]="c.country_name desc"; break;
             case 'd': $orderBy[]="cm.competition_opens asc"; break;
             case 'D': $orderBy[]="cm.competition_opens desc"; break;
+            case 'e': $orderBy[]="e.event_year, e.event_open"; break;
+            case 'E': $orderBy[]="e.event_year desc, e.event_open desc"; break;
             }
         }
         return $orderBy;

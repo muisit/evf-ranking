@@ -263,7 +263,7 @@ class Fencer extends Base {
         // trim whitespace in front and after
         $value = preg_replace("/(^\s+)|(\s+$)/u", "", $value);
         // replace any non-numeric, non-lexical, non-space characters
-        $value = preg_replace("/[^- '\p{L}\p{N}]/u", " ", $value);
+        $value = preg_replace("/[^-. '\p{L}\p{N}]/u", " ", $value);
         return $value;
     }
 

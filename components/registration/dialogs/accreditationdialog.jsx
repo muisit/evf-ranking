@@ -158,21 +158,6 @@ export default class AccreditationDialog extends React.Component {
 
     renderPicture () {
         // display the accreditation photo
-        // anyone that can view this dialog can upload a better image
-        var canapprove=["accreditor","organiser"].includes(evfranking.eventcap) && this.props.value.picture!='N';
-        var approvestates=[{
-            name: "Newly uploaded",
-            id: "Y"
-        },{
-            name: "Approved",
-            id: "A"
-        },{
-            name: "Request replacement",
-            id: "R"
-        },{
-            name: "None available",
-            id: "N"
-        }];
         var picstate = this.props.value.picture;
         if(!['Y','N','R','A'].includes(picstate)) {
             picstate='N';
@@ -181,7 +166,7 @@ export default class AccreditationDialog extends React.Component {
             <div className='col-10 offset-1'>
             {['Y','A','R'].includes(this.props.value.picture) && (
                 <div className='accreditation'>
-                  <img src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + "&event=" + this.props.event.id + '&hash='+this.state.imageHash}></img>
+                  <img src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + "&mainevent=" + this.props.event.id + '&hash='+this.state.imageHash}></img>
                 </div>
             )}
             <div className='textcenter'>

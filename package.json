@@ -1,6 +1,6 @@
 {
   "name": "EVFRanking",
-  "version": "1.9.8",
+  "version": "1.9.10",
   "main": "index.jsx",
   "browserslist": [
     ">0.2%",

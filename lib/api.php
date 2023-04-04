@@ -189,8 +189,8 @@ class API extends BaseLib {
                 }
             }
             else if (is_numeric($picture)) {
-                $event = $this->loadModel("Event", $sid);
-                $fencer = $this->loadModel("Fencer", $picture);
+                $event = new \EVFRanking\Models\Event($eid, true);
+                $fencer = new \EVFRanking\Models\Fencer($picture, true);
 
                 if ($fencer->exists()) {
                     $sideevent = new \EVFRanking\Models\SideEvent($sid, true);

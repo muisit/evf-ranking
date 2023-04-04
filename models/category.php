@@ -91,15 +91,15 @@ class Category extends Base {
         {
         default:
         case 1:
-            $year -= 40; break;
+            $year -= 39; break;
         case 2:
-            $year -= 50; break;
+            $year -= 49; break;
         case 3:
-            $year -= 60; break;
+            $year -= 59; break;
         case 4:
-            $year -= 70; break;
+            $year -= 69; break;
         case 5:
-            $year -= 80; break;
+            $year -= 79; break;
         }
         return date('Y-m-d', strtotime(($year) . '-01-01'));
     }

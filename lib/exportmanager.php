@@ -127,7 +127,7 @@ class ExportManager extends BaseLib {
         }
         else if($this->filetype == "cashier") {
             // filter out 0 values
-            if ($row->cost == 0.0 && intval($row->competition_id) <= 0) {
+            if ((!isset($row->cost) || $row->cost == 0.0) && (!isset($row->competition_id) || intval($row->competition_id) <= 0)) {
                 return false;
             }
         }
@@ -359,7 +359,7 @@ class ExportManager extends BaseLib {
                 }
                 else if($hd=="paid") {
                     if($cost > 0.0) {
-                        if ($row['paid'] == 'Y') $retval[] = "yes";
+                        if (isset($row['paid']) && $row['paid'] == 'Y') $retval[] = "yes";
                         else $retval[] = "no";
                     }
                     else {

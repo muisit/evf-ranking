@@ -78,18 +78,17 @@
     }
 
     public function get($id) {
-        global $evflogger;
-        $evflogger->log("getting by id $id");
         $obj = new static($id);
         $obj->load();
-        $pk=$obj->pk;
-        if(empty($obj->$pk)) {
+        $pk = $obj->pk;
+        if (empty($obj->$pk)) {
             return null;
         }
         return $obj;
     }
 
-    public function exists() {
+    public function exists()
+    {
         $this->load();
         return !($this->isNew());
     }
@@ -98,23 +97,20 @@
         return $this->_state == 'new' || $this->getKey() <= 0;
     }
 
-    public function load() {
-        //global $evflogger;
-        //$evflogger->log("load for ".get_class($this)."->".$this->{$this->pk});
-        if($this->_state == "loaded" || $this->_state == "new") { 
-            //$evflogger->log("already loaded or new");
+    public function load()
+    {
+        if ($this->_state == "loaded" || $this->_state == "new") {
             return;
         }
 
         global $wpdb;
 
         $pkval = $this->getKey();
-        $sql="select * from ".$this->table." where ".$this->pk."=%d";
-        $sql = $wpdb->prepare($sql,array($pkval));
+        $sql = "select * from " . $this->table . " where " . $this->pk . "=%d";
+        $sql = $wpdb->prepare($sql, array($pkval));
         $results = $wpdb->get_results($sql);
 
-        //$evflogger->log("load returns ".json_encode($results));
-        if(empty($results) || sizeof($results) != 1) {
+        if (empty($results) || sizeof($results) != 1) {
             $this->{$this->pk} = -1;
             $this->_state = "new";
         }

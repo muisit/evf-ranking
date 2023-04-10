@@ -629,10 +629,10 @@ class API extends BaseLib {
     }
 
     protected function delete($model, $data) {
-        $retval=array();
-        $model=$model->get($data['id']);
-        if(!empty($model) && $model->exists()) {
-            if(!$model->delete($data['id'])) {
+        $retval = array();
+        $model = $model->get($data['id']);
+        if (!empty($model) && $model->exists()) {
+            if (!$model->delete()) {
                 error_log('ERROR: delete failed');
                 $retval["error"]=true;
                 $retval["messages"]=array("Internal database error");

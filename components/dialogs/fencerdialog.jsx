@@ -151,26 +151,13 @@ export default class FencerDialog extends React.Component {
                 this.loading(false);
                 this.delete();
             })
-            .catch((err) => {
-                if(err.response.data.messages && err.response.data.messages.length) {
-                    var txt="";
-                    for(var i=0;i<err.response.data.messages.length;i++) {
-                        txt+=err.response.data.messages[i]+"\r\n";
-                    }
-                    alert(txt);
-                }
-                else {
-                    alert('Error removing the data. Please try again');
-                }
-            })
-    
+            .catch((err) => parse_net_error(err, () => this.loading(false)));
         }
     }
 
     renderPicture () {
         // display the accreditation photo
         // anyone that can view this dialog can upload a better image
-        console.log("rendering picture for ",this.props.value);
         var canapprove=this.props.value.picture != 'N';
         if(evfranking && evfranking.eventcap) {
             canapprove=["accreditor","organiser","system"].includes(evfranking.eventcap) && this.props.value.picture!='N';

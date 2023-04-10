@@ -138,7 +138,7 @@ export function is_valid(id) {
     return !isNaN(id) && id>0;
 }
 
-export function parse_net_error(err) {
+export function parse_net_error(err, cb) {
     if (   err.response 
         && err.response.data
         && err.response.data.messages 
@@ -153,7 +153,8 @@ export function parse_net_error(err) {
     else {
         alert('Error storing the data. Please try again!');
         console.log("parse net error, result: ",err);
-    }    
+    }
+    if (cb) cb();
 }
 
 // convenience functions to check on the event-related capabilities

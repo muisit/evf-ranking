@@ -103,15 +103,19 @@
         return $qry;
     }
 
-    public function count() {
-        if($this->_error) {
+    public function count()
+    {
+        if ($this->_error) {
             $this->_reset_values();
             return 0;
         }
+        $this->select("COUNT(*) as cnt", true);
         $sql = $this->_doget();
         $result = $this->_model->prepare($sql, $this->_where_values);
         $this->_reset_values();
-        if(empty($result) || !is_array($result)) return 0;
+        if (empty($result) || !is_array($result)) {
+            return 0;
+        }
         return intval($result[0]->cnt);
     }
 

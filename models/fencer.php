@@ -30,8 +30,8 @@ use \DateTimeImmutable;
 
 class Fencer extends Base {
     public $table = "TD_Fencer";
-    public $pk="fencer_id";
-    public $fields=array("fencer_id","fencer_firstname","fencer_surname","fencer_country","fencer_dob",
+    public $pk = "fencer_id";
+    public $fields = array("fencer_id","fencer_firstname","fencer_surname","fencer_country","fencer_dob",
         "fencer_gender", "fencer_picture","country_name");
     public $fieldToExport = array(
         "fencer_id" => "id",
@@ -43,7 +43,7 @@ class Fencer extends Base {
         "fencer_gender" => "gender",
         "fencer_picture" => "picture"
     );
-    public $rules=array(
+    public $rules = array(
         "fencer_id" => "skip",
         "fencer_firstname" =>array("rules"=>"trim|ucfirst|required","message"=>"Please enter the first name of the fencer"),
         "fencer_surname" => array("rules"=>"trim|upper|required","message"=>"Surname is a required field"),
@@ -64,17 +64,20 @@ class Fencer extends Base {
         return strtoupper($this->fencer_surname) . ", " . $this->fencer_firstname;
     }
 
-    public function delete($id=null) {
-        if($id === null) $id = $this->getKey();
-
-        $cnt = $this->query()->from("TD_Result")->where("result_fencer",$id)->count();
-
-        if(intval($cnt) == 0) {
-            $this->query()->from("TD_Accreditation")->where("fencer_id",$id)->delete();
-            $this->query()->from("TD_Registration")->where("registration_fencer",$id)->delete();
-            //$this->query()->from("TD_Result")->where("result_fencer",$id)->delete();
-            parent::delete($id);
+    public function delete($id = null) {
+        if ($id === null) {
+            $id = $this->getKey();
         }
+
+        $cnt = $this->query()->from("TD_Result")->where("result_fencer", $id)->count();
+
+        if (intval($cnt) == 0) {
+            $this->query()->from("TD_Accreditation")->where("fencer_id", $id)->delete();
+            $this->query()->from("TD_Registration")->where("registration_fencer", $id)->delete();
+            //$this->query()->from("TD_Result")->where("result_fencer",$id)->delete();
+            return parent::delete($id);
+        }
+        return false;
     }
 
     private function sortToOrder($sort) {

@@ -66,7 +66,7 @@ export default class FECashierTab extends FEBase {
     }
 
     redirectList = (type) => {
-        var href = evfranking.url + "&download=" + type + "&event=" + this.props.item.id + "&nonce=" + evfranking.nonce;
+        var href = evfranking.url + "&download=" + type + "&mainevent=" + this.props.basic.event.id + "&nonce=" + evfranking.nonce + "&country=" + this.state.country;
         window.open(href);
     }
 

@@ -102,6 +102,7 @@ class API extends BaseLib {
             $eid = $this->fromGet("mainevent");
             $picture = $this->fromGet("picture");
             $tid = $this->fromGet("template");
+            //$evflogger->log("filetype $filetype, event $eid/$sid, template $tid, picture $picture");
 
             if ((!empty($sid) || !empty($eid)) && in_array($filetype, array("participants","participantsxml"))) {
                 $sideevent = $this->loadModel("SideEvent", $sid);
@@ -126,11 +127,11 @@ class API extends BaseLib {
                     else {
                         $em = new ExportManager();
                     }
-                    $em->export($filetype,$sideevent,$event);
+                    $em->export($filetype, $sideevent, $event);
                 }
             }
             else if (!empty($eid) && in_array($filetype, array("summary"))) {
-                $event = $this->loadModel("Event", $eid);
+                $event = new \EVFRanking\Models\Event($eid, true);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("accreditation", "view", array(
@@ -143,7 +144,7 @@ class API extends BaseLib {
                 }
             }
             else if (!empty($eid) && in_array($filetype, array("accreditation"))) {
-                $event = $this->loadModel("Event", $eid);
+                $event = new \EVFRanking\Models\Event($eid, true);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("accreditation", "view", array(
@@ -156,8 +157,9 @@ class API extends BaseLib {
                     $em->exportAccreditation($event, $this->fromGet("id"));
                 }
             }
-            else if (!empty($sid) && in_array($filetype, array("cashier"))) {
-                $event = $this->loadModel("Event", $eid);
+            else if (!empty($eid) && in_array($filetype, array("cashier"))) {
+                $event = new \EVFRanking\Models\Event($eid, true);
+                $country = new \EVFRanking\Models\Country($this->fromGet('country'), true);
                 if ($event->exists()) {
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("registration", "list", array(
@@ -170,7 +172,7 @@ class API extends BaseLib {
                     ));
 
                     $em = new ExportManager();
-                    $em->export($filetype, null, $event);
+                    $em->export($filetype, null, $event, $country);
                 }
             }
             else if (!empty($tid) && !empty($picture)) {

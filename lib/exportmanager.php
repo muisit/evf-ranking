@@ -40,19 +40,14 @@ class ExportManager extends BaseLib {
 
     public $fencer_state;
 
-    public function export($filetype, $sideevent,$event) {
+    public function export($filetype, $sideevent, $event, $country = null) {
         $this->sideevent = $sideevent;
         $this->event = $event;
-        $this->filetype=$filetype;
+        $this->filetype = $filetype;
         $this->category = new \EVFRanking\Models\Category();
 
         $this->sideevents = $this->event->sides();
-        if(!empty($this->sideevent) && !$this->sideevent->isNew()) {
-            $data = $this->sideevent->registrations();
-        }
-        else {
-            $data = $this->event->registrations();
-        }
+        $data = $this->retrieveData($country);
 
         $this->headers = array("name", "firstname", "country", "year-of-birth", "role", "organisation", "organisation_abbr", "type", "date", "days","team");
         if ($this->filetype == "participants") {
@@ -126,6 +121,12 @@ class ExportManager extends BaseLib {
                 //}
             }
             return false;
+        }
+        else if($this->filetype == "cashier") {
+            // filter out 0 values
+            if ($row->cost == 0.0 && intval($row->competition_id) <= 0) {
+                return false;
+            }
         }
         return true;
     }
@@ -449,5 +450,26 @@ class ExportManager extends BaseLib {
             }
         }
         die(403);
+    }
+
+    private function retrieveData($country)
+    {
+        $qb = \EVFRanking\Models\SideEvent::BaseRegistrationSelection($this->event);
+        $qb->where("TD_Registration.registration_mainevent", $this->event->getKey());
+
+        if ($this->filetype == 'cashier') {
+            if (!empty($country) && $country->exists()) {
+                $qb->where('c.country_id', $country->getKey());
+            }
+            else {
+                $qb->where("rt.org_declaration", "<>", "Country");
+            }
+        }
+        else {
+            if (!empty($this->sideevent) && $this->sideevent->exists()) {
+                $qb->where("TD_Registration.registration_event", $this->sideevent->getKey());
+            }
+        }
+        return $qb->get();
     }
 }

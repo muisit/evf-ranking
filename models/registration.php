@@ -109,6 +109,9 @@ class Registration extends Base {
             if (isset($filter["event"])) {
                 $qb->where("TD_Registration.registration_mainevent", intval($filter["event"]));
             }
+            if (isset($filter["org_roles"])) {
+                $qb->where("rt.org_declaration", "<>", "country");
+            }
         }
         if (!empty($special)) {
             if (isset($special["photoid"])) {

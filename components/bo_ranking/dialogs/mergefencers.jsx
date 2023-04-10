@@ -64,12 +64,20 @@ export default class MergeFencers extends React.Component {
     change = (name,value) => {
         switch(name) {
         case 'mergeid1':
+            this.setState({mergeid1: value});
             this.getFencer(value, (dt)=> {
-                this.setState({mergeid1: value, fencer1: dt}); });
+                if (this.state.mergeid1 == value) {
+                    this.setState({fencer1: dt}); 
+                }
+            });
             break;
         case 'mergeid2':
+            this.setState({mergeid2: value});
             this.getFencer(value, (dt)=> {
-                this.setState({mergeid2: value, fencer2: dt}); });
+                if (this.state.mergeid2 == value) {
+                    this.setState({fencer2: dt}); 
+                }
+            });
             break;
         }
     }

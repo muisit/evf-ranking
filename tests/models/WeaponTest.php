@@ -51,21 +51,21 @@ class WeaponTest extends \EVFTest\BaseTestCase
         $model = new Weapon();
         $model->count(null, null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Weapon"],
+            ["SELECT COUNT(*) as cnt FROM TD_Weapon"],
             $this->dbLog()
         );
 
         // no use of filter
         $model->count("filter", null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Weapon"],
+            ["SELECT COUNT(*) as cnt FROM TD_Weapon"],
             $this->dbLog()
         );
 
         // no use of special
         $model->count(null, "special");
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Weapon"],
+            ["SELECT COUNT(*) as cnt FROM TD_Weapon"],
             $this->dbLog()
         );
     }

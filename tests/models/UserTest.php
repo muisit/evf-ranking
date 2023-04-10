@@ -62,26 +62,26 @@ class UserTest extends \EVFTest\BaseTestCase
         $model = new User();
         $model->count(null, null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM wppref_users"],
+            ["SELECT COUNT(*) as cnt FROM wppref_users"],
             $this->dbLog()
         );
 
         $model->count("filter", null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM wppref_users WHERE (user_nicename like '%filter%' or user_login like '%filter%')"],
+            ["SELECT COUNT(*) as cnt FROM wppref_users WHERE (user_nicename like '%filter%' or user_login like '%filter%')"],
             $this->dbLog()
         );
 
         $model->count("fil'ter", null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM wppref_users WHERE (user_nicename like '%fil\'ter%' or user_login like '%fil\'ter%')"],
+            ["SELECT COUNT(*) as cnt FROM wppref_users WHERE (user_nicename like '%fil\'ter%' or user_login like '%fil\'ter%')"],
             $this->dbLog()
         );
 
         // no use of special
         $model->count(null, "special");
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM wppref_users"],
+            ["SELECT COUNT(*) as cnt FROM wppref_users"],
             $this->dbLog()
         );
     }

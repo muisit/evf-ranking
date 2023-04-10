@@ -19,13 +19,13 @@ class RoleFixture
     {
         global $DB;
         $DB->onQuery(
-            "SELECT count(*) as cnt FROM TD_Role " .
+            "SELECT COUNT(*) as cnt FROM TD_Role " .
             "WHERE role_type = " .
             RoleTypeFixture::ROLETYPE_ID_1,
             [(object)['cnt' => 1]]
         );
         $DB->onQuery(
-            "SELECT count(*) as cnt FROM TD_Role " .
+            "SELECT COUNT(*) as cnt FROM TD_Role " .
             "WHERE role_type = " .
             RoleTypeFixture::ROLETYPE_ID_2,
             [(object)['cnt' => 0]]

@@ -92,25 +92,25 @@ class RoleTypeTest extends \EVFTest\BaseTestCase
         $model = new RoleType();
         $model->count(null, null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role_Type"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role_Type"],
             $this->dbLog()
         );
 
         $model->count("filter", null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role_Type WHERE role_type_name like %filter%"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role_Type WHERE role_type_name like %filter%"],
             $this->dbLog()
         );
 
         $model->count("fil%ter", null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role_Type WHERE role_type_name like %fil%%ter%"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role_Type WHERE role_type_name like %fil%%ter%"],
             $this->dbLog()
         );
 
         $model->count(null, "special");
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role_Type"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role_Type"],
             $this->dbLog()
         );
     }
@@ -124,13 +124,14 @@ class RoleTypeTest extends \EVFTest\BaseTestCase
         $result = $model->delete();
         $queries = $this->dbLog();
         $this->assertEquals(1, count($queries));
-        $this->assertEquals($queries[0], "SELECT count(*) as cnt FROM TD_Role WHERE role_type = " . RoleTypeFixture::ROLETYPE_ID_1);
+        $this->assertEquals($queries[0], "SELECT COUNT(*) as cnt FROM TD_Role WHERE role_type = " . RoleTypeFixture::ROLETYPE_ID_1);
+        //$this->assertEquals($queries[1], ["delete", "TD_Role_Type", ["role_type_id" => RoleTypeFixture::ROLETYPE_ID_1]]);
         $this->assertEquals(false, $result);
 
         $result = $model->delete(RoleTypeFixture::ROLETYPE_ID_2);
         $queries = $this->dbLog();
         $this->assertEquals(2, count($queries));
-        $this->assertEquals($queries[0], "SELECT count(*) as cnt FROM TD_Role WHERE role_type = " . RoleTypeFixture::ROLETYPE_ID_2);
+        $this->assertEquals($queries[0], "SELECT COUNT(*) as cnt FROM TD_Role WHERE role_type = " . RoleTypeFixture::ROLETYPE_ID_2);
         $this->assertEquals($queries[1], ["delete", "TD_Role_Type", ["role_type_id" => RoleTypeFixture::ROLETYPE_ID_2]]);
         $this->assertEquals(true, $result);
     }

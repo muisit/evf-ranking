@@ -97,37 +97,37 @@ class RoleTest extends \EVFTest\BaseTestCase
         $role = new Role();
         $role->count(null, null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role"],
             $this->dbLog()
         );
 
         $role->count("filter", null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role WHERE role_name like %filter%"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role WHERE role_name like %filter%"],
             $this->dbLog()
         );
 
         $role->count((object)array("name" => "filter2"), null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role WHERE role_name like %filter2%"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role WHERE role_name like %filter2%"],
             $this->dbLog()
         );
 
         $role->count(array("name" => "filter3"), null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role WHERE role_name like %filter3%"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role WHERE role_name like %filter3%"],
             $this->dbLog()
         );
 
         $role->count(array("name" => ''), null);
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role"],
             $this->dbLog()
         );
 
         $role->count(null, "special");
         $this->assertEquals(
-            ["SELECT count(*) as cnt FROM TD_Role"],
+            ["SELECT COUNT(*) as cnt FROM TD_Role"],
             $this->dbLog()
         );
     }
@@ -141,13 +141,13 @@ class RoleTest extends \EVFTest\BaseTestCase
         $role->delete();
         $queries = $this->dbLog();
         $this->assertEquals(2, count($queries));
-        $this->assertEquals($queries[0], "SELECT count(*) as cnt FROM TD_Registration WHERE registration_role = " . RoleFixture::ROLE_ID_1);
+        $this->assertEquals($queries[0], "SELECT COUNT(*) as cnt FROM TD_Registration WHERE registration_role = " . RoleFixture::ROLE_ID_1);
         $this->assertEquals($queries[1], ["delete", "TD_Role", ["role_id" => RoleFixture::ROLE_ID_1]]);
 
         $role->delete(RoleFixture::ROLE_ID_2);
         $queries = $this->dbLog();
         $this->assertEquals(2, count($queries));
-        $this->assertEquals($queries[0], "SELECT count(*) as cnt FROM TD_Registration WHERE registration_role = " . RoleFixture::ROLE_ID_2);
+        $this->assertEquals($queries[0], "SELECT COUNT(*) as cnt FROM TD_Registration WHERE registration_role = " . RoleFixture::ROLE_ID_2);
         $this->assertEquals($queries[1], ["delete", "TD_Role", ["role_id" => RoleFixture::ROLE_ID_2]]);
     }
 

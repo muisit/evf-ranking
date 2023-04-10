@@ -96,8 +96,8 @@ export default class MergeFencers extends React.Component {
 
 return (<Dialog header="Merge Fencers Suggestions" position="center" visible={this.props.display} className="fencer-merge-dialog" style={{ width: this.props.width || '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} >
     <div>
-          {(!is_valid(this.state.mergeid1) || !is_valid(this.state.mergeid2)) && (<p>Merge two different fencers into one. Provide the IDs of both fencers first.</p>)}
-          {is_valid(this.state.mergeid1) && is_valid(this.state.mergeid2) && (<p>Click on 'Merge' to merge all data for these two fencers. All data of {this.state.fencer1.id} ({this.state.fencer1.name}, {this.state.fencer1.firstname}) will be retained, the other fencer is removed completely. <b>This cannot be undone, use at your own risk!</b></p>)}
+          {(!is_valid(this.state.mergeid1) || !is_valid(this.state.mergeid2) || !this.state.fencer1) && (<p>Merge two different fencers into one. Provide the IDs of both fencers first.</p>)}
+          {is_valid(this.state.mergeid1) && is_valid(this.state.mergeid2 && this.state.fencer1) && (<p>Click on 'Merge' to merge all data for these two fencers. All data of {this.state.fencer1.id} ({this.state.fencer1.name}, {this.state.fencer1.firstname}) will be retained, the other fencer is removed completely. <b>This cannot be undone, use at your own risk!</b></p>)}
           
               <div>
                 <div className='formelement'>

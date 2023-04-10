@@ -255,8 +255,11 @@
         return $sql;
     }
 
-    public function select($f=null) {
+    public function select($f=null, $reset = false) {
         $this->_action="select";
+        if ($reset) {
+            $this->_select_fields = array();
+        }
         if(empty($f)) {
             return $this;
         }
@@ -426,7 +429,10 @@
         return $this;
     }
 
-    public function orderBy($field, $dr=null) {
+    public function orderBy($field, $dr=null, $reset = false) {
+        if ($reset) {
+            $this->_orderbyclause = array();
+        }
         if(is_array($field)) {
             foreach($field as $k=>$v) {
                 if(is_numeric($k)) {

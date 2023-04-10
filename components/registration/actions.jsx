@@ -198,6 +198,7 @@ export default class ActionsTab extends FEBase {
                             );
                         })}
                         <Button label="Check Pictures" icon="pi pi-search" className="p-button-raised p-button-text" onClick={() => this.onDialog("open")} />
+                        <br/><i className='pi pi-download' onClick={() => this.redirectList(null, "picturestate")}> Picture state list</i>
                     </div>
                 </div>
                 <AccreditationDialog event={this.props.basic.event} value={this.state.fencer_object} display={this.state.displayDialog} onClose={() => this.onDialog('close')} onChange={(itm) => this.onDialog('change', itm)} onSave={(itm) => this.onDialog('save', itm)} goTo={(itm) => this.onDialog('goto',itm)} />

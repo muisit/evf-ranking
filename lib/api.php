@@ -157,7 +157,7 @@ class API extends BaseLib {
                     $em->exportAccreditation($event, $this->fromGet("id"));
                 }
             }
-            else if (!empty($eid) && in_array($filetype, array("cashier"))) {
+            else if (!empty($eid) && in_array($filetype, array("cashier", "picturestate"))) {
                 $event = new \EVFRanking\Models\Event($eid, true);
                 $country = new \EVFRanking\Models\Country($this->fromGet('country'), true);
                 if ($event->exists()) {

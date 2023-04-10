@@ -74,6 +74,9 @@ class ExportManager extends BaseLib {
         if($this->filetype == "cashier") {
             $this->headers=array("name","firstname","country","role","event","costs","payment","paid");
         }
+        else if ($this->filetype == "picturestate") {
+            $this->headers=array("country", "name","firstname","picture");
+        }
         $this->fencer_state=array();
         if((empty($this->sideevent) || $this->sideevent->isNew()) && $this->filetype == "participants") {
             $this->precalc=array();
@@ -83,7 +86,7 @@ class ExportManager extends BaseLib {
         $csv = array_map(array($this,"header_map"), array_filter($data, array($this,"header_filter") ));
         usort($csv, array($this,"header_sort"));
         $csv = array_merge(array($this->headers), $csv);
-        $this->createCSV($csv, $this->filetype . "_" . $this->sideevent->title . ".csv", ";");
+        $this->createCSV($csv, $this->filetype . ((!empty($this->sideevent) && $this->sideevent->exists()) ? "_" . $this->sideevent->title : "") . ".csv", ";");
         return true;
     }
 
@@ -373,6 +376,25 @@ class ExportManager extends BaseLib {
                     $retval[]="";
                 }
                 break;
+            case "picture":
+                if (isset($row['fencer_picture'])) {
+                    if ($row['fencer_picture'] == 'R') {
+                        $retval[]='REPLACE';
+                    }
+                    else if($row['fencer_picture'] == 'N') {
+                        $retval[]='NOTHING';
+                    }
+                    else if($row['fencer_picture'] == 'Y') {
+                        $retval[]='NEW';
+                    }
+                    else {
+                        $retval[] = 'OTHER (' . $row['fencer_picture'] . ')';
+                    }
+                }
+                else {
+                    $retval[] = 'NOTHING';
+                }
+                break;
             }
         }
         return $retval;
@@ -464,6 +486,17 @@ class ExportManager extends BaseLib {
             else {
                 $qb->where("rt.org_declaration", "<>", "Country");
             }
+        }
+        else if($this->filetype == 'picturestate') {
+            $qb->select(array(
+                'f.fencer_surname', 'f.fencer_firstname', 'f.fencer_picture',
+                'c.country_name'),
+                true)
+                ->where("(f.fencer_picture IS NULL OR f.fencer_picture IN ('R','N','Y'))")
+                ->groupBy(array(
+                    'f.fencer_surname', 'f.fencer_firstname', 'f.fencer_picture',
+                    'c.country_name'))
+                ->orderBy("c.country_name", null, true)->orderBy("f.fencer_surname");
         }
         else {
             if (!empty($this->sideevent) && $this->sideevent->exists()) {

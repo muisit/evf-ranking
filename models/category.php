@@ -75,7 +75,7 @@ class Category extends Base {
         if($wrtM > 7) {
             $diff += 1; // people start fencing in the older category as of august
         }
-        if ($diff >= 80) return 5;
+        //if ($diff >= 80) return 5;
         if ($diff >= 70) return 4;
         if ($diff >= 60) return 3;
         if ($diff >= 50) return 2;
@@ -106,7 +106,6 @@ class Category extends Base {
 
     public function getMinimalDate()
     {
-        error_log("cat value " . $this->category_value);
         $catval = intval($this->category_value);
         $year = date('Y');
         switch ($catval)

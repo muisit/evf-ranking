@@ -573,7 +573,6 @@ class Event extends Base
     public function listRankedEvents()
     {
         $row = $this->select('event_open')->where('event_in_ranking', 'Y')->orderBy('event_open asc')->first();
-        error_log("row is ".json_encode($row));
         return $this->select('*')->where('event_open', '>=', $row->event_open)->orderBy('event_open')->get();
     }
 

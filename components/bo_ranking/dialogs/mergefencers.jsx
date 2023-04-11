@@ -43,7 +43,7 @@ export default class MergeFencers extends React.Component {
             return;
         }
 
-        fencer('view',{id:id})
+        fencer('view',{id:id, merge: true })
           .then((json)=> {
             if(json.data.item) {
                 var obj=json.data.item;
@@ -65,19 +65,27 @@ export default class MergeFencers extends React.Component {
         switch(name) {
         case 'mergeid1':
             this.setState({mergeid1: value});
-            this.getFencer(value, (dt)=> {
-                if (this.state.mergeid1 == value) {
-                    this.setState({fencer1: dt}); 
+            window.setTimeout(() => {
+                if (value == this.state.mergeid1) {
+                    this.getFencer(value, (dt)=> {
+                        if (this.state.mergeid1 == value) {
+                            this.setState({fencer1: dt});
+                        }
+                    });
                 }
-            });
+            }, 500);
             break;
         case 'mergeid2':
             this.setState({mergeid2: value});
-            this.getFencer(value, (dt)=> {
-                if (this.state.mergeid2 == value) {
-                    this.setState({fencer2: dt}); 
+            window.setTimeout(() => {
+                if (value == this.state.mergeid2) {
+                    this.getFencer(value, (dt)=> {
+                        if (this.state.mergeid2 == value) {
+                            this.setState({fencer2: dt});
+                        }
+                    });
                 }
-            });
+            }, 500);
             break;
         }
     }
@@ -108,7 +116,22 @@ return (<Dialog header="Merge Fencers Suggestions" position="center" visible={th
                       value={this.state.mergeid1}></InputNumber>
                     {this.state.fencer1 && (<div>
                         <span>{this.state.fencer1.name}, {this.state.fencer1.firstname}</span><br/>
-                        <span>{this.state.fencer1.birthday}, {this.state.fencer1.country_name}</span>
+                        <span>{this.state.fencer1.birthday}, {this.state.fencer1.country_name}</span><br/>
+                        <span>
+                            {this.state.fencer1.basic.rankings && (<span>Rankings:</span>)}
+                            {this.state.fencer1.basic.rankings && (Object.keys(this.state.fencer1.basic.rankings).map((key) => {
+                                var rnk = this.state.fencer1.basic.rankings[key];
+                                return (<span key={key}>{key}: {rnk.pos} ({rnk.points})</span>);
+                            }))}
+                        </span>
+                        {this.state.fencer1.basic.rankings && (<br/>)}
+                        <span>
+                            {this.state.fencer1.basic.registrations && (<span>Registrations:</span>)}
+                            {this.state.fencer1.basic.registrations && (Object.keys(this.state.fencer1.basic.registrations).map((key) => {
+                                var reg = this.state.fencer1.basic.registrations[key];
+                                return (<span key={key}>{reg[0]}</span>);
+                            }))}
+                        </span>
                     </div>)}
                     </div>
                 </div>
@@ -120,7 +143,22 @@ return (<Dialog header="Merge Fencers Suggestions" position="center" visible={th
                       value={this.state.mergeid2}></InputNumber>
                     {this.state.fencer2 && (<div>
                         <span>{this.state.fencer2.name}, {this.state.fencer2.firstname}</span><br/>
-                        <span>{this.state.fencer2.birthday}, {this.state.fencer2.country_name}</span>
+                        <span>{this.state.fencer2.birthday}, {this.state.fencer2.country_name}</span><br/>
+                        <span>
+                            {this.state.fencer2.basic.rankings && (<span>Rankings:</span>)}
+                            {this.state.fencer2.basic.rankings && (Object.keys(this.state.fencer2.basic.rankings).map((key) => {
+                                var rnk = this.state.fencer2.basic.rankings[key];
+                                return (<span key={key}>{key}: {rnk.pos} ({rnk.points})</span>);
+                            }))}
+                        </span>
+                        {this.state.fencer2.basic.rankings && (<br/>)}
+                        <span>
+                            {this.state.fencer2.basic.registrations && (<span>Registrations:</span>)}
+                            {this.state.fencer2.basic.registrations && (Object.keys(this.state.fencer2.basic.registrations).map((key) => {
+                                var reg = this.state.fencer2.basic.registrations[key];
+                                return (<span key={key}>{reg[0]}</span>);
+                            }))}
+                        </span>
                     </div>)}
                     </div>
                 </div>

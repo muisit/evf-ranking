@@ -59,6 +59,15 @@ class Fencer extends Base {
         $this->rules["fencer_dob"]["rule"]="date|lt=".strftime('%F',strtotime(time() - 20*365*24*60*60));
     }
 
+    public function export($result = null)
+    {
+        $retval = parent::export($result);
+        if (isset($this->basic)) {
+            $retval["basic"] = $this->basic;
+        }
+        return $retval;
+    }
+
     public function getFullName()
     {
         return strtoupper($this->fencer_surname) . ", " . $this->fencer_firstname;
@@ -132,6 +141,90 @@ class Fencer extends Base {
         $qb = $this->numrows();
         $this->addFilter($qb,$filter,$special);
         return $qb->count();
+    }
+
+    public function postProcessing($data)
+    {
+        if (!empty($data) && isset($data["merge"]) && $data["merge"]) {
+            $this->basic = array(
+                "rankings" => $this->getRankingPositions(),
+                "registrations" => $this->getRegistrations()
+            );
+        }
+    }
+
+    public function getCurrentCategory()
+    {
+        $date = DateTimeImmutable::createFromFormat('Y-m-d', $this->fencer_dob);
+        if ($date === false) {
+            return null;
+        }
+        $catnum = \EVFRanking\Models\Category::CategoryFromYear($date->format('Y'), date('Y-m-d'));
+        if ($catnum < 1) {
+            return null;
+        }
+        $model = new \EVFRanking\Models\Category();
+        return new \EVFRanking\Models\Category($model->select('*')->where("category_value", $catnum)->first());
+    }
+
+    public function getRegistrations()
+    {
+        $regmodel = new \EVFRanking\Models\Registration();
+        $regs = $regmodel->select('TD_Registration.*, e.event_name, e.event_open')->where('registration_fencer', $this->getKey())
+            ->join("TD_Event", "e", "TD_Registration.registration_mainevent=e.event_id")
+            ->where("e.event_open", '>', date('Y-m-d'))
+            ->get();
+        $retval = array();
+        if (!empty($regs)) {
+            foreach ($regs as $reg) {
+                $date = DateTimeImmutable::createFromFormat('Y-m-d', $reg->event_open);
+                $retval[$reg->registration_mainevent] = array(
+                    $reg->event_name,
+                    $date->format('Y')
+                );
+            }
+        }
+        return $retval;
+    }
+
+    public function getRankingPositions()
+    {
+        $retval = array();
+        foreach (array("E","F","S") as $wpn) {
+            $weapon = $this->gender == 'F' ? 'W' . $wpn : 'M' . $wpn;
+            $ranking = $this->getRankingForWeapon($weapon);
+            if (!empty($ranking)) {
+                $retval[$weapon] = $ranking;
+            }
+        }
+        return $retval;
+    }
+
+    public function getRankingForWeapon($weapon)
+    {
+        if (!is_object($weapon)) {
+            $model = new \EVFRanking\Models\Weapon();
+            $weapon = $model->select('*')->where("weapon_abbr", $weapon)->first();
+            if (empty($weapon)) {
+                return null;
+            }
+            $weapon = new \EVFRanking\Models\Weapon($weapon);
+        }
+        if (empty($weapon) || !$weapon->exists()) {
+            return null;
+        }
+        $category = $this->getCurrentCategory();
+        if (empty($category) || !$category->exists()) {
+            return null;
+        }
+        $rankingmodel = new \EVFRanking\Models\Ranking();
+        $rankings = $rankingmodel->listResults($weapon->getKey(), $category);
+        foreach ($rankings as $ranking) {
+            if ($ranking["id"] == $this->getKey()) {
+                return $ranking;
+            }
+        }
+        return null;
     }
 
     public function allByName($lastname,$firstname,$gender) {

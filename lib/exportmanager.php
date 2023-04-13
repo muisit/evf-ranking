@@ -481,7 +481,7 @@ class ExportManager extends BaseLib {
 
         if ($this->filetype == 'cashier') {
             if (!empty($country) && $country->exists()) {
-                $qb->where('c.country_id', $country->getKey());
+                $qb->where('TD_Registration.registration_country', $country->getKey());
             }
             else {
                 $qb->where("rt.org_declaration", "<>", "Country");

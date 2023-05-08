@@ -233,7 +233,7 @@ class Accreditation extends Base {
     {
         // do not check for dirty accreditations while we are generating accreditations
         $queue = new \EVFRanking\Models\Queue();
-        $cnt = $queue->numrows()->where_like('model', '%AccreditationCreate')->where('state', 'new')->count();
+        $cnt = $queue->numrows()->where("model like '%AccreditationCreate'")->where('state', 'new')->count();
         if ($cnt > 2) {
             return;
         }

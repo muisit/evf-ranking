@@ -713,7 +713,8 @@ class PDFCreator {
         if($font!= "Helvetica") {
             $this->addFont($font);
         }
-        $fontsize = $this->determineFontSize($text, isset($options["fontsize"]) ? $options["fontsize"] : 20, $font);
+        $originalFontSize = isset($options["fontsize"]) ? intval($options["fontsize"]) : 20;
+        $fontsize = $this->determineFontSize($text, $originalFontSize, $font);
         $this->addFont($font);
         $this->pdf->SetFontSize($fontsize * PDFCreator::PDF_PXTOPT);
         $lineheight = $this->pdf->getCellHeight($this->pdf->GetFontSize());
@@ -730,7 +731,7 @@ class PDFCreator {
         if($maxlines < 1) $maxlines=1; 
         if (isset($options['wrap']) && $options['wrap'] === false && count($lines) > 1) {
             if ($fontsize > 6) {
-                $options['fontsize'] = $fontsize - 1;
+                $options['fontsize'] = $originalFontSize - 1;
             }
             else {
                 // too much text, wrap anyway and cause an overflow

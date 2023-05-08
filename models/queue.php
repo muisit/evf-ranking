@@ -340,9 +340,16 @@ class Queue extends Base
 
     public function cleanup() {
         // delete all finished jobs that are older than 2 days
-        $this->query()->where("state","finished")->where("started_at","<",strftime("%F %T",time()-48*60*60))->delete();
+        $this->query()->where("state", "finished")->where("started_at", "<", strftime("%F %T", time() - 48 * 60 * 60))->delete();
+
         // delete all error jobs that are older than a month
-        $this->query()->where("state", "error")->where("started_at", "<", strftime("%F %T", time() - 31*24 * 60 * 60))->delete();
+        $this->query()->where("state", "error")->where("started_at", "<", strftime("%F %T", time() - 31 * 24 * 60 * 60))->delete();
+
+        // reset all running tasks that are older than 1 hour
+        $this->query()
+            ->where('state', 'running')
+            ->where('started_at', '<', strftime("%F %T", time() - (60 * 60)))
+            ->set('state', 'new')
+            ->set('started_at', null)->update();
     }
 }
- 

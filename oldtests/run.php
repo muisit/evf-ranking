@@ -1,5 +1,17 @@
 <?php
 
+echo phpversion()."\r\n";
+
+if (!function_exists('mb_ord')) {
+    echo "Missing mbstring\r\n";
+    exit(1);
+}
+
+if (!function_exists('imagecreatefromjpeg')) {
+    echo "Missing GD\r\n";
+    exit(1);
+}
+
 $verbose=false;
 $namedtests=array();
 $nextisnamed=false;
@@ -63,7 +75,6 @@ foreach ($objects as $filename) {
 }
 
 sort($alltests);
-
 $numtests=0;
 $success=0;
 $fails=0;

@@ -461,7 +461,7 @@ class PDFCreator {
         }
         if (strlen(trim($txt))) {
             $evflogger->log("putting text '$txt' at ".json_encode($offset)." x ".json_encode($size)." font size $fsize");
-            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour,"align"=>$align));
+            $this->putTextAt($txt, array("offset" => $offset, "box" => $size, "fontsize" => $fsize, "font"=>$ffamily, "colour" => $colour,"align"=>$align, "wrap" => false));
         }
     }
 
@@ -728,7 +728,16 @@ class PDFCreator {
         // Print at least 1 line, even if it overflows. 
         // This allows us to set a very small height and make sure exactly one line is printed
         if($maxlines < 1) $maxlines=1; 
-
+        if (isset($options['wrap']) && $options['wrap'] === false && count($lines) > 1) {
+            if ($fontsize > 6) {
+                $options['fontsize'] = $fontsize - 1;
+            }
+            else {
+                // too much text, wrap anyway and cause an overflow
+                $options['wrap'] = true;
+            }
+            return $this->putTextAt($text, $options);
+        }
         if($maxlines < sizeof($lines)) {
             // cut off lines we cannot print
             $lines = array_slice($lines,0,$maxlines);
@@ -779,7 +788,7 @@ class PDFCreator {
     }
 
     private function getTextWidth($txt) {
-        $characters = preg_split('//u', $txt, null, PREG_SPLIT_NO_EMPTY);
+        $characters = preg_split('//u', $txt, -1, PREG_SPLIT_NO_EMPTY);
         $width=0.0;
         global $evflogger;
         foreach($characters as $c) {
@@ -856,7 +865,7 @@ class PDFCreator {
     private function breakTextIntoTokens($text) {
         //global $evflogger;
         // we could do a complicated regexp, but instead we just run over the text
-        $characters = preg_split('//u', $text, null, PREG_SPLIT_NO_EMPTY);
+        $characters = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
         $totalsize = sizeof($characters);
         $retval=array();
         $current="";

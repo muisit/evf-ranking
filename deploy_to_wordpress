@@ -95,7 +95,7 @@ else
 fi
 
 cd oldtests
-php ./run.php > /dev/null 2>&1
+php7.4 ./run.php > /dev/null 2>&1
 if [[ ! "x$?" = "x0" ]]
 then
     echo "PHP tests fail, please run tests yourself"

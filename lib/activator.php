@@ -115,6 +115,8 @@ class Activator extends BaseLib
 
     // every 10 minutes
     public function cron_10() {
+        $queue = new \EVFRanking\Models\Queue();
+        $queue->queue = "default"; // run only the default queue
         
         $model = new \EVFRanking\Models\Accreditation();
         $model->checkDirtyAccreditations();

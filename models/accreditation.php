@@ -231,6 +231,13 @@ class Accreditation extends Base {
 
     public function checkDirtyAccreditations()
     {
+        // do not check for dirty accreditations while we are generating accreditations
+        $queue = new \EVFRanking\Models\Queue();
+        $cnt = $queue->numrows()->where_like('model', '%AccreditationCreate')->where('state', 'new')->count();
+        if ($cnt > 2) {
+            return;
+        }
+
         // only look at accreditations that were made dirty at least 10 minutes ago, to avoid
         // situations where a registration is entered and we generate a new badge half way
         // there should not be a situation where one row is <10 minutes ago and another is >10 minutes,

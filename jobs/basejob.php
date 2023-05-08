@@ -31,7 +31,8 @@ class BaseJob
     public $queue = null;
     public $_log = array();
 
-    public function __construct(\EVFRanking\Models\Queue $queue = null) {
+    public function __construct(\EVFRanking\Models\Queue $queue = null)
+    {
         if (empty($queue)) {
             $queue = new \EVFRanking\Models\Queue();
             $queue->queue = "default";

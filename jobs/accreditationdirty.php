@@ -130,6 +130,7 @@ class AccreditationDirty extends BaseJob
                     $a->save();
                 }
                 $job->queue->event_id = $this->event->getKey();
+                $job->queue->queue = $this->queue->queue;
                 $job->create($a);
             }
             else {

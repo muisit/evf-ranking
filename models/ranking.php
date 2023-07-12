@@ -179,51 +179,76 @@ class Ranking extends Base
         return $retval;
     }
 
-    public function calculateRankings() {
+    private function getCutoff()
+    {
+        $cutoff = intval(get_option("evfranking_ranking_count_included"));
+        if (empty($cutoff)) {
+            $cutoff = 5;
+        }
+        return $cutoff;
+    }
+
+    public function setCutoff($data)
+    {
+        $data = (array)$data;
+        if (!empty($data) && isset($data['cutoff'])) {
+            $opt = get_option("evfranking_ranking_count_included");
+            if (empty($opt)) {
+                add_option('evfranking_ranking_count_included', intval($data['cutoff']));
+            }
+            else {
+                update_option('evfranking_ranking_count_included', intval($data['cutoff']));
+            }
+        }
+        return $this->getCutoff();
+    }
+
+    public function calculateRankings()
+    {
+        $cutoff = $this->getCutoff();
         global $wpdb;
         // reset all results that we count in the ranking, except for the excluded results
         $wpdb->query("update TD_Result set result_in_ranking='N' where result_in_ranking in ('Y','N')");
 
         // sort by fencer, weapon, category
         // then by points to get the best results first, then by event_open to get the most recent best results first
-        $results=$wpdb->get_results("select result_id, fencer_id, weapon_id, result_in_ranking from VW_Ranking order by fencer_id, weapon_id, result_total_points DESC, event_open DESC");
-        $current_fencer=null;
-        $current_weapon=null;
-        $cnt=0;
-        $allresults=array();
-        $totalresults=0;
-        foreach($results as $r) {
+        $results = $wpdb->get_results("select result_id, fencer_id, weapon_id, result_in_ranking from VW_Ranking order by fencer_id, weapon_id, result_total_points DESC, event_open DESC");
+        $current_fencer = null;
+        $current_weapon = null;
+        $cnt = 0;
+        $allresults = array();
+        $totalresults = 0;
+        foreach ($results as $r) {
             $fid = intval($r->fencer_id);
-            $wid= intval($r->weapon_id);
+            $wid = intval($r->weapon_id);
 
             // change in fencer means a change in weapon as well
-            if($current_fencer === null || $current_fencer != $fid) {
-                $current_fencer=$fid;
-                $current_weapon=null;
+            if ($current_fencer === null || $current_fencer != $fid) {
+                $current_fencer = $fid;
+                $current_weapon = null;
             }
             // change in weapon means we start counting anew
-            if($current_weapon === null || $current_weapon != $wid) {
+            if ($current_weapon === null || $current_weapon != $wid) {
                 $current_weapon = $wid;
                 $cnt = 0;
             }
 
-            // for the 21/22 season, due to COVID, up to 4 results are counted
             // excluded 'excluded' results from being updated and included
-            if($cnt < 4 && $r->result_in_ranking != 'E') {
-                $allresults[]=$r->result_id;
-                $cnt+=1;
+            if ($cnt < $cutoff && $r->result_in_ranking != 'E') {
+                $allresults[] = $r->result_id;
+                $cnt += 1;
             }
 
-            if(sizeof($allresults) > 100) {
-                $totalresults+=sizeof($allresults);
-                $wpdb->query("update TD_Result set result_in_ranking='Y' where result_id in ('" . implode("','",$allresults)."')");
-                $allresults=array();
+            if (sizeof($allresults) > 100) {
+                $totalresults += sizeof($allresults);
+                $wpdb->query("update TD_Result set result_in_ranking='Y' where result_id in ('" . implode("','", $allresults) . "')");
+                $allresults = array();
             }
         }
 
-        if(sizeof($allresults)>0) {
-            $totalresults+=sizeof($allresults);
-            $wpdb->query("update TD_Result set result_in_ranking='Y' where result_id in ('" . implode("','",$allresults)."')");
+        if (sizeof($allresults) > 0) {
+            $totalresults += sizeof($allresults);
+            $wpdb->query("update TD_Result set result_in_ranking='Y' where result_id in ('" . implode("','", $allresults) . "')");
         }
         return $totalresults;
     }

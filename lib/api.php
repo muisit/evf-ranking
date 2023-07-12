@@ -509,6 +509,11 @@ class API extends BaseLib {
                     $model = $this->loadModel("Event");
                     $retval = $this->listResults($model, $model->listRankedEvents());
                 }
+                else if(isset($path[1]) && $path[1] == "cutoff") {
+                    $this->checkPolicy($path[0],"misc", array("filter" => $filter, "model" => $modeldata));
+                    $model = $this->loadModel("Ranking");
+                    $retval = $model->setCutoff($modeldata);
+                }
                 else {
                     $retval=array("error"=>"invalid action");
                 }

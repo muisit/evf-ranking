@@ -305,6 +305,7 @@ class Result extends Base {
     }
 
     public function doImportCheck($ranking, $cid) {
+        $debug = false;
         // ranking consists of a list of pos,lastname,firstname,country values
         // Check for each entry that the combination of lastname, firstname, country exists
         //
@@ -319,12 +320,14 @@ class Result extends Base {
         $category = $competition->getCategory();
         $minDate = DateTimeImmutable::createFromFormat('Y-m-d', $category->getMinimalDate());
         $maxDate = DateTimeImmutable::createFromFormat('Y-m-d', $category->getMaximalDate());
+        $ultimateDate  = DateTimeImmutable::createFromFormat('Y-m-d', '1900-01-01');
 
         foreach ($ranking as $entry) {
             // we leave 'position' as it is: an integer front-end check can be done there without problem
             $lastname = Fencer::Sanitize($entry["lastname"]);
             $firstname = Fencer::Sanitize($entry["firstname"]);
             $country = Fencer::Sanitize($entry["country"]);
+            if ($debug) error_log("testing '$lastname', '$firstname', '$country'");
 
             $fencerid = -1;
             $suggestions = null;
@@ -340,10 +343,23 @@ class Result extends Base {
             $allbyname = $model->allByName($lastname, $firstname, $gender);
             $suggestions = [];
             // see if anyone of these results matches the country abbreviation
+            if ($debug) error_log('allbyname returns ' . count($allbyname) . ' results');
             foreach ($allbyname as $fencer) {
                 $values = (array)$fencer;
-                if ($values["country_abbr"] === $country && $this->matchDates($values['fencer_dob'], $minDate, $maxDate)) {
-                    $suggestions[] = $model->export($values);
+                if ($values["country_abbr"] === $country) {
+                    if (!$this->matchDates($values['fencer_dob'], $minDate, $maxDate)) {
+                        if ($debug) error_log('correct match, but date is off. See if the person has an older date');
+                        if ($this->matchDates($values['fencer_dob'], $ultimateDate, $minDate)) {
+                            if ($debug) error_log('person is too old for this category');
+                            $suggestions[] = $model->export($values);
+                            $acheck = 'nok';
+                            $atext = 'Person is too old for this category';
+                        }
+                    }
+                    else {
+                        if ($debug) error_log('dates and country match, adding entry to suggestions ' . json_encode($fencer));
+                        $suggestions[] = $model->export($values);
+                    }
                 }
             }
 
@@ -353,13 +369,15 @@ class Result extends Base {
                 $lcheck = 'ok';
                 $fcheck = 'ok';
                 $ccheck = 'ok';
-                $acheck = 'ok';
+                $acheck = $acheck == 'und' ? 'ok' : $acheck; // do not override the age-category-result
             }
             
             // no match, but if we found exactly one fencer, it is only a country change
             if (sizeof($allbyname) == 1 && $fencerid < 0) {
+                if ($debug) error_log('allbyname contains one entry, see if this is only a country change');
                 $values = (array) $allbyname[0];
                 if ($this->matchDates($values['fencer_dob'], $minDate, $maxDate)) {
+                    if ($debug) error_log('matching fencer based on name and age category, but country is wrong');
                     $fencerid = $values["fencer_id"];
                     $lcheck = 'ok';
                     $fcheck = 'ok';
@@ -368,12 +386,20 @@ class Result extends Base {
                     $acheck = 'nok';
                     $suggestions[] = $model->export($values);
                 }
+                else if ($this->matchDates($values['fencer_dob'], $ultimateDate, $minDate)) {
+                    if ($debug) error_log('person is too old for this category');
+                    $suggestions[] = $model->export($values);
+                    $acheck = 'nok';
+                    $atext = 'Person is too old for this category';
+                }
             }
 
             if (count($suggestions) == 0) {
                 $suggestions = $model->findSuggestions($firstname, $lastname, $country, $gender, $minDate, $maxDate);
+                if ($debug) error_log('found ' . count($suggestions) . ' additional suggestions');
 
                 if (count($suggestions) == 1) {
+                    if ($debug) error_log('only one additional suggestion found, this is probably neo');
                     // only 1 suggestion means we are more or less sure this 'is the one'
                     // but indicate the failing fields to be sure
                     $key = $keys[0];
@@ -395,6 +421,7 @@ class Result extends Base {
                     $atext = 'at least one field did not match properly';
                 }
                 else {
+                    if ($debug) error_log('several suggestions found, pick one');
                     // more than 1 suggestion means the user needs to pick
                     $lcheck = 'nok';
                     $ltext = sizeof($suggestions) > 0 ? 'Please pick a suggestion' : 'not found';
@@ -422,12 +449,14 @@ class Result extends Base {
             );
             $retval["ranking"][] = $values;
         }
+        if ($debug) error_log('import check returns ' . json_encode($retval, JSON_PRETTY_PRINT));
         return $retval;
     }
 
     private function matchDates($dt, $min, $max)
     {
         $tm1 = DateTimeImmutable::createFromFormat('Y-m-d', $dt);
+        //error_log('date check for ' . $tm1->format('Y-m-d') . ' and ' . $min->format('Y-m-d') . '/' . $max->format('Y-m-d'));
         return $tm1 >= $min && $tm1 < $max;
     }
 }

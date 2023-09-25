@@ -94,7 +94,7 @@ HEREDOC;
         wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
         $output="<div id='evfranking-ranking'></div>";
         return $output;
-    }    
+    }
 
     public function resultsShortCode($attributes) {
         // insert a small piece of html to load the ranking react script
@@ -109,7 +109,7 @@ HEREDOC;
         $attributes = shortcode_atts(array(
             "id"=>-1,
             "name"=>""
-        ),$attributes);
+        ), $attributes);
 
         // check to see if there is currently any event open
         $model=new \EVFRanking\Models\Event();

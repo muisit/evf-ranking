@@ -3,7 +3,7 @@ import { ToggleButton } from 'primereact/togglebutton';
 import { Toast } from 'primereact/toast';
 import { InputNumber } from 'primereact/inputnumber';
 import PerusalDialog from './dialogs/perusaldialog';
-import { abort_all_calls, ranking, singleevent } from "../api.js";
+import { abort_all_calls, ranking, singleevent, competitions, result } from "../api.js";
 
 import React from 'react';
 
@@ -75,6 +75,27 @@ export default class ActionsTab extends React.Component {
             case 'cutoff':
                 this.setState({cutoff:value});
         }
+    }
+
+    recalculateResults = (event) => {
+        console.log("getting competitions for ", event);
+        competitions(event.id).then((data) => {
+            console.log("competitions is ", data.data.list);
+            if (data && data.data.list) {
+                var compsToCalc = [];
+                data.data.list.map((cmp) => {
+                    console.log("recalculating for ", cmp);
+                    result("recalculate",{competition_id: cmp.id})
+                        .then((res) => {
+                            compsToCalc.push(cmp.id);
+                            console.log("compsToCalc ", compsToCalc);
+                            if (compsToCalc.length == data.data.list.length) {
+                                alert("All competitions recalculated");
+                            }
+                        })
+                });
+            }
+        });
     }
 
     onStore = (name) => {
@@ -150,6 +171,9 @@ export default class ActionsTab extends React.Component {
                             <td>{ev.opens}</td>
                             <td>
                                 <ToggleButton onLabel='Included' offLabel='Excluded' checked={ev.in_ranking == 'Y'} onChange={(e) => this.onToggleRanking(ev, e.value)} />
+                            </td>
+                            <td>
+                                <i className="pi pi-replay"></i><a onClick={()=>this.recalculateResults(ev)}>Recalculate</a>
                             </td>
                         </tr>
                     );

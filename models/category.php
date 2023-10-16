@@ -87,6 +87,8 @@ class Category extends Base {
     {
         $catval = intval($this->category_value);
         $year = date('Y');
+        $month = intval(date('m'));
+        if ($month > 7) $year = intval($year) + 1;
         switch ($catval)
         {
         default:
@@ -108,6 +110,8 @@ class Category extends Base {
     {
         $catval = intval($this->category_value);
         $year = date('Y');
+        $month = intval(date('m'));
+        if ($month > 7) $year = intval($year) + 1;
         switch ($catval)
         {
         default:

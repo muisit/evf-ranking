@@ -36,7 +36,7 @@ class Ranking extends Base
     public function unselectOldTournaments() {
         // only take tournaments into account that are less than 2 years ago
         global $wpdb;
-        $twoyearsago = strftime('%Y-%m-%d', time() - 2*365*24*60*60);
+        $twoyearsago = evfranking_ftime('Y-m-d', time() - 2*365*24*60*60);
         $wpdb->query("update TD_Event set event_in_ranking='N' where event_open < '$twoyearsago';");
     }
 
@@ -73,7 +73,7 @@ class Ranking extends Base
                 "abbr" => $r->fencer_country_abbr,
                 "event" => $r->event_name, // make sure no lines are broken
                 "date" => $r->event_open,
-                "year" => strftime('%Y',strtotime($r->event_open)),
+                "year" => date('Y', strtotime($r->event_open)),
                 "location" => $r->event_location,
                 "country" => $r->country_name,
                 "category" => $r->category_name,

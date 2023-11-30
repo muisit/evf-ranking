@@ -43,7 +43,7 @@ class OverviewPage extends VirtualPage
         $options = $this->createFakePost();
 
         $title = "Participants Overview for " . $model->event_name . " at " .
-            $model->event_location . " on " . strftime("%e %B %Y", strtotime($model->event_open));
+            $model->event_location . " on " . date('j F Y', strtotime($model->event_open));
         $options["post_name"] = "Participants";
         $options["post_title"] = $title;
         $options["post_content"] = $this->createContent($model, $title);

@@ -164,7 +164,7 @@
     public function postSave($wassaved) {
         if($wassaved) {
             // make all accreditations of this template dirty
-            $this->query()->from("TD_Accreditation")->set("is_dirty", strftime('%F %T'))->where('template_id', $this->getKey())->update();
+            $this->query()->from("TD_Accreditation")->set("is_dirty", date('Y-m-d H:i:s'))->where('template_id', $this->getKey())->update();
         }
     }
 

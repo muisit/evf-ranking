@@ -51,7 +51,7 @@
 
     public function save() {
         if($this->isNew()) {
-            $this->created=strftime('%F %T');
+            $this->created=date('Y-m-d H:i:s');
             $this->creator = -1;
 
             $user = wp_get_current_user();

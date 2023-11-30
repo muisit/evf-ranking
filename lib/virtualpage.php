@@ -47,7 +47,7 @@ class VirtualPage
             "post_type" => "page",
             "filter" => "raw",
             "comment_status" => "closed",
-            "post_date" => strftime("%Y-%m-%d %H:%M:%S")
+            "post_date" => date('Y-m-d H:i:s')
         );
     }
 

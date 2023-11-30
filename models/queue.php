@@ -153,11 +153,11 @@ class Queue extends Base
         if (!empty($special)) {
             if (isset($special["open"])) {
                 $qb->where("state", "new");
-                $qb->where("available_at", ">", strftime('%Y-%m-%d %H:%M:%S'));
+                $qb->where("available_at", ">", date('Y-m-d H:i:s'));
             }
             if (isset($special["waiting"])) {
                 $qb->where("state", "new");
-                $qb->where("available_at", "<", strftime('%Y-%m-%d %H:%M:%S'));
+                $qb->where("available_at", "<", date('Y-m-d H:i:s'));
             }
             if (isset($special["running"])) {
                 $qb->where("state", "running");
@@ -188,7 +188,7 @@ class Queue extends Base
 
     public function save() {
         if($this->isNew()) {
-            $this->created_at = strftime('%Y-%m-%d %H:%M:%S');
+            $this->created_at = date('Y-m-d H:i:s');
             $this->started_at = null;
             $this->finished_at = null;
             $this->attempts=0;
@@ -216,14 +216,14 @@ class Queue extends Base
             });
             try {
                 $this->state = "running";
-                $this->started_at = strftime('%Y-%m-%d %H:%M:%S');
+                $this->started_at = date('Y-m-d H:i:s');
                 $this->attempts += 1;
                 $this->save();
 
                 $this->doRun($timelimit);
 
                 $this->state = "finished";
-                $this->finished_at = strftime('%Y-%m-%d %H:%M:%S');
+                $this->finished_at = date('Y-m-d H:i:s');
                 $this->save();
 
                 return true;
@@ -237,9 +237,9 @@ class Queue extends Base
                 // to go first
                 //
                 // wait at least one second to allow other queue entries to go first
-                $this->available_at = strftime('%Y-%m-%d %H:%M:%S', time() + 1);
+                $this->available_at = date('Y-m-d H:i:s', time() + 1);
                 $yields = $this->getData("yields", array());
-                $yields[] = strftime('%Y-%m-%d %H:%M:%S');
+                $yields[] = date('Y-m-d H:i:s');
                 $this->setData("yields", $yields);
                 $this->save();
                 return true;
@@ -323,7 +323,7 @@ class Queue extends Base
 
     public function tick($timelimit) {
         $res=$this->select('*')
-            ->where('available_at','<=',strftime('%F %T'))
+            ->where('available_at','<=',date('Y-m-d H:i:s'))
             ->where('started_at',null)
             ->where("state","new")
             ->where("queue",$this->queue)
@@ -340,15 +340,15 @@ class Queue extends Base
 
     public function cleanup() {
         // delete all finished jobs that are older than 2 days
-        $this->query()->where("state", "finished")->where("started_at", "<", strftime("%F %T", time() - 48 * 60 * 60))->delete();
+        $this->query()->where("state", "finished")->where("started_at", "<", date('Y-m-d H:i:s', time() - 48 * 60 * 60))->delete();
 
         // delete all error jobs that are older than a month
-        $this->query()->where("state", "error")->where("started_at", "<", strftime("%F %T", time() - 31 * 24 * 60 * 60))->delete();
+        $this->query()->where("state", "error")->where("started_at", "<", date('Y-m-d H:i:s', time() - 31 * 24 * 60 * 60))->delete();
 
         // reset all running tasks that are older than 1 hour
         $this->query()
             ->where('state', 'running')
-            ->where('started_at', '<', strftime("%F %T", time() - (60 * 60)))
+            ->where('started_at', '<', date('Y-m-d H:i:s', time() - (60 * 60)))
             ->set('state', 'new')
             ->set('started_at', null)->update();
     }

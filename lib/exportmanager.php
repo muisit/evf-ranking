@@ -112,7 +112,7 @@ class ExportManager extends BaseLib {
                 //if (empty($row['fencer_dob'])) {
                 //    return false;
                 //}
-                //$yob = strftime('%Y', strtotime($row->fencer_dob));
+                //$yob = date('Y', strtotime($row->fencer_dob));
                 //$catnum = $cmodel->categoryFromYear($yob, $row->starts);
                 //if($catnum != intval($row->category_value)) {
                 //    return false;
@@ -159,12 +159,12 @@ class ExportManager extends BaseLib {
                     $retval[] = '';
                 } 
                 else {
-                    $yob = strftime('%Y', strtotime($row['fencer_dob']));
+                    $yob = date('Y', strtotime($row['fencer_dob']));
                     $retval[] = $yob;
                 }
                 break;
             case 'date':
-                $retval[] = strftime('%Y-%m-%d', strtotime($row['starts']));
+                $retval[] = date('Y-m-d', strtotime($row['starts']));
                 break;
             case 'event':
                 if(empty($row['title'])) {
@@ -253,7 +253,7 @@ class ExportManager extends BaseLib {
                     $retval[] = '(no category)';
                 } 
                 else {
-                    $yob = strftime('%Y', strtotime($row['fencer_dob']));
+                    $yob = date('Y', strtotime($row['fencer_dob']));
                     $catnum = Category::CategoryFromYear($yob, $row['starts']);
                     if ($catnum < 1) {
                         $retval[] = '(no category)';
@@ -282,7 +282,7 @@ class ExportManager extends BaseLib {
                 foreach($this->sideevents as $se) {
                     $se=new \EVFRanking\Models\SideEvent($se);
                     $se->realstart=strtotime($se->starts);
-                    $date=strftime('%Y-%m-%d',$se->realstart);
+                    $date=date('Y-m-d',$se->realstart);
                     $days[$date]=false;
                     $seById["s".$se->getKey()]=$se;
                 }
@@ -296,7 +296,7 @@ class ExportManager extends BaseLib {
                     $key = "s" . $r->registration_event;
                     if(isset($seById[$key])) {
                         $se=$seById[$key];
-                        $date = strftime('%Y-%m-%d', $se->realstart);
+                        $date = date('Y-m-d', $se->realstart);
                         $days[$date] = true;
                     }
                 }
@@ -313,7 +313,7 @@ class ExportManager extends BaseLib {
                     foreach($days as $key=>$dt) {
                         if($dt) {
                             $time=strtotime($key);
-                            $entry = str_replace('  ',' ', strtoupper(strftime('%a %e',$time)));
+                            $entry = str_replace('  ',' ', strtoupper(date('D j',$time)));
                             $txt[]=$entry;
                         }
                     }

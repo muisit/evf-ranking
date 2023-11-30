@@ -212,7 +212,7 @@ class XMLManager extends BaseLib
         $tireur->setAttribute("ID", $row["registration_fencer"]);
         $tireur->setAttribute('Nom', $row["fencer_surname"]);
         $tireur->setAttribute('Prenom', $row["fencer_firstname"]);
-        $tireur->setAttribute("DateNaissance", strftime('%d.%m.%Y', strtotime($row["fencer_dob"])));
+        $tireur->setAttribute("DateNaissance", date('d.m.Y', strtotime($row["fencer_dob"])));
         $tireur->setAttribute('Nation', $row["country_abbr"]);
 
         if ($row['fencer_gender'] == 'M') $tireur->setAttribute('Sexe', 'M');
@@ -268,14 +268,14 @@ class XMLManager extends BaseLib
 
     private function setDates() {
         if(!empty($this->sideevent)) {
-            $this->doc->setAttribute("Date", strftime("%d.%m.%Y",strtotime($this->sideevent->starts)));
+            $this->doc->setAttribute("Date", date("d.m.Y",strtotime($this->sideevent->starts)));
         }
         else {
-            $this->doc->setAttribute("Date", strftime("%d.%m.%Y",strtotime($this->event->event_open)));
+            $this->doc->setAttribute("Date", date("d.m.Y",strtotime($this->event->event_open)));
         }
-        $this->doc->setAttribute("DateDebut", strftime("%d.%m.%Y",strtotime($this->event->event_open)));
-        $this->doc->setAttribute("DateFin", strftime("%d.%m.%Y",strtotime($this->event->event_open) + intval($this->event->event_duration) * 24*60*60));
-        $this->doc->setAttribute("DateFichierXML", strftime("%d.%m.%Y %H:%M",time()));
+        $this->doc->setAttribute("DateDebut", date("d.m.Y",strtotime($this->event->event_open)));
+        $this->doc->setAttribute("DateFin", date("d.m.Y",strtotime($this->event->event_open) + intval($this->event->event_duration) * 24*60*60));
+        $this->doc->setAttribute("DateFichierXML", date("d.m.Y H:i",time()));
         return $this;
     }
 

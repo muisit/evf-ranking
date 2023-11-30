@@ -56,7 +56,7 @@ class Fencer extends Base {
 
     public function __construct($id=null,$forceload=false) {
         parent::__construct($id,$forceload);
-        $this->rules["fencer_dob"]["rule"]="date|lt=".strftime('%F',strtotime(time() - 20*365*24*60*60));
+        $this->rules["fencer_dob"]["rule"]="date|lt=".date('Y-m-d',strtotime(time() - 20*365*24*60*60));
     }
 
     public function export($result = null)
@@ -301,7 +301,7 @@ class Fencer extends Base {
                 ->join("TD_Country","c","TD_Fencer.fencer_country=c.country_id")
                 ->where('SOUNDEX(\''.addslashes($firstname).'\')=SOUNDEX(fencer_firstname)')
                 ->where('SOUNDEX(\''.addslashes($name).'\')=SOUNDEX(fencer_surname)')
-                ->where("fencer_dob",strftime("%F",strtotime($modeldata['birthday'])))
+                ->where("fencer_dob",date("Y-m-d",strtotime($modeldata['birthday'])))
                 ->get();
             $retval=array();
             foreach($results as $row) {
@@ -329,7 +329,7 @@ class Fencer extends Base {
             return array("error"=> true, "messages"=>array("Cannot merge fencer with him/herself"));
         }
 
-        $this->query()->from("TD_Accreditation")->set("fencer_id",$model1->getKey())->set('is_dirty',strftime('%F %T'))->where("fencer_id",$model2->getKey())->update();
+        $this->query()->from("TD_Accreditation")->set("fencer_id",$model1->getKey())->set('is_dirty',date('Y-m-d H:i:s'))->where("fencer_id",$model2->getKey())->update();
         $this->query()->from("TD_Registration")->set("registration_fencer",$model1->getKey())->where("registration_fencer",$model2->getKey())->update();
         $this->query()->from("TD_Result")->set("result_fencer",$model1->getKey())->where("result_fencer",$model2->getKey())->update();
 

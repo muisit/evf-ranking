@@ -208,11 +208,11 @@ class Accreditation extends Base {
                 }
                 $dt->file_id = null;
                 $dt->generated = null;
-                $dt->is_dirty = strftime('%F %T');
+                $dt->is_dirty = date('Y-m-d H:i:s');
                 $dt->save();
             }
             else {
-                $qb = $this->query()->set("is_dirty", strftime('%F %T'))->where('fencer_id', $fid)->where("event_id", $eid)->update();
+                $qb = $this->query()->set("is_dirty", date('Y-m-d H:i:s'))->where('fencer_id', $fid)->where("event_id", $eid)->update();
             }
         }
     }
@@ -242,7 +242,7 @@ class Accreditation extends Base {
         // situations where a registration is entered and we generate a new badge half way
         // there should not be a situation where one row is <10 minutes ago and another is >10 minutes,
         // unless it is exactly around this border (so both < 9.9 minutes)
-        $notafter = strftime('%F %T', time() - EVFRANKING_RENEW_DIRTY_ACCREDITATONS * 60);
+        $notafter = date('Y-m-d H:i:s', time() - EVFRANKING_RENEW_DIRTY_ACCREDITATONS * 60);
         $res = $this->select('fencer_id, event_id')
             ->from('TD_Accreditation')
             ->where("is_dirty", "<>", null)
@@ -349,7 +349,7 @@ class Accreditation extends Base {
         if ($event->exists()) {
             // make all existing accreditations for this event dirty
             // This is a catch all to make sure we get all accreditations
-            $this->query()->set("is_dirty", strftime('%F %T'))->where("event_id", $event->getKey())->update();
+            $this->query()->set("is_dirty", date('Y-m-d H:i:s'))->where("event_id", $event->getKey())->update();
 
             // loop over all different fencers that are registered and make accreditations dirty.
             // Only select fencers that have no accreditations, so we can make new ones.

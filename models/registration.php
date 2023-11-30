@@ -180,7 +180,7 @@ class Registration extends Base {
     {
         $wasnew = false;
         if ($this->isNew()) {
-            $this->registration_date = strftime('%Y-%m-%d');
+            $this->registration_date = date('Y-m-d');
             $wasnew = true;
         }
         if (empty($this->registration_role)) {

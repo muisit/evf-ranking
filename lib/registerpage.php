@@ -31,7 +31,7 @@ class RegisterPage extends VirtualPage
 
         $options["post_name"] = "Registration";
         $options["post_title"] = "Registrations for " . $model->event_name . " at " .
-            $model->event_location . " on " . strftime("%e %B %Y", strtotime($model->event_open));
+            $model->event_location . " on " . date("j F Y", strtotime($model->event_open));
         $options["post_content"] = "<div id='evfregistration-frontend-root'></div>";
 
         Display::$jsparams["eventid"] = intval($model->getKey());

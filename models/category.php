@@ -68,12 +68,12 @@ class Category extends Base {
     public static function CategoryFromYear($year, $wrt)
     {
         $year=intval($year);
-        $wrtM=intval(strftime('%m',strtotime($wrt)));
-        $wrtY=intval(strftime('%Y', strtotime($wrt)));
+        $wrtM=intval(date('m',strtotime($wrt)));
+        $wrtY=intval(date('Y', strtotime($wrt)));
 
         $diff = $wrtY - $year;
-        if($wrtM > 7) {
-            $diff += 1; // people start fencing in the older category as of august
+        if($wrtM > 6) {
+            $diff += 1; // people start fencing in the older category as of July
         }
         //if ($diff >= 80) return 5;
         if ($diff >= 70) return 4;
@@ -88,7 +88,7 @@ class Category extends Base {
         $catval = intval($this->category_value);
         $year = date('Y');
         $month = intval(date('m'));
-        if ($month > 7) $year = intval($year) + 1;
+        if ($month > 6) $year = intval($year) + 1;
         switch ($catval)
         {
         default:
@@ -111,7 +111,7 @@ class Category extends Base {
         $catval = intval($this->category_value);
         $year = date('Y');
         $month = intval(date('m'));
-        if ($month > 7) $year = intval($year) + 1;
+        if ($month > 6) $year = intval($year) + 1;
         switch ($catval)
         {
         default:

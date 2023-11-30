@@ -62,7 +62,7 @@ class BaseJob
 
     public function log($txt)
     {
-        $dt = strftime('%F %T');
+        $dt = date('Y-m-d H:i:s');
         $txt = $dt . ": " . $txt;
         global $evflogger;
         if (!empty($evflogger)) {

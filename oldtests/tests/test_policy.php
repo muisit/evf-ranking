@@ -602,12 +602,12 @@ class Test_Policy extends BaseTest {
 
     private function setup_registration_db() {
         global $DB;
-        $now = strftime("%Y-%m-%d");
-        $in3months=strftime("%Y-%m-%d", time() + 92*24*60*60);
-        $in1weeks = strftime("%Y-%m-%d", time() + 7 * 24 * 60 * 60);
-        $in2weeks = strftime("%Y-%m-%d", time() + 14*24*60*60);
-        $in3weeks = strftime("%Y-%m-%d", time() + 21 * 24 * 60 * 60);
-        $lastweek = strftime("%Y-%m-%d", time() - 7*24*60*60);
+        $now = date("Y-m-d");
+        $in3months=date("Y-m-d", time() + 92*24*60*60);
+        $in1weeks = date("Y-m-d", time() + 7 * 24 * 60 * 60);
+        $in2weeks = date("Y-m-d", time() + 14*24*60*60);
+        $in3weeks = date("Y-m-d", time() + 21 * 24 * 60 * 60);
+        $lastweek = date("Y-m-d", time() - 7*24*60*60);
 
         $DB->set("wp_posts",1, array(
             "ID" => 1,

@@ -417,7 +417,7 @@ class Event extends Base
     public function cleanEvents()
     {
         // find all events in the future
-        $opens = strftime('%F', time() - 24 * 60 * 60);
+        $opens = date('Y-m-d', time() - 24 * 60 * 60);
         $res = $this->select('*')->where("event_open", ">", $opens)->get();
         if (!empty($res) && count($res)) {
             foreach ($res as $row) {
@@ -433,7 +433,7 @@ class Event extends Base
 
         // then find all events in the past that still have files
         // We take all events that have closed at least a month
-        $opens = strftime('%F', time() - 30 * 24 * 60 * 60);
+        $opens = date('Y-m-d', time() - 30 * 24 * 60 * 60);
         $res = $this->select('*')->where("event_open", "<", $opens)->get();
         if (!empty($res) && count($res)) {
             foreach ($res as $row) {
@@ -449,8 +449,8 @@ class Event extends Base
 
     public function findOpenEvents() {
         // allow events one day ahead and 2 days behind
-        $opens=strftime('%F', time()+24*60*60);
-        $wayold=strftime('%F',time()-21*24*60*60);
+        $opens=date('Y-m-d', time()+24*60*60);
+        $wayold=date('Y-m-d',time()-21*24*60*60);
         $retval=array();
 
         $res = $this->select('*')->where("event_open","<",$opens)->where("event_open",">",$wayold)->get();
@@ -459,7 +459,7 @@ class Event extends Base
                 // check the duration to see if it is still open
                 $base = strtotime($e->event_open);
                 $addthis = 24*60*60*intval($e->event_duration);
-                $closes = strtotime(strftime('%F',$base + $addthis));
+                $closes = strtotime(date('Y-m-d',$base + $addthis));
                 if($closes > (time() - 48*60*60)) {
                     $retval[]=new Event($e);
                 }

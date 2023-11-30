@@ -236,7 +236,7 @@ class AccreditationDirty extends BaseJob
         $dates = array("all" => array("sideevents" => array(), "roles" => array()));
         // make sure we have an entry for each date
         foreach ($this->sidesById as $k => $s) {
-            $date = strftime('%F', strtotime($s->starts));
+            $date = date('Y-m-d', strtotime($s->starts));
             if (!isset($dates[$date])) {
                 $dates[$date] = array("sideevents" => array(), "roles" => array());
             }
@@ -251,13 +251,13 @@ class AccreditationDirty extends BaseJob
             $role = isset($this->rolesById["r" . $rid]) ? $this->rolesById["r" . $rid] : null;
 
             if (!empty($sideevent)) {
-                $date = strftime('%F', strtotime($sideevent->starts));
+                $date = date('Y-m-d', strtotime($sideevent->starts));
                 if (empty($role)) {
                     // just a mere participant
                     // if the side event has a competition, accredit the person. Do not
                     // accredit for other side events
                     if ($sideevent->competition->exists()) {
-                        $date = strftime('%F', strtotime($sideevent->competition->competition_weapon_check));
+                        $date = date('Y-m-d', strtotime($sideevent->competition->competition_weapon_check));
                         // requirement 6.1.1: For team events, display the team name as well
                         $role = new \EVFRanking\Models\Role();
                         $role->role_id = 0;
@@ -368,7 +368,7 @@ class AccreditationDirty extends BaseJob
 
     private function createTemplate($template, $assignedRoles, $dates)
     {
-        $yob = strftime('%Y', strtotime($this->fencer->fencer_dob));
+        $yob = date('Y', strtotime($this->fencer->fencer_dob));
         $catnum = Category::CategoryFromYear($yob, $this->event->event_open);
         $accr = array(
             "category" => $catnum,
@@ -400,7 +400,7 @@ class AccreditationDirty extends BaseJob
         foreach ($dates as $k) {
             if ($k != "ALL") {
                 $time = strtotime($k);
-                $entry = str_replace('  ', ' ', strtoupper(strftime('%e %a', $time)));
+                $entry = str_replace('  ', ' ', strtoupper(date('j D', $time)));
                 $accr["dates"][] = $entry;
             }
             else {

@@ -51,7 +51,7 @@ class Activator extends BaseLib
 
     public function activate() {
         if ( ! wp_next_scheduled( 'evfranking_cron_hook' ) ) {
-            $date = strftime('%Y-%m-%d',time());
+            $date = date('Y-m-d',time());
             $ts = strtotime($date) + (24+4) * 60 * 60; // schedule for 4 in the morning, starting 24 hours after the start of this day
             wp_schedule_event( $ts, 'daily', 'evfranking_cron_hook' );
         }
@@ -70,7 +70,7 @@ class Activator extends BaseLib
            && $options['type'] == 'plugin' ) {
             foreach($options['plugins'] as $each_plugin) {
                 if ($each_plugin==EVFRANKING_PLUGIN_PATH) {
-                    add_option("evfranking_upgrade", strftime("%F %T"));
+                    add_option("evfranking_upgrade", date("Y-m-d H:i:s"));
                 }
             }
         }

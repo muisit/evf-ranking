@@ -177,6 +177,7 @@ export default class EventRegistrationDialog extends React.Component {
         case 'allow_more_teams':
         case 'no_accreditations':
         case 'use_accreditation':
+        case 'use_registration':
             // checkbox configuration value
             var isset = event.checked;
             if(!item.config) {
@@ -198,7 +199,7 @@ export default class EventRegistrationDialog extends React.Component {
             break;
         case 'reg_open':
         case 'reg_close':
-            item[name] = format_date(value);
+            item[name] = value ? format_date(value) : null;
             break;
         case 'currency':
             item.currency = value;
@@ -347,8 +348,8 @@ export default class EventRegistrationDialog extends React.Component {
           { id: "individual", name: "Individual payments only" },
         ];
 
-        var reg_open = parse_date(this.props.value.reg_open);
-        var reg_close = parse_date(this.props.value.reg_close);
+        var reg_open = this.props.value.reg_open ? parse_date(this.props.value.reg_open).toDate() : null;
+        var reg_close = this.props.value.reg_close ? parse_date(this.props.value.reg_close).toDate() : null;
 
         var basefee = parse_float(this.props.value.base_fee,0);
         var compfee = parse_float(this.props.value.competition_fee,0);
@@ -358,6 +359,7 @@ export default class EventRegistrationDialog extends React.Component {
         var allow_more_teams = (cfg && cfg.allow_more_teams) ? true : false;
         var no_accreditations = (cfg && cfg.no_accreditations) ? true : false;
         var use_accreditation = (cfg && cfg.use_accreditation) ? true : false;
+        var use_registration = (cfg && cfg.use_registration) ? true : false;
 
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
@@ -376,13 +378,13 @@ export default class EventRegistrationDialog extends React.Component {
       <div>
         <label>Reg. Opens</label>
         <div className='input'>
-            <Calendar name="reg_open" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_open.toDate()}></Calendar>
+            <Calendar name="reg_open" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_open} showButtonBar></Calendar>
         </div>
       </div>
       <div>
         <label>Reg. Closes</label>
         <div className='input'>
-            <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_close.toDate()}></Calendar>
+            <Calendar name="reg_close" appendTo={document.body} onChange={this.onChangeEl} dateFormat="yy-mm-dd" value={reg_close} showButtonBar></Calendar>
         </div>
       </div>
       <div>
@@ -403,6 +405,10 @@ export default class EventRegistrationDialog extends React.Component {
           <div className='config'>
             <Checkbox inputId='cfg4' name={'use_accreditation'} onChange={this.onChangeEl} checked={use_accreditation} /> 
             <label className='checkbox' htmlFor="cfg4">Use accreditation interface</label>
+          </div>
+          <div className='config'>
+            <Checkbox inputId='cfg4' name={'use_registration'} onChange={this.onChangeEl} checked={use_registration} /> 
+            <label className='checkbox' htmlFor="cfg4">Allow registration interface</label>
           </div>
         </div>
       </div>

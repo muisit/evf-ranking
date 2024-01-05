@@ -70,6 +70,7 @@ class OverviewPage extends VirtualPage
             $comp->weapon = $comp->getWeapon();
             $comp->category = $comp->getCategory();
             $comp->registrations = $comp->sideEvent->registrations();
+            $comp->teams = $this->separateIntoTeams($comp->registrations);
             $comp->_abbreviation = $comp->abbreviation();
             return $comp;
         }, $event->competitions(null, true));
@@ -93,6 +94,25 @@ class OverviewPage extends VirtualPage
                 });
             }
         });
+    }
+
+    private function separateIntoTeams($registrations)
+    {
+        $teamspercountry = [];
+        foreach ($registrations as $reg) {
+            if (!empty($reg->registration_country) && !empty($reg->registration_team)) {
+                $key = $reg->registration_country . '-' . $reg->registration_team;
+                if (!isset($teamspercountry[$key])) {
+                    $country = new \EVFRanking\Models\Country($reg->registration_country);
+                    $teamspercountry[$key] = [
+                        "country" => $country,
+                        "registrations" => [],
+                    ];
+                }
+                $teamspercountry[$key]['registrations'][] = $reg;
+            }
+        }
+        return $teamspercountry;
     }
 
     public function renderOverview($competitions, $title)
@@ -119,7 +139,12 @@ class OverviewPage extends VirtualPage
             }
 
             $name = $competition->weapon->weapon_gender;
-            $participants = count($competition->registrations);
+            if ($competition->category->category_type == 'T') {
+                $participants = count($competition->teams);
+            }
+            else {
+                $participants = count($competition->registrations);
+            }
             $anchor = $competition->_abbreviation;
             $buckets[$cat][$wpn][$name] = array("anchor" => $anchor, "count" => $participants);
         }
@@ -137,7 +162,7 @@ class OverviewPage extends VirtualPage
         }
 
         $rows = '';
-        $totals=['MF' => 0, 'FF' => 0, 'ME' => 0, 'FE' => 0, 'MS' => 0, 'FS' => 0];
+        $totals = ['MF' => 0, 'FF' => 0, 'ME' => 0, 'FE' => 0, 'MS' => 0, 'FS' => 0];
         foreach ($catsAvailable as $category) {
             $rows .= "<tr><td>" . $category . "</td>";
             foreach ($weaponsAvailable as $weapon) {
@@ -202,7 +227,22 @@ class OverviewPage extends VirtualPage
     {
         $se = $competition->sideEvent;
         $title = $this->encode($se->title);
-        $subtitle = count($competition->registrations) . ' participants';
+        if ($competition->category->category_type == 'I') {
+            if (count($competition->registrations) == 1) {
+                $subtitle = count($competition->registrations) . ' participant';
+            }
+            else {
+                $subtitle = count($competition->registrations) . ' participants';
+            }
+        }
+        else {
+            if (count($competition->teams) == 1) {
+                $subtitle = count($competition->teams) . ' team';
+            }
+            else {
+                $subtitle = count($competition->teams) . ' teams';
+            }
+        }
         $anchor = $competition->_abbreviation;
         $output = <<<DOC
         <div class='container competition'>
@@ -214,31 +254,49 @@ class OverviewPage extends VirtualPage
             <div class='col-4 textright'><a href='#top'><span class='pi pi-icon pi-caret-up' style='margin-top: 2rem;'> back to top</span></a></div>
           </div>
           <table class='list' style='width: auto;'>
-            <thead>
-              <tr>
-                <th style='width: 30px;'>#</th>
-                <th style='min-width: 50px'>Country</th>
-                <th>Name</th>
-                <th style='width: 50px'>Ranking</th>
-              </tr>
-            </thead>
-            <tbody>
         DOC;
 
-        usort($competition->registrations, function ($a1, $a2) {
-            if ($a1->country_name != $a2->country_name) {
-                return $a1->country_name <=> $a2->country_name;
-            }
-            if ($a1->fencer_surname != $a2->fencer_surname) {
-                return $a1->fencer_surname <=> $a2->fencer_surname;
-            }
-            return $a1->fencer_firstname <=> $a2->fencer_firstname;
-        });
+        if ($competition->category->category_type == 'I') {
+            $output .= <<<DOC
+                <thead>
+                <tr>
+                    <th style='width: 30px;'>#</th>
+                    <th style='min-width: 50px'>Country</th>
+                    <th>Name</th>
+                    <th style='width: 50px'>Ranking</th>
+                </tr>
+                </thead>
+                <tbody>
+            DOC;
 
-        $index = 1;
-        foreach ($competition->registrations as $reg) {
-            error_log(json_encode($reg));
-            $output .= $this->renderRegistration($index++, $competition, $reg);
+            usort($competition->registrations, function ($a1, $a2) {
+                if ($a1->country_name != $a2->country_name) {
+                    return $a1->country_name <=> $a2->country_name;
+                }
+                if ($a1->fencer_surname != $a2->fencer_surname) {
+                    return $a1->fencer_surname <=> $a2->fencer_surname;
+                }
+                return $a1->fencer_firstname <=> $a2->fencer_firstname;
+            });
+    
+            $index = 1;
+            foreach ($competition->registrations as $reg) {
+                $output .= $this->renderRegistration($index++, $competition, $reg);
+            }
+        }
+        else {
+            $output .= <<<DOC
+                <thead>
+                <tr>
+                    <th style='width: 30px;'>#</th>
+                    <th style='min-width: 50px'>Country</th>
+                    <th>Participants</th>
+                </tr>
+                </thead>
+                <tbody>
+            DOC;
+
+            $output .= $this->renderTeams($competition);
         }
 
         $output .= <<<DOC
@@ -247,6 +305,81 @@ class OverviewPage extends VirtualPage
         </div>
         DOC;
         return $output;
+    }
+
+    private function renderTeams($competition)
+    {
+        // create a list of unique country entries for this competition
+        $teams = [];
+        foreach ($competition->teams as $team) {
+            $team['fencers'] = [];
+            foreach ($team['registrations'] as $reg) {
+                $fencer = $this->fencers['#' . $reg->registration_fencer];
+                $team['fencers'][] = $fencer;
+            }
+            $teams[] = $team;
+        }
+        usort($teams, function ($a1, $a2) {
+            return $a1['country']->country_name <=> $a2['country']->country_name;
+        });
+        $index = 1;
+        $output = '';
+        foreach ($teams as $team) {
+            $output .= $this->renderCountryTeam($index++, $team, $competition);
+        }
+        return $output;
+    }
+
+    private function renderCountryTeam(int $index, $countryValues, $competition)
+    {
+        $fencers = $countryValues['fencers'];
+        if (empty($fencers)) return '';
+        usort($fencers, function ($a1, $a2) {
+            if ($a1->fencer_surname != $a2->fencer_surname) {
+                return $a1->fencer_surname <=> $a2->fencer_surname;
+            }
+            return $a1->fencer_firstname <=> $a2->fencer_firstname;
+        });
+
+        $constituents = $this->renderCountryTeamFencers($fencers, $competition);
+        $path = '/' . $this->encode($countryValues['country']->country_flag_path);
+        $country = $this->encode($countryValues['country']->country_name);
+
+        return <<< DOC
+          <tr>
+            <td class='textright'>$index</td>
+            <td class='textleft'><img style='height: 1.1rem;' src='$path'> $country</td>
+            <td>$constituents</td>
+          </tr>
+        DOC;
+    }
+
+    private function renderCountryTeamFencers($fencers, $competition)
+    {
+        $output = "";
+        foreach ($fencers as $fencer) {
+            $output .= $this->renderCountryTeamFencer($fencer, $competition);
+        }
+        return "<div class='team-fencer-list'>" . $output . "</div>";
+    }
+
+    private function renderCountryTeamFencer($fencer, $competition)
+    {
+        $surname = $this->encode(strtoupper($fencer->fencer_surname));
+        $name = $this->encode($fencer->fencer_firstname);
+
+        $position = null;
+        $key = $competition->weapon->weapon_abbr . '#' . $competition->category->category_abbr . '#' . $fencer->getKey();
+        if (isset($this->ranking[$key])) {
+            $position = $this->ranking[$key]['pos'];
+        }
+        $position = intval($position);
+
+        $output = $surname . ', ' . $name;
+        if ($position > 0) {
+            $output .= " ($position)";
+        }
+        return $output . "<br/>";
     }
 
     private function renderRegistration($index, $competition, $reg)

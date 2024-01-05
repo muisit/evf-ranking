@@ -59,6 +59,12 @@ class Activator extends BaseLib
             wp_schedule_event( time(), EVFRANKING_CRON_WAIT_HOOK, 'evfranking_cron_hook_10m' );
         }
 
+        if (!current_user_can('manage_ranking')) {
+            $role = get_role('administrator');
+            $role->add_cap('manage_ranking', true);
+            $role->add_cap('manage_registration', true);
+        }
+
         // execute the upgrade tasks as well, to allow users to run these explicitely
         // by inactivating and reactivating the plugin
         $this->upgrade();

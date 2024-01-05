@@ -68,7 +68,7 @@ export default class ImportDialog extends React.Component {
             var ranking=[];
             for(var i in this.props.value.object.ranking) {
                 var rnk=this.props.value.object.ranking[i];
-                var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
+                var obj={pos: rnk.pos, fencer_id: rnk.fencer_id, firstname: rnk.firstname, lastname: rnk.lastname};
                 ranking.push(obj);
             }
 
@@ -82,7 +82,13 @@ export default class ImportDialog extends React.Component {
                     }
                 })
                 .catch((err) => {
-                    alert("Import error encountered: ",err);
+                    if (err.response && err.response.data && err.response.data.error) {
+                        err = err.response.data.error.join('');
+                        alert("Import error:\r\n" + err);
+                    }
+                    else {
+                        alert("Network error encountered: " + err);
+                    }
                 });
 
             //var eventValue = {
@@ -124,15 +130,16 @@ export default class ImportDialog extends React.Component {
                         for(var j in ranking) {
                             var el=ranking[j];
                             if(el.index === entry.index) {
-                                if(entry.fencer_id > 0) {
-                                    for(var k in entry.suggestions) {
-                                        var sugg = entry.suggestions[k];
-                                        if(sugg.id == entry.fencer_id) {
-                                            entry.birthday = sugg.birthday;
-                                            entry.gender = sugg.gender;
-                                        }
-                                    }
-                                }
+                                //if(entry.fencer_id > 0) {
+                                //    //console.log('copying birthday and gender from suggestions');
+                                //    for(var k in entry.suggestions) {
+                                //        var sugg = entry.suggestions[k];
+                                //        if(sugg.id == entry.fencer_id) {
+                                //            entry.birthday = sugg.birthday;
+                                //            entry.gender = sugg.gender;
+                                //        }
+                                //    }
+                                //}
 
                                 el.fencer_id = entry.fencer_id || -1;
                                 el.lastname_check = entry.lastname_check || 'nok';

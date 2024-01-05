@@ -413,30 +413,34 @@ class Result extends Base {
             }
 
             if (count($suggestions) == 0) {
-                $suggestions = $model->findSuggestions($firstname, $lastname, $country, $gender, $minDate, $maxDate);
+                $suggestions = $model->findSuggestions($firstname, $lastname, $country, $gender, null /*$minDate */, $maxDate);
                 if ($debug) error_log('found ' . count($suggestions) . ' additional suggestions');
 
                 if (count($suggestions) == 1) {
                     if ($debug) error_log('only one additional suggestion found, this is probably neo');
                     // only 1 suggestion means we are more or less sure this 'is the one'
                     // but indicate the failing fields to be sure
-                    $key = $keys[0];
-                    $fencer = $values[$key];
-                    $fencerid = $fencer["fencer_id"];
-                    if (!isset($ln[$key])) {
+                    $fencer = reset($suggestions);
+                    $fencerid = -1; //$fencer["id"]; // keep it in the middle
+                    if (!isset($fencer["inLn"])) {
                         $lcheck = 'nok';
                         $ltext = 'No match on last name';
                     }
-                    if (!isset($fn[$key])) {
+                    if (!isset($fencer["inFn"])) {
                         $fcheck = 'nok';
                         $ftext = 'No match on first name';
                     }
-                    if (!isset($cn[$key])) {
+                    if (!isset($fencer["inCn"])) {
                         $ccheck = 'nok';
                         $ctext = 'No match on country';
                     }
                     $acheck = 'nok';
-                    $atext = 'at least one field did not match properly';
+                    if (!isset($fencer["inAge"])) {
+                        $atext = 'Person is too young for this category';
+                    }
+                    else {
+                        $atext = 'At least one field did not match properly';
+                    }
                 }
                 else {
                     if ($debug) error_log('several suggestions found, pick one');

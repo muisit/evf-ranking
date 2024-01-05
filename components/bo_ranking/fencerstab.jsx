@@ -36,7 +36,7 @@ export default class FencersTab extends PagedTab {
         return fieldToSorterList[fld];
     }
 
-    toastMessage = (type,item) => {
+    toastMessage = (type, item) => {
         if(type == "save") {
             return { severity: 'info', summary: 'Fencer Saved', detail: 'Fencer ' + item.name+ ' was succesfully stored in the database', life: 3000 };
         }

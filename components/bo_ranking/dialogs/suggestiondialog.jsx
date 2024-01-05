@@ -117,10 +117,12 @@ export default class SuggestionDialog extends React.Component {
             return (<div></div>);
         }
         var closebutton=(<Button label="Cancel" icon="pi pi-times" className="p-button-raised p-button-text" onClick={this.onCancelDialog} />);
-        var savebutton=(<Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />);
+        var savebutton=(null);
+        
         var newbutton =(<Button label="Add" icon="pi pi-file-o" className="p-button-raised p-button-text" onClick={this.onNew} />);
         if(this.props.value.fencer_id > 0) {
           newbutton =(<Button label="Update" icon="pi pi-file-o" className="p-button-raised p-button-text" onClick={this.onUpdate} />);
+          savebutton = (<Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />);
         }
 
         var footer=(<div>{newbutton}{closebutton}{savebutton}</div>);
@@ -162,18 +164,7 @@ export default class SuggestionDialog extends React.Component {
           <label>Suggestions</label>
           <div className='input'>
             <table className="suggestiontable"><tbody>
-                {this.props.value.suggestions.map((itm,idx) => (
-              <tr key={idx} className={itm.id == this.props.value.fencer_id && "selected"}>
-                <td>{itm.name}</td>
-                <td>{itm.firstname}</td>
-                <td>{this.state.countryById["k"+itm.country] && this.state.countryById["k"+itm.country].abbr}</td>
-                <td>{itm.birthday}</td>
-                <td>{itm.gender}</td>
-                <td className='icon'>
-                  <a onClick={()=>this.selectSuggestion(itm)}><i className="pi pi-replay"></i></a>
-                </td>
-              </tr>
-                ))}
+                { this.renderSuggestions() }
             </tbody></table>
           </div>
         </div>
@@ -181,6 +172,31 @@ export default class SuggestionDialog extends React.Component {
           )}
           <FencerDialog countries={this.props.countries} onClose={() => this.onFencer('close')} onChange={(itm) => this.onFencer('change',itm)} onSave={(itm) => this.onFencer('save',itm)} delete={false} display={this.state.displayFencerDialog} value={this.state.item} />
         </Dialog>);
+    }
+
+    renderSuggestions()
+    {
+      return this.props.value.suggestions.map((itm,idx) => this.renderSuggestion(itm, idx));
+    }
+
+    renderSuggestion(fencer, idx) 
+    {
+      var lnameClass = (fencer.inLn == 'nok') ? 'nok' : 'ok';
+      var fnameClass = (fencer.inFn == 'nok') ? 'nok' : 'ok';
+      var countryClass = (fencer.inCn == 'nok') ? 'nok' : 'ok';
+      var ageClass = fencer.inAge == 'nok' ? 'nok' : 'ok';
+      return (
+        <tr key={idx} className={fencer.id == this.props.value.fencer_id ? "selected" : "unselected"}>
+          <td className={lnameClass}>{fencer.name}</td>
+          <td className={fnameClass}>{fencer.firstname}</td>
+          <td className={countryClass}>{this.state.countryById["k"+fencer.country] && this.state.countryById["k"+fencer.country].abbr}</td>
+          <td className={ageClass}>{fencer.birthday}</td>
+          <td>{fencer.gender}</td>
+          <td className='icon'>
+            <a onClick={()=>this.selectSuggestion(fencer)}><i className="pi pi-replay"></i></a>
+          </td>
+        </tr>
+      );
     }
 }
 

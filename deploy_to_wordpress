@@ -106,12 +106,12 @@ else
 fi
 cd ..
 
-#phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
-php8.1 phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
+#php8.1 /usr/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
+php8.1 /usr/bin/phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
 if [[ ! "x$?" = "x0" ]]
 then
     echo "PHPUnit tests fail, please run tests yourself"
-    echo "phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
+    echo "php8.1 /usr/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
     exit 1
 else
     echo "PHPUnit tests succeed"
@@ -138,6 +138,7 @@ then
     echo "Dry-run, no execution"
 else
     # perform a production build before we deploy
+    export NODE_OPTIONS=--openssl-legacy-provider
     npm run build
 fi
 

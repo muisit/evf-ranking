@@ -504,53 +504,106 @@ class Fencer extends Base {
 
     public function findSuggestions($firstname, $lastname, $country, $gender, $minDate = null, $maxDate = null)
     {
+        $debug = false;
         $retval = array();
         $allbylastname = $this->allByLastNameSound($lastname, $gender);
         $allbyfirstname = $this->allByFirstNameSound($firstname, $gender);
         $allbycountry = empty($country) ? [] : $this->allByCountry($country, $gender);
+        $tooyoungLN = [];
+        $tooyoungFN = [];
+        $tooyoungCN = [];
+        if ($debug) error_log("allbylastname: " . count($allbylastname) . ", allbyfirstname: " . count($allbyfirstname) . ", allbycountry: " . count($allbycountry));
 
         $ln = array();
         foreach ($allbylastname as $f) {
             $v = (array)$f;
             $tm = DateTimeImmutable::createFromFormat('Y-m-d', $v['fencer_dob']);
-            //error_log("checking " . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate->format('Y-m-d') . ' / ' . $maxDate->format('Y-m-d'));
-            if ($tm === false || (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+            error_log("lastname checking " . $v['fencer_id'] .': ' . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate?->format('Y-m-d') . ' / ' . $maxDate?->format('Y-m-d'));
+            if ($tm !== false && (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+                if ($debug) error_log("lastname adding " . $v['fencer_id'] . '-' . $v['fencer_surname']);
                 $ln["f_" . $v["fencer_id"]] = $v;
+            }
+            else if ($tm !== false && $maxDate !== null && $tm >= $maxDate) {
+                if ($debug) error_log("lastname too young: adding " . $v['fencer_id'] . '-' . $v['fencer_surname']);
+                $tooyoungLN["f_" . $v["fencer_id"]] = $v;
             }
         }
         $fn = array();
         foreach ($allbyfirstname as $f) {
             $v = (array)$f;
             $tm = DateTimeImmutable::createFromFormat('Y-m-d', $v['fencer_dob']);
-            //error_log("checking " . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate->format('Y-m-d') . ' / ' . $maxDate->format('Y-m-d'));
-            if ($tm === false || (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+            error_log("firstname checking ". $v['fencer_id'] .': '  . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate?->format('Y-m-d') . ' / ' . $maxDate?->format('Y-m-d'));
+            if ($tm !== false && (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+                if ($debug) error_log("firstname adding " . $v['fencer_id'] . '-' . $v['fencer_surname']);
                 $fn["f_" . $v["fencer_id"]] = $v;
+            }
+            else if ($tm !== false && $maxDate !== null && $tm >= $maxDate) {
+                if ($debug) error_log("firstname too young: adding " . $v['fencer_id'] . '-' . $v['fencer_surname']);
+                $tooyoungFN["f_" . $v["fencer_id"]] = $v;
             }
         }
         $cn = array();
         foreach ($allbycountry as $f) {
             $v = (array)$f;
             $tm = DateTimeImmutable::createFromFormat('Y-m-d', $v['fencer_dob']);
-            //error_log("checking " . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate->format('Y-m-d') . ' / ' . $maxDate->format('Y-m-d'));
-            if ($tm === false || (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+            error_log("country checking ". $v['fencer_id'] .': '  . (is_bool($tm) ? "none" : $tm->format('Y-m-d')) . ' vs ' . $minDate?->format('Y-m-d') . ' / ' . $maxDate?->format('Y-m-d'));
+            if ($tm !== false && (($minDate === null || $tm >= $minDate) && ($maxDate === null || $tm < $maxDate))) {
+                if ($debug) error_log("country adding " . $v['fencer_id'] . '-' . $v['fencer_surname']);
                 $cn["f_" . $v["fencer_id"]] = $v;
             }
+            else if ($tm !== false && $maxDate !== null && $tm >= $maxDate) {
+                if ($debug) error_log("country too young: adding " . $v['fencer_id'] . '-' . $v['fencer_surname']);
+                $tooyoungCN["f_" . $v["fencer_id"]] = $v;
+            }
         }
+        if ($debug) error_log("allbylastname: " . count($ln) . ", allbyfirstname: " . count($fn) . ", allbycountry: " . count($cn));
+        if ($debug) error_log("too young lastname: " . count($tooyoungLN) . ", firstname: " . count($tooyoungFN) . ", country: " . count($tooyoungCN));
 
         // find out the records that match 2 out of 3 fields
         $m1 = array_intersect(array_keys($ln), array_keys($fn));
         $m2 = array_intersect(array_keys($ln), array_keys($cn));
         $m3 = array_intersect(array_keys($fn), array_keys($cn));
+        if ($debug) error_log("last+first: " . count($m1) . ", last+country: " . count($m2) . ", first+country: " . count($m3));
         $keys = array_unique(array_merge($m1, $m2, $m3));
 
-        // if any list is very small and we have less than 10 values, add that list
-        // first add all matching lastnames (which are relatively country-specific)
-        if (sizeof($keys) < 10 && sizeof($ln) < 10) $keys = array_unique(array_merge($keys, array_keys($ln)));
-        // then add all matching firstnames (which are more international)
-        if (sizeof($keys) < 10 && sizeof($fn) < 10) $keys = array_unique(array_merge($keys, array_keys($fn)));
-        // then add all fencers from the same country
-        if (sizeof($keys) < 10 && sizeof($cn) < 10) $keys = array_unique(array_merge($keys, array_keys($cn)));
+        // do the same for the too-young fencers
+        $tooyoungm1 = array_intersect(array_keys($tooyoungLN), array_keys($tooyoungFN));
+        $tooyoungm2 = array_intersect(array_keys($tooyoungLN), array_keys($tooyoungCN));
+        $tooyoungm3 = array_intersect(array_keys($tooyoungFN), array_keys($tooyoungCN));
+        if ($debug) error_log("last+first: " . count($tooyoungm1) . ", last+country: " . count($tooyoungm2) . ", first+country: " . count($tooyoungm3));
+        $tooyoungKeys = array_unique(array_merge($tooyoungm1, $tooyoungm2, $tooyoungm3));
+        if ($debug) error_log(json_encode($tooyoungKeys));
 
+        // if any list is very small and we have less than 10 values, add that list
+        // first add fencers that were considered too young
+        if (sizeof($keys) < 10 && sizeof($tooyoungKeys) < 10) {
+            if ($debug) error_log("adding too-young fencers");
+            $keys = array_unique(array_merge($keys, $tooyoungKeys));
+            if ($debug) error_log(json_encode($keys));
+        }
+
+        // then add all matching lastnames (which are relatively country-specific)
+        if (sizeof($keys) < 10 && sizeof($ln) < 10) {
+            if ($debug) error_log("adding lastname matches");
+            $keys = array_unique(array_merge($keys, array_keys($ln)));
+            if ($debug) error_log(json_encode($keys));
+        }
+        // then add all matching firstnames (which are more international)
+        if (sizeof($keys) < 10 && sizeof($fn) < 10) {
+            if ($debug) error_log("adding firstname matches");
+            $keys = array_unique(array_merge($keys, array_keys($fn)));
+            if ($debug) error_log(json_encode($keys));
+        }
+        // then add all fencers from the same country
+        if (sizeof($keys) < 10 && sizeof($cn) < 10) {
+            if ($debug) error_log("adding country matches");
+            $keys = array_unique(array_merge($keys, array_keys($cn)));
+            if ($debug) error_log(json_encode($keys));
+        }
+
+        $ln = array_merge($ln, $tooyoungLN);
+        $fn = array_merge($fn, $tooyoungFN);
+        $cn = array_merge($cn, $tooyoungCN);
         $values = array_merge($ln, $fn, $cn);
         foreach ($keys as $k) {
             if (isset($values[$k])) {
@@ -558,6 +611,7 @@ class Fencer extends Base {
                 $vs["inLn"] = isset($ln[$k]) ? 'ok' : 'nok';
                 $vs["inFn"] = isset($fn[$k]) ? 'ok' : 'nok';
                 $vs["inCn"] = isset($cn[$k]) ? 'ok' : 'nok';
+                $vs["inAge"] = in_array($k, $tooyoungKeys) ? 'nok' : 'ok';
                 $retval[] = $vs;
             }
         }

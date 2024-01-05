@@ -35,9 +35,9 @@ export default class FencerDialog extends React.Component {
         this.close();
     }
 
-    delete = (item) => {
+    delete = () => {
         if(this.props.delete !== false) {
-            if(this.props.onDelete) this.props.onDelete(item);
+            if(this.props.onDelete) this.props.onDelete(this.props.value);
         }
         this.close();
     }
@@ -121,6 +121,7 @@ export default class FencerDialog extends React.Component {
     }    
 
     onChangeEl = (event) => {
+        console.log('onChangeEl', event);
         if(!event.target || (!event.target.value && !event.value)) return;
         var item=this.props.value;
         switch(event.target.name) {
@@ -128,7 +129,10 @@ export default class FencerDialog extends React.Component {
         case 'name':
         case 'country':
         case 'birthday':
-        case 'gender':item[event.target.name] = event.target.value; break;
+        case 'gender':
+            console.log('changing ', event.target.name,' to ', event.target.value);
+            item[event.target.name] = event.target.value;
+            break;
         case 'picture':
             var value=event.value;
             // allow changes from Y->A, Y->R, A->R, R->A

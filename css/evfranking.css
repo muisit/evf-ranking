@@ -165,6 +165,8 @@ table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
 .resultranking tbody td span.item { padding-top: 0px;}
 
 .suggestiontable { padding-top: 8px; border-spacing: 0px; border-collapse: collapse; }
+.suggestiontable tr.unselected td.nok { background-color: #f99;}
+.suggestiontable tr.unselected td.und { background-color: #f99;}
 .suggestiontable tr.selected td{ background-color: #9f9; }
 .suggestiontable tr.selected td.icon { background-color: none; }
 .suggestiontable tr td { padding: 2px 4px; }

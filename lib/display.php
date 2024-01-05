@@ -177,7 +177,7 @@ HEREDOC;
         if ($event != null) {
             $caps = Display::$policy->eventCaps($event);
 
-            $location = home_url("/register/$id");
+            $location = "https://register.veteransfencing.eu?event=" . $event->getKey();
             if (in_array($caps, array("system","organiser","cashier","accreditation"))) {
                 echo "<a href='$location'><div class='evfranking-manage'></div><a/>";
             }

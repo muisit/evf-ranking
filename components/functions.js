@@ -139,6 +139,7 @@ export function is_valid(id) {
 }
 
 export function parse_net_error(err, cb) {
+    console.log(err);
     if (   err.response 
         && err.response.data
         && err.response.data.messages 

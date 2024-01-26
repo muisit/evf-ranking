@@ -149,22 +149,14 @@ then
     echo "rm -rf $DEPLOYDIR"
     echo "mkdir -p $DEPLOYDIR/dist"
     echo "mkdir -p $DEPLOYDIR/models"
-    echo "mkdir -p $DEPLOYDIR/models/migrations"
     echo "mkdir -p $DEPLOYDIR/lib"
-    echo "mkdir -p $DEPLOYDIR/jobs"
-    echo "mkdir -p $DEPLOYDIR/css"
-    echo "mkdir -p $DEPLOYDIR/util"
-    echo "mkdir -p $DEPLOYDIR/util/fonts"
+    echo "mkdir -p $DEPLOYDIR/vendor"
 else
     rm -rf $DEPLOYDIR
     mkdir -p $DEPLOYDIR/models
-    mkdir -p $DEPLOYDIR/models/migrations
+    mkdir -p $DEPLOYDIR/vendor
     mkdir -p $DEPLOYDIR/lib
-    mkdir -p $DEPLOYDIR/jobs
     mkdir -p $DEPLOYDIR/dist
-    mkdir -p $DEPLOYDIR/css
-    mkdir -p $DEPLOYDIR/util
-    mkdir -p $DEPLOYDIR/util/fonts
 fi
 
 for i in *.php LICENSE readme.txt
@@ -198,6 +190,13 @@ done
 
 if [[ "x$DRY" = "x1" ]]
 then
+    echo "cp -darp ./vendor $DEPLOYDIR"
+else
+    cp -darp ./vendor $DEPLOYDIR
+fi
+
+if [[ "x$DRY" = "x1" ]]
+then
     echo "cp -r dist/images dist/app.js dist/ranking.js dist/results.js $DEPLOYDIR/dist"
     echo "cp css/evfranking.css $DEPLOYDIR/css"
 else
@@ -205,7 +204,7 @@ else
     cp dist/app.css $DEPLOYDIR/dist
 
     cd /tmp
-    cp -darpv $DEPLOYDIR /tmp/$PROJECT
+    cp -darp $DEPLOYDIR /tmp/$PROJECT
     zip -r $PROJECT $PROJECT
     mv $PROJECT.zip $DEPLOYDIR
     rm -rf /tmp/$PROJECT

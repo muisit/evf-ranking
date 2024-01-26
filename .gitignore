@@ -33,3 +33,4 @@ yarn.lock
 tests/expected_output_pdfs
 tests/coverage
 
+vendor

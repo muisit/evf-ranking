@@ -51,13 +51,16 @@ class Policy extends BaseLib
 
     public function findUser()
     {
-        $userdata = array("id" => null, "rankings" => false);
+        $userdata = array("id" => null, "rankings" => false, 'downloadRankings' => false);
         $user = wp_get_current_user();
         if (!empty($user)) {
             $userdata["id"] = $user->ID;
 
             if (current_user_can('manage_ranking')) {
                 $userdata["rankings"] = true;
+            }
+            if (current_user_can('download_ranking')) {
+                $userdata["downloadRankings"] = true;
             }
         }
         return $userdata;

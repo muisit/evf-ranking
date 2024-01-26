@@ -62,6 +62,10 @@ class Activator extends BaseLib
             $role = get_role('administrator');
             $role->add_cap('manage_ranking', true);
         }
+        if (!current_user_can('download_ranking')) {
+            $role = get_role('administrator');
+            $role->add_cap('download_ranking', true);
+        }
 
         // execute the upgrade tasks as well, to allow users to run these explicitely
         // by inactivating and reactivating the plugin

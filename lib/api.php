@@ -98,8 +98,9 @@ class API extends BaseLib {
         $this->checkNonce($nonce);
         if ($action == "evfranking") {
             $picture = $this->fromGet("picture");
+            $download = $this->fromGet("download");
 
-            if (is_numeric($picture)) {
+            if (!empty($picture) && is_numeric($picture)) {
                 $fencer = new \EVFRanking\Models\Fencer($picture, true);
 
                 if ($fencer->exists()) {
@@ -112,6 +113,10 @@ class API extends BaseLib {
                     $pm = new PictureManager();
                     $pm->display($fencer);
                 }
+            }
+
+            if (!empty($download) && $download == 'ranking') {
+                (new ExportManager())->download('ranking');
             }
         }
         die(403);

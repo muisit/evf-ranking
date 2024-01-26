@@ -44,10 +44,13 @@ class Weapon extends Base
         "weapon_gender" => "enum=M,F"
     );
 
-    public static function ExportAll()
+    public static function ExportAll($export = true)
     {
         $model = new Weapon();
         $lst = $model->selectAll(0, null, null, "n", null);
+        if (!$export) {
+            return $lst;
+        }
         $retval = [];
         foreach ($lst as $c) {
             $retval[] = $model->export($c);

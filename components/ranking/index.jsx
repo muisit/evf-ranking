@@ -179,6 +179,8 @@ export default class RankingPage extends React.Component {
                 return (orderby=='r' || orderby=='n') ? r : -1*r;
             });
 
+            var downloadUrl = evfranking.url + '&nonce=' + evfranking.nonce + '&download=ranking';
+
             return (
                 <div className='container ranking-results front-ranking'>
                     <div className='row'>
@@ -191,12 +193,15 @@ export default class RankingPage extends React.Component {
                         </select>
                       </div>
                       <div className='col-6 col-md-2 col-md-offset-1'>Category :</div>
-                      <div className='col-6 col-md-3'>
+                      <div className='col-5 col-md-3'>
                         <select className='drop catdrop' name='category' value={this.state.category_id} onChange={this.onChangeEl}>
                             {this.state.categories && this.state.categories.map((cat) => {
                                 return (<option key={cat.id} value={cat.id}>{cat.name}</option>);
                             })}
                         </select>
+                      </div>
+                      <div className='col'>
+                        <a href={ downloadUrl } class='pi pi-icon pi-cloud-download'></a>
                       </div>
                     </div>
                     <div className='row'>

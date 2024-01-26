@@ -255,3 +255,4 @@ function evfranking_autoloader($name)
 }
 
 spl_autoload_register('evfranking_autoloader');
+require_once('vendor/autoload.php');

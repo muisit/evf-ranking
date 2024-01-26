@@ -162,7 +162,7 @@ export default class ResultsTab extends PagedTab {
         var value = ev.target.value;
         if(name == "event") {
             this.setState({items:[], competition:{}, competitions:[]}, () => {
-                this.props.onAction({event: "select", value: value}, () => this.checkState());
+                this.props.onAction({event: "select", value: value, offset:0, page: 1}, () => this.checkState());
             });
         }
     }
@@ -232,7 +232,7 @@ export default class ResultsTab extends PagedTab {
                 <i className="pi pi-file-import"></i><a onClick={()=>this.onImport('open')}>Import</a>
                 <i className="pi pi-trash"></i><a onClick={()=>this.onImport('clear')}>Clear</a>
                 <i className="pi pi-replay"></i><a onClick={()=>this.onImport('recalc')}>Recalculate</a>
-                <i className="pi pi-caret-left"></i><a onClick={()=>this.setState({competition: {}, items: [1]}) }>Back</a>
+                <i className="pi pi-caret-left"></i><a onClick={()=>this.setState({competition: {}, items: [1], offset:0, page: 1}) }>Back</a>
             </span>);
         }
     }
@@ -242,7 +242,7 @@ export default class ResultsTab extends PagedTab {
             return (<div></div>);
         }
 
-        let pagesizes=[5,10,20,50];//{name: 5, code: 5},{name: 10, code: 10}, {name:20, code:20},{name: 50, code:50}];
+        let pagesizes=[5, 10, 20, 50];// {name: 5, code: 5},{name: 10, code: 10}, {name:20, code:20},{name: 50, code:50}];
         if(this.state.pages > 10) {
             return (<div className='p-d-block pager'>
     <div className='p-d-inline-block slider'>

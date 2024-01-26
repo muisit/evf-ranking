@@ -50,7 +50,7 @@ export default class PagedTab extends React.Component {
                         "count": json.data.total, 
                         "pages": maxpages, 
                         "loading":false,
-                        "noslider": maxpages<1
+                        "noslider": maxpages<1,
                     });
                 }
         });
@@ -76,7 +76,7 @@ export default class PagedTab extends React.Component {
 
     onSort = (event) => {
         event.first = 0;
-        this.setState({'multiSortMeta':event.multiSortMeta}, this.loadItemPage);
+        this.setState({'multiSortMeta':event.multiSortMeta, offset: 0, page: 1}, this.loadItemPage);
     }
 
     onPageChange = (event) => {
@@ -93,12 +93,12 @@ export default class PagedTab extends React.Component {
     }
 
     onPagesizeChange = (event) => {
-        this.setState({pagesize: event.value}, this.loadItemPage)
+        this.setState({pagesize: event.value, offset:0, page: 1}, this.loadItemPage)
     }
 
     changeFilter = (event) => {
         if(event.type == "change") {
-            this.setState({filter: event.target.value, offset: 0});
+            this.setState({filter: event.target.value, offset: 0, page: 1});
         }
 
         if (this.state.filterTimerId) {

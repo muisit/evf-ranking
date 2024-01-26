@@ -2,10 +2,10 @@
 
 /**
  * EVF-Ranking SideEvent Model
- * 
+ *
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
- * @copyright           2020 Michiel Uitdehaag for muis IT
+ * @copyright           2020 - 2024 Michiel Uitdehaag for muis IT
  * @licenses            GPL-3.0-or-later
  *
  * This file is part of evf-ranking.
@@ -24,51 +24,36 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Models;
 
- namespace EVFRanking\Models;
-
- class SideEvent extends Base {
+class SideEvent extends Base
+{
     public $table = "TD_Event_Side";
-    public $pk="id";
-    public $fields=array("id","event_id","title","description","starts","costs","competition_id");
-    public $fieldToExport=array(
-        "id"=>"id",
-        "event_id"=>"event_id",
-        "title"=>"title",
+    public $pk = "id";
+    public $fields = array("id", "event_id", "title", "description", "starts", "costs", "competition_id");
+    public $fieldToExport = array(
+        "id" => "id",
+        "event_id" => "event_id",
+        "title" => "title",
         "description" => "description",
         "starts" => "starts",
-        "costs"=>"costs",
+        "costs" => "costs",
         "competition_id" => "competition_id"
     );
-    public $rules=array(
-        "id" => "skip",
-        "event_id"=> "skip",
-        "title" => array("rules"=>"trim|lt=255|required","message"=>"Please provide a short descriptive title"),
-        "description" => array("rules"=>"trim","message"=>"Please provide a description"),
-        "starts" => "date",
-        "costs" => array("rules"=>"float|gte=0","message"=>"Please set the costs for participating in this event"),
-        "competition_id" => "skip"
-    );
+    public $rules = [];
 
-    public static function ExportAll($event)
+    // cannot save sideevents through this interface
+    public function save()
     {
-        $model = new SideEvent();
-        $lst = $model->listByEvent($event->getKey());
-        $retval = [];
-        foreach ($lst as $c) {
-            $retval[] = $model->export($c);
-        }
-        return $retval;
+        return false;
     }
 
-    public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
-        return $this->select('*')->offset($offset)->limit($pagesize)->orderBy(array("starts", "title","costs"))->get();
+    public function delete($id = null)
+    {
+        // cannot delete sideevents through this interface
+        return false;
     }
-
-    public function listByEvent($event) {
-        return $this->select('*')->where("event_id",intval($event))->orderBy(array("starts", "title","costs"))->get();
-    }
-
+    
     public static function BaseRegistrationSelection($obj) {
         $qb=new QueryBuilder($obj);
         return $qb->select(array(
@@ -92,19 +77,10 @@
             ->orderBy(array("c.country_name", "r.role_name", "f.fencer_surname", "f.fencer_firstname"));
     }
 
-    public function registrations() {
+    public function registrations()
+    {
         $qb = SideEvent::BaseRegistrationSelection($this);
         return $qb->where("TD_Registration.registration_event", $this->getKey())->get();
-    }
-
-    public static function SelectCompetitions($event) {
-        $model = new SideEvent();
-        $events = $model->query()->select("id")->from("TD_Event_Side")
-        ->where("event_id", $event->getKey())
-            ->where_exists(function ($qb) {
-                $qb->select("*")->from("TD_Competition")->where("competition_id=TD_Event_Side.competition_id");
-            })->get();
-        return $events;
     }
 
     public function getByCompetition($comp)
@@ -116,28 +92,4 @@
         }
         return null;
     }
-
-    public function selectAccreditations($event) {
-        // select accreditations for all fencers that registered for this side event
-        // only select actual participants (role=0)
-        $templateIdByType = AccreditationTemplate::TemplateIdsByRoleType($event);
-        $athleteTemplates = isset($templateIdByType["r0"]) ? $templateIdByType["r0"] : array();
-
-        $accr = new Accreditation();
-        $se=$this;
-        $res = $accr->select('*')
-            ->where_exists(function($qb) use($se) {
-                $qb->select("*")->from("TD_Registration")
-                    ->where("registration_event",$se->getKey())
-                    ->where("registration_fencer=TD_Accreditation.fencer_id");
-            })
-            ->where_in("template_id", $athleteTemplates)
-            ->where('event_id', $event->getKey())
-            ->get();
-        $retval = array();
-        foreach ($res as $r) $retval[] = new Accreditation($r);
-        return $retval;
-    }    
-
 }
- 

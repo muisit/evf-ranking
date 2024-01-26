@@ -76,5 +76,4 @@
         $this->addFilter($qb, $filter, $special);
         return $qb->count();
     }
- }
- 
+}

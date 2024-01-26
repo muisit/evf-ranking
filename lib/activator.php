@@ -46,7 +46,6 @@ class Activator extends BaseLib
     {
         $this->deactivate();
         delete_option("evfranking_upgrade");
-        delete_option(\EVFRanking\Models\AccreditationTemplate::OPTIONNAME);
     }
 
     public function activate() {
@@ -62,7 +61,6 @@ class Activator extends BaseLib
         if (!current_user_can('manage_ranking')) {
             $role = get_role('administrator');
             $role->add_cap('manage_ranking', true);
-            $role->add_cap('manage_registration', true);
         }
 
         // execute the upgrade tasks as well, to allow users to run these explicitely
@@ -72,8 +70,8 @@ class Activator extends BaseLib
 
     public function upgraded($obj,$options) {
         if (isset($options["action"]) && isset($options["type"])
-           && $options['action'] == 'update' 
-           && $options['type'] == 'plugin' ) {
+           && $options['action'] == 'update'
+           && $options['type'] == 'plugin') {
             foreach($options['plugins'] as $each_plugin) {
                 if ($each_plugin==EVFRANKING_PLUGIN_PATH) {
                     add_option("evfranking_upgrade", date("Y-m-d H:i:s"));
@@ -82,7 +80,8 @@ class Activator extends BaseLib
         }
     }
 
-    public function loaded() {
+    public function loaded()
+    {
         $upgrade_time = get_option("evfranking_upgrade");
         if(!empty($upgrade_time)) {
             $tm = strtotime($upgrade_time);
@@ -93,14 +92,13 @@ class Activator extends BaseLib
         }
     }
 
-    public function upgrade() {
-        // request installation of the TCPDF library
-        do_action( 'extlibraries_install', 'tcpdf','evf-ranking','6.4.1');
-        do_action( 'extlibraries_install', 'fpdf','evf-ranking','2.3.6');
+    public function upgrade()
+    {
     }
 
     // daily call
-    public function cron() {
+    public function cron()
+    {
         $model = new \EVFRanking\Models\Ranking();
 
         // remove the old tournaments from the ranking automatically
@@ -109,41 +107,10 @@ class Activator extends BaseLib
 
         // then rebuild the rankings
         $model->calculateRankings();
-
-        // clear out Queue entries that are too old
-        $model = new \EVFRanking\Models\Queue();
-        $model->cleanup();
-
-        // clear out accreditations and documents no longer needed
-        $model = new \EVFRanking\Models\Event();
-        $model->cleanEvents();
     }
 
     // every 10 minutes
-    public function cron_10() {
-        $model = new \EVFRanking\Models\Accreditation();
-        $model->checkDirtyAccreditations();
-
-        // run the Queue as long as we have a time limit and it doesn't take longer than, say, 9 minutes
-        $start = time();
-        $delta = 10 * 60; // total time we spend
-        $lastjob = 0; // time for the last job
-        $queue = new \EVFRanking\Models\Queue();
-        $queue->queue = "default"; // run only the default queue
-        while (time() < ($start + $delta - $lastjob)) {
-            $qstart = time();
-            // pass the estimation of the time we have left
-            if (!$queue->tick(($start + $delta) - time())) {
-                // end of the queue reached
-                break;
-            }
-            $qend = time();
-            // make sure we take looooong running jobs into account
-            // in our estimation of the worst-case delta time for
-            // our next job
-            if (($qend - $qstart) > $lastjob) {
-                $lastjob = $qend - $qstart;
-            }
-        }
+    public function cron_10()
+    {
     }
 }

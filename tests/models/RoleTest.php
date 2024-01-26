@@ -150,20 +150,4 @@ class RoleTest extends \EVFTest\BaseTestCase
         $this->assertEquals($queries[0], "SELECT COUNT(*) as cnt FROM TD_Registration WHERE registration_role = " . RoleFixture::ROLE_ID_2);
         $this->assertEquals($queries[1], ["delete", "TD_Role", ["role_id" => RoleFixture::ROLE_ID_2]]);
     }
-
-    // $role->selectAccreditations
-    public function testSelectAccreditations(): void
-    {
-        AccreditationTemplateFixture::init();
-        AccreditationFixture::init();
-
-        $event = new Event();
-        $event->setKey(EventFixture::EVENT_ID);
-        $role = new Role();
-        $role->setKey(RoleFixture::ROLE_ID_1);
-        $result = $role->selectAccreditations($event);
-        $this->assertEquals(1, count($result));
-        $this->assertEquals(AccreditationFixture::ACCREDITATION_ID, $result[0]->getKey());
-        $this->assertEquals(EventFixture::EVENT_ID, $result[0]->event_id);
-    }
 }

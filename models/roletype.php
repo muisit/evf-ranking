@@ -86,7 +86,7 @@
         $model=new RoleType();
         $rt=$model->select("*")->where("org_declaration",$orgdecl)->first();
         if(!empty($rt)) {
-            $model->read($rt);            
+            $model->read($rt);
         }
         return $model;
     }

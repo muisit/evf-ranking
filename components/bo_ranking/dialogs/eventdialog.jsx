@@ -161,6 +161,13 @@ export default class EventDialog extends React.Component {
             dt.hour(12); // compensate for timezones
             item.opens = format_date(dt);
             break;
+        case 'use_registration':
+            var isset = value == 'Y';
+            if(!item.config) {
+              item.config={};
+            }
+            item.config[name]=isset;
+            break;
         case 'ccat':
         case 'cwpn':
         case 'copens':
@@ -317,6 +324,9 @@ export default class EventDialog extends React.Component {
         if (isNaN(duration)) duration = 2;
         end.add(duration, 'd');
 
+        var cfg = this.props.value.config;
+        var use_registration = (cfg && cfg.use_registration) ? 'Y' : 'N';
+
         var options = [{ name: 'Yes', code: 'Y' }, { name: 'No', code: 'N' }];
 
         return (
@@ -351,36 +361,9 @@ export default class EventDialog extends React.Component {
         </div>
       </div>
       <div>
-        <label>Duration</label>
+        <label>Registration Application</label>
         <div className='input'>
-            <InputNumber className='inputint' name='duration' onValueChange={(e)=>this.onChangeEl('duration',e.value)} min={1} max={21}  mode="decimal" useGrouping={false} 
-             value={duration}
-             showButtons buttonLayout="horizontal" step={1} decrementButtonClassName="p-button-success" incrementButtonClassName="p-button-success" 
-             incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></InputNumber>
-        </div>
-      </div>
-      <div>
-        <label>E-mail</label>
-        <div className='input'>
-            <InputText name='email' value={this.props.value.email} onChange={this.onChangeEl} placeholder='e-mail'/>
-        </div>
-      </div>
-      <div>
-        <label>Web</label>
-        <div className='input'>
-            <InputText name='web' value={this.props.value.web} onChange={this.onChangeEl} placeholder='web address'/>
-        </div>
-      </div>
-      <div>
-        <label>Location</label>
-        <div className='input'>
-            <InputText name='location' value={this.props.value.location} onChange={this.onChangeEl} placeholder='location'/>
-        </div>
-      </div>
-      <div>
-        <label>Country</label>
-        <div className='input'>
-            <Dropdown name='country' optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
+            <Dropdown name='use_registration' optionLabel="name" optionValue="code" value={use_registration} options={options} onChange={this.onChangeEl} />
         </div>
       </div>
       <div>

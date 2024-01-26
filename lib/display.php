@@ -27,137 +27,129 @@
 
 namespace EVFRanking\Lib;
 
-class Display {
-    public static $policy=null;
-    public static $instance=null;
-    public static $jsparams=array();
+class Display
+{
+    public static $policy = null;
+    public static $instance = null;
+    public static $jsparams = array();
 
-    public function __construct() {
-        Display::$instance=$this;
+    public function __construct()
+    {
+        Display::$instance = $this;
     }
 
-    public static function Instance() {
-        if(Display::$instance === null) {
-            $display=new Display();
+    public static function Instance()
+    {
+        if (Display::$instance === null) {
+            $display = new Display();
         }
         return Display::$instance;
     }
 
-    private function get_plugin_base() {
+    private function get_plugin_base()
+    {
         return __DIR__;
     }
 
-    public function index() {
+    public function index()
+    {
         echo <<<HEREDOC
         <div id="evfranking-root"></div>
 HEREDOC;
     }
 
-    public function registration() {
+    public function registration()
+    {
         echo <<<HEREDOC
         <div id="evfregistration-root"></div>
 HEREDOC;
     }
 
-    public function scripts($page) {
-        if(in_array($page,array("toplevel_page_evfrankings"))) {
+    public function scripts($page)
+    {
+        if (in_array($page, array("toplevel_page_evfrankings"))) {
             $script = plugins_url('/dist/app.js', $this->get_plugin_base());
             $this->enqueue_code($script);
         }
-        if(in_array($page,array("toplevel_page_evfregistration"))) {
-            $script = plugins_url('/dist/registrations.js', $this->get_plugin_base());
-            $this->enqueue_code($script);
+    }
+
+    public function styles($page)
+    {
+        if (in_array($page, array("toplevel_page_evfrankings"))) {
+            wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
         }
     }
 
-    public function styles($page) {
-        if(in_array($page,array("toplevel_page_evfrankings","toplevel_page_evfregistration"))) {
-            wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
-        }
-    }
-
-    private function enqueue_code($script) {
+    private function enqueue_code($script)
+    {
         // insert a small piece of html to load the ranking react script
         wp_enqueue_script( 'evfranking', $script, array('jquery','wp-element'), EVFRANKING_VERSION );
         $dat = new API();
         $nonce = wp_create_nonce( $dat->createNonceText() );
-        $params= array_merge(Display::$jsparams, array(
+        $params = array_merge(Display::$jsparams, array(
             'url' => admin_url('admin-ajax.php?action=evfranking'),
-            'nonce'    => $nonce
+            'nonce' => $nonce
         ));
         wp_localize_script('evfranking', 'evfranking', $params);
     }
 
-    public function rankingShortCode($attributes) {
+    public function rankingShortCode($attributes)
+    {
         $script = plugins_url('/dist/ranking.js', $this->get_plugin_base());
         $this->enqueue_code($script);
-        wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
-        $output="<div id='evfranking-ranking'></div>";
+        wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
+        $output = "<div id='evfranking-ranking'></div>";
         return $output;
     }
 
-    public function resultsShortCode($attributes) {
+    public function resultsShortCode($attributes)
+    {
         // insert a small piece of html to load the ranking react script
         $script = plugins_url('/dist/results.js', $this->get_plugin_base());
         $this->enqueue_code($script);
-        wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
-        $output="<div id='evfranking-results'></div>";
+        wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
+        $output = "<div id='evfranking-results'></div>";
         return $output;
     }
 
     public function feedShortCode($attributes) {
         $attributes = shortcode_atts(array(
-            "id"=>-1,
-            "name"=>""
+            "id" => -1,
+            "name" => ""
         ), $attributes);
 
         // check to see if there is currently any event open
-        $model=new \EVFRanking\Models\Event();
+        $model = new \EVFRanking\Models\Event();
         $events = $model->findOpenEvents();
 
-        $found=null;
-        foreach($events as $e) {
+        $found = null;
+        foreach ($events as $e) {
             // if we have an id, make sure it matches
-            if(isset($attributes["id"]) && intval($attributes["id"]) > 0) {
-                if(intval($attributes["id"]) == intval($e->getKey())) {
-                    $found=$e;
+            if (isset($attributes["id"]) && intval($attributes["id"]) > 0) {
+                if (intval($attributes["id"]) == intval($e->getKey())) {
+                    $found = $e;
                     break;
                 }
             }
             // if we have part of a title, make sure it matches
             else if(isset($attributes["name"]) && strlen($attributes["name"])) {
-                if(strpos(strtolower($e->event_name), strtolower($attributes["name"])) !== FALSE) {
-                    $found=$e;
+                if (strpos(strtolower($e->event_name), strtolower($attributes["name"])) !== false) {
+                    $found = $e;
                     break;
                 }
             }
-            else if(strlen($e->event_feed)) {
+            else if (strlen($e->event_feed)) {
                 // take the first event with a live feed url
-                $found=$e;
+                $found = $e;
                 break;
             }
         }
         
-        if(!empty($found) && strlen($found->event_feed)) {
-            wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
-            return "<a href='".addslashes($found->event_feed)."' target='_blank'><div class='live-feed'></div></a>";
+        if (!empty($found) && strlen($found->event_feed)) {
+            wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
+            return "<a href='" . addslashes($found->event_feed) . "' target='_blank'><div class='live-feed'></div></a>";
         }
         return "";
-    }
-
-    // action called when we move from the Event registration button to the Event registration page
-    // Check here if we are already logged in. If not, redirect. If so, display the Event registration
-    // frontend page.
-    public function registerRedirect($eventid)
-    {
-        $page = new RegisterPage();
-        return $page->create($eventid);
-    }
-
-    public function accreditRedirect($accrid)
-    {
-        $page = new AccreditPage();
-        return $page->create($accrid);
     }
 
     public function overviewRedirect($eventid)
@@ -177,22 +169,19 @@ HEREDOC;
         if ($event != null) {
             $caps = Display::$policy->eventCaps($event);
 
-            $location = "https://register.veteransfencing.eu?event=" . $event->getKey();
-            if (in_array($caps, array("system","organiser","cashier","accreditation"))) {
-                echo "<a href='$location'><div class='evfranking-manage'></div><a/>";
-            }
-            else if (in_array($caps, array("open","registrar","hod","hod-view"))) {
-                echo "<a href='$location'><div class='evfranking-register'></div></a>";
-            }
             if (in_array($caps, array("system","organiser","cashier","accreditation", "open","registrar","hod","hod-view"))) {
+                $location = "https://register.veteransfencing.eu?event=" . $event->getKey();
+                echo "<a href='$location'><div class='evfranking-register'></div></a>";
+
                 $location = home_url("/entries/$id");
                 echo "<a href='$location'><div class='evfranking-entries'></div></a>";
             }
 
             // if the event has a live feed, just display it
             if (strlen($event->event_feed)) {
-                wp_enqueue_style( 'evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION );
-                echo "<a href='".addslashes($event->event_feed)."' target='_blank'><div class='evfranking-livefeed'></div></a>";
+                // add the style sheet so we can style the front end button
+                wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
+                echo "<a href='" . addslashes($event->event_feed) . "' target='_blank'><div class='evfranking-livefeed'></div></a>";
             }
         }
     }

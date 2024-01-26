@@ -15,16 +15,13 @@ class TestDatabase
 
     public function doQuery($query)
     {
-        global $evflogger;
         $this->queryLog[] = $query;
 
-        //$evflogger->log("query " . $query);
         if (isset($this->queries[$query])) {
             if (is_callable($this->queries[$query])) {
                 return $this->queries[$query]($query, $query);
             }
             else {
-                //$evflogger->log("returning " . json_encode($this->queries[$query]));
                 return $this->queries[$query];
             }
         }
@@ -43,7 +40,6 @@ class TestDatabase
             }
         }
 
-        //$evflogger->log("No query found for $query");
         return null;
     }
 
@@ -66,8 +62,6 @@ class TestDatabase
                 }
             }
         }
-        global $evflogger;
-        //$evflogger->log("Saving entry using PK $pk = $largestid");
         $largestid += 1;
         $fields[$pk] = $largestid;
         $this->set($otable, $largestid, $fields);

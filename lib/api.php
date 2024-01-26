@@ -97,120 +97,18 @@ class API extends BaseLib {
         global $evflogger;
         $this->checkNonce($nonce);
         if ($action == "evfranking") {
-            $filetype = $this->fromGet("download");
-            $sid = $this->fromGet("event");
-            $eid = $this->fromGet("mainevent");
             $picture = $this->fromGet("picture");
-            $tid = $this->fromGet("template");
-            //$evflogger->log("filetype $filetype, event $eid/$sid, template $tid, picture $picture");
 
-            if ((!empty($sid) || !empty($eid)) && in_array($filetype, array("participants","participantsxml"))) {
-                $sideevent = $this->loadModel("SideEvent", $sid);
-                $event = $this->loadModel("Event", $eid);
-                if (empty($eid) && $sideevent->exists()) {
-                    $event = $this->loadModel("Event", $sideevent->event_id);
-                }
-                if ($event->exists()) {
-                    // check the policy to see if the user can retrieve a listing
-                    $this->checkPolicy("registration", "list", array(
-                        "model" => array(
-                            "event" => $event->getKey()
-                        ),
-                        "filter" => array(
-                            "event" => $event->getKey()
-                        )
-                    ));
-
-                    if($filetype == "participantsxml") {
-                        $em = new XMLManager();
-                    }
-                    else {
-                        $em = new ExportManager();
-                    }
-                    $em->export($filetype, $sideevent, $event);
-                }
-            }
-            else if (!empty($eid) && in_array($filetype, array("summary"))) {
-                $event = new \EVFRanking\Models\Event($eid, true);
-                if ($event->exists()) {
-                    // check the policy to see if the user can retrieve a listing
-                    $this->checkPolicy("accreditation", "view", array(
-                        "model" => array(
-                            "event" => $event->getKey()
-                        )
-                    ));
-                    $em = new ExportManager();
-                    $em->exportSummary($event, $this->fromGet("id"));
-                }
-            }
-            else if (!empty($eid) && in_array($filetype, array("accreditation"))) {
-                $event = new \EVFRanking\Models\Event($eid, true);
-                if ($event->exists()) {
-                    // check the policy to see if the user can retrieve a listing
-                    $this->checkPolicy("accreditation", "view", array(
-                        "model" => array(
-                            "event" => $event->getKey()
-                        )
-                    ));
-
-                    $em = new ExportManager();
-                    $em->exportAccreditation($event, $this->fromGet("id"));
-                }
-            }
-            else if (!empty($eid) && in_array($filetype, array("cashier", "picturestate"))) {
-                $event = new \EVFRanking\Models\Event($eid, true);
-                $country = new \EVFRanking\Models\Country($this->fromGet('country'), true);
-                if ($event->exists()) {
-                    // check the policy to see if the user can retrieve a listing
-                    $this->checkPolicy("registration", "list", array(
-                        "model" => array(
-                            "event" => $event->getKey()
-                        ),
-                        "filter" => array(
-                            "event" => $event->getKey()
-                        )
-                    ));
-
-                    $em = new ExportManager();
-                    $em->export($filetype, null, $event, $country);
-                }
-            }
-            else if (!empty($tid) && !empty($picture)) {
-                $event = $this->loadModel("Event", $sid);
-                $template = $this->loadModel("AccreditationTemplate", $tid);
-
-                if ($event->exists() && $template->exists() && $template->event_id == $event->getKey()) {
-                    $this->checkPolicy("templates", "save", array(
-                        "model" => array(
-                            "event" => $event->getKey()
-                        )
-                    ));
-                    
-                    $pm = new PictureManager();
-                    $pm->template($template, $picture);
-                }
-            }
-            else if (is_numeric($picture)) {
-                $event = new \EVFRanking\Models\Event($eid, true);
+            if (is_numeric($picture)) {
                 $fencer = new \EVFRanking\Models\Fencer($picture, true);
 
                 if ($fencer->exists()) {
-                    $sideevent = new \EVFRanking\Models\SideEvent($sid, true);
-                    if (!$sideevent->exists() && $event->exists()) {
-                        $sides = $event->sides();
-                        if (!empty($sides)) {
-                            $sideevent = $this->loadModel("SideEvent", $sides[0]); // pick any sideevent
-                        }
-                    }
-
                     // check the policy to see if the user can retrieve a listing
                     $this->checkPolicy("picture", "view", array(
                         "model" => array(
                             "fencer" => $fencer->getKey(),
-                            "event" => $sideevent->event_id,
                         )
                     ));
-                    $evflogger->log("starting picture manager");
                     $pm = new PictureManager();
                     $pm->display($fencer);
                 }
@@ -222,24 +120,16 @@ class API extends BaseLib {
     private function doFile($nonce)
     {
         $this->checkNonce($nonce);
-
-        $upload = $this->fromPost("upload");
         $fencer = $this->fromPost("fencer");
-        $event = $this->fromPost("event");
-        $template = $this->fromPost("template");
-        $type = $this->fromPost('type');
         $retval = array("error" => true);
 
         if (!empty($event) && $upload == "true") {
-            $event = $this->loadModel("Event", $event);
             $fencer = $this->loadModel("Fencer", $fencer);
-            $template = $this->loadModel("AccreditationTemplate", $template);
 
             if ($fencer->exists()) {
                 // check the policy to see if the user can save a picture
                 $this->checkPolicy("picture", "save", array(
                     "model" => array(
-                        "event" => $event->getKey(),
                         "fencer" => $fencer
                     )
                 ));
@@ -251,33 +141,12 @@ class API extends BaseLib {
                     $retval["model"] = $fencer->export();
                 }
             }
-            else if ($event->exists() && $template->exists()) {
-                // check the policy to see if the user can save a registration
-                $this->checkPolicy("templates", "save", array(
-                    "model" => array(
-                        "event" => $event->getKey(),
-                    )
-                ));
-
-                $pm = new PictureManager();
-                $retval=$pm->importTemplate($template);
-                if(!isset($retval["error"])) {
-                    $retval["success"] = true;
-                    //$retval["model"] = $template->export();
-                }
-            }
-            else if (!empty($type) && $type == 'csv') {
-                $manager = new CSVManager();
-                $retval = $manager->import();
-                if (!isset($retval["error"])) {
-                    $retval["success"] = true;
-                }
-            }
         }
         return $retval;
     }
 
-    protected function doPost($data) {
+    protected function doPost($data)
+    {
         $this->checkNonce($data['nonce']);
 
         $modeldata = isset($data['model']) ? $data['model'] : array();
@@ -287,17 +156,17 @@ class API extends BaseLib {
         $sort = isset($modeldata['sort']) ? $modeldata['sort'] : "";
         $special = isset($modeldata['special']) ? $modeldata['special'] : "";
 
-        $path=$data['path'];
-        if(empty($path)) {
-            $path="index";
+        $path = $data['path'];
+        if (empty($path)) {
+            $path = "index";
         }
-        $path=explode('/',trim($path,'/'));
-        if(!is_array($path) || sizeof($path) == 0) {
-            $path=array("index");
+        $path = explode('/', trim($path, '/'));
+        if (!is_array($path) || sizeof($path) == 0) {
+            $path = array("index");
         }
 
-        $retval=array();
-        switch($path[0]) {
+        $retval = array();
+        switch ($path[0]) {
             default:
             case "index":
                 break;
@@ -309,16 +178,14 @@ class API extends BaseLib {
             case "roletypes":
             case "roles":
             case "registrars":
-            case 'templates':
                     switch($path[0]) {
-                    case 'fencers': $model = $this->loadModel("Fencer");break;
+                    case 'fencers': $model = $this->loadModel("Fencer"); break;
                     case 'countries': $model = $this->loadModel("Country"); break;
                     case 'results': $model = $this->loadModel("Result"); break;
                     case 'events': $model = $this->loadModel("Event"); break;
                     case 'roletypes': $model = $this->loadModel("RoleType"); break;
                     case 'roles': $model = $this->loadModel("Role"); break;
                     case 'registrars': $model = $this->loadModel("Registrar"); break;
-                    case 'templates': $model = $this->loadModel("AccreditationTemplate"); break;
                 }
                 
                 if(isset($path[1]) && $path[1] == "save") {
@@ -341,23 +208,11 @@ class API extends BaseLib {
                     $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
                     $retval=array_merge($retval, $this->listResults($model, $model->competitions($id), null, TRUE));
                 }
-                else if($path[0] == 'events' && isset($path[1]) && $path[1] == "sides") {
-                    // list all side events of events (event special action)
-                    $this->checkPolicy("sides","list", array("filter" => $filter, "model" => $modeldata));
-                    $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
-                    $retval=array_merge($retval, $this->listResults($model, $model->sides($id), null, TRUE));
-                }
                 else if($path[0] == 'events' && isset($path[1]) && $path[1] == "roles") {
                     // list all side events of events (event special action)
                     $this->checkPolicy("eventroles","list", array("filter" => $filter, "model" => $modeldata));
                     $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
                     $retval=array_merge($retval, $this->listResults($model, $model->roles($id), null, TRUE));
-                }
-                else if($path[0] == 'events' && isset($path[1]) && $path[1] == "statistics") {
-                    // list a bunch of statistics for this event, useful for accreditors and organisers
-                    $this->checkPolicy("statistics","view", array("filter" => $filter, "model" => $modeldata));
-                    $id=isset($modeldata["id"]) ? intval($modeldata["id"]) : -1;
-                    $retval=array_merge($retval, $model->statistics($id));
                 }
                 else if($path[0] == 'events' && isset($path[1]) && $path[1] == "ranking") {
                     // list a bunch of statistics for this event, useful for accreditors and organisers
@@ -394,29 +249,6 @@ class API extends BaseLib {
                     $comp = isset($modeldata["competition_id"]) ? intval($modeldata["competition_id"]) : -1;
                     $retval=array_merge($retval, $model->clear($comp));
                 }
-                else if($path[0] == 'templates' && isset($path[1]) && $path[1] == "delpic") {
-                    $this->checkPolicy("templates","delete", array("filter" => $filter, "model" => $modeldata));
-                    $fid=isset($modeldata["file_id"]) ? $modeldata["file_id"] : '';
-                    $tid=isset($modeldata["template_id"]) ? intval($modeldata["template_id"]) : -1;
-                    $model->deletePicture($fid, $tid);
-                }
-                else if($path[0] == 'templates' && isset($path[1]) && $path[1] == "example") {
-                    $this->checkPolicy("templates","save", array("filter" => $filter, "model" => $modeldata));
-                    $model->createExample($modeldata);
-                }
-                else if($path[0] == 'templates' && isset($path[1]) && $path[1] == "default") {
-                    $this->checkPolicy("templates","misc", array("filter" => $filter, "model" => $modeldata));
-                    $model->setAsDefault($modeldata);
-                }
-                else if($path[0] == 'templates' && isset($path[1]) && $path[1] == "defaults") {
-                    $this->checkPolicy("templates","misc", array("filter" => $filter, "model" => $modeldata));
-                    $retval=$model->listDefaults();
-                }
-                else if($path[0] == 'templates' && isset($path[1]) && $path[1] == "loaddefaults") {
-                    $this->checkPolicy("templates","save", array("filter" => $filter, "model" => $modeldata));
-                    $model->addDefaults($modeldata);
-                    $retval= array_merge($retval, $this->listAll($model,$offset,$pagesize,$filter,$sort,$special));
-                }
                 else if($path[0] == 'fencers' && isset($path[1]) && $path[1] == "presavecheck") {
                     $this->checkPolicy("fencers","save", array("filter" => $filter, "model" => $modeldata));
                     $retval= array_merge($retval, $model->preSaveCheck($modeldata));
@@ -430,35 +262,18 @@ class API extends BaseLib {
                     $retval=array_merge($retval, $this->listAll($model,$offset,$pagesize,$filter,$sort,$special));
                 }
                 break;
-            // LIST and UPDATE
-            case "migrations":
-                switch($path[0]) {
-                    case 'migrations': $model = $this->loadModel("Migration"); break;
-                }
-                
-                if(isset($path[1]) && $path[1] == "save") {
-                    $this->checkPolicy($path[0],"save", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $this->save($model,$modeldata));
-                }
-                else {
-                    $this->checkPolicy($path[0],"list", array("filter" => $filter, "model" => $modeldata));
-                    $retval=array_merge($retval, $this->listAll($model,$offset,$pagesize,$filter,$sort,$special));
-                }
-                break;
             // for these we only support a listing functionality
             case "weapons":
             case "categories":
             case "types":
             case "users":
             case "posts":
-            //case "audit":
                 switch($path[0]) {
                     case 'weapons': $model = $this->loadModel("Weapon"); break;
                     case 'categories': $model = $this->loadModel("Category"); break;
                     case 'types': $model = $this->loadModel("EventType"); break; 
                     case 'users': $model = $this->loadModel("User"); break;
                     case 'posts': $model = $this->loadModel("Posts"); break;
-                    //case 'audit': $model = $this->loadModel("Audit"); break;
                 }
                 $this->checkPolicy($path[0],"list", array("filter" => $filter, "model" => $modeldata));
                 $retval=array_merge($retval, $this->listAll($model,0,null,'','i',$special));
@@ -518,95 +333,16 @@ class API extends BaseLib {
                     $retval=array("error"=>"invalid action");
                 }
                 break;
-            case "registration":
-                $model = $this->loadModel("Registration");
-                if (isset($path[1]) && $path[1] == "save") {
-                    $this->checkPolicy($path[0], "save", array("filter" => $filter, "model" => $modeldata));
-                    $retval = array_merge($retval, $this->save($model, $modeldata));
-                } 
-                else if (isset($path[1]) && $path[1] == "delete") {
-                    $this->checkPolicy($path[0], "delete", array("filter" => $filter, "model" => $modeldata));
-                    $retval = array_merge($retval, $this->delete($model, $modeldata));
-                }
-                else if (isset($path[1]) && $path[1] == "overview") {
-                    $this->checkPolicy($path[0], "list", array("filter" => $filter, "model" => $modeldata));
-                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
-                    $retval = array_merge($retval, $model->overview($ev));
-                }
-                else {
-                    // we can list if we can administer the event belonging to the passed side-event
-                    $this->checkPolicy($path[0], "list", array("filter"=>$filter, "model"=>$modeldata));
-                    $retval = array_merge($retval, $this->listAll($model, $offset, $pagesize, $filter, $sort, $special));
-                }                   
-                break;
-            case 'accreditation':
-                $model = $this->loadModel("Accreditation");
-                $this->checkPolicy($path[0], "view", array("filter" => $filter, "model" => $modeldata));
-                $subpath=sizeof($path)>1 ? $path[1]: "";
-                switch($subpath) {
-                case "overview":
-                    // overview displayed for accreditors
-                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
-                    $retval = array_merge($retval, $model->overview($ev));
-                    break;
-                case "regenerate":
-                    // regenerate all accreditations, from the accreditors tab
-                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
-                    $retval = array_merge($retval, $model->regenerate($ev));
-                    break;
-                case "check":
-                    // check validity of summary documents, from the accreditors tab
-                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
-                    $retval = array_merge($retval, $model->checkSummaryDocuments($ev));
-                    break;
-                case "fencer":
-                    // get all accreditations for this fencer, from fencerselect and the accreditation page
-                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
-                    $fid=isset($modeldata["fencer"]) ? intval($modeldata["fencer"]):-1;
-                    $retval = array_merge($retval, $model->findAccreditations($ev,$fid));
-                    break;
-                case "generate":
-                    // generate a summary document, from the accreditors tab
-                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
-                    $tid=isset($modeldata["type"]) ? $modeldata["type"]:-1;
-                    $tyid=isset($modeldata["type_id"]) ? intval($modeldata["type_id"]):-1;
-                    $retval = array_merge($retval, $model->generate($ev,$tid,$tyid));
-                    break;
-                case "generateone":
-                    // generate accreditations for a specific fencer, from the fencerselect dialog
-                    $ev=isset($modeldata["event"]) ? intval($modeldata["event"]):-1;
-                    $fid=isset($modeldata["fencer"]) ? intval($modeldata["fencer"]):-1;
-                    $retval = array_merge($retval, $model->generateForFencer($ev,$fid));
-                    break;
-                default:
-                    $retval=array("error"=>"invalid action");
-                }
-                break;
-
         }
         return $retval;
     }
 
     protected function save($model, $data) {
         $retval=array();
-        $event=null;
-        if(isset($data["event"])) {
-            $event = $this->loadModel("Event",$data["event"]);
-        }
-        if(isset($data["sideevent"])) {
-            $se=$this->loadModel("SideEvent",$data["sideevent"]);
-            if($se->exists()) {
-                $event = $this->loadModel("Event",$se->event_id);
-            }
-        }
+
         $caps="none"; // no capabilities by default, unless we have an event to base it on
-        if(!empty($event) && $event->exists()) {
-            $caps = $event->eventCaps();
-        }
-        else {
-            if(current_user_can( 'manage_ranking' ) || current_user_can( 'manage_registration' )) {
-                $caps="system";
-            }
+        if (current_user_can( 'manage_ranking' ) || current_user_can( 'manage_registration' )) {
+            $caps="system";
         }
         $data = $model->filterData($data, $caps);
 

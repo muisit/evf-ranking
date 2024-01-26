@@ -1,11 +1,11 @@
 <?php
 
 /**
- * EVF-Ranking database migration
+ * EVF-Ranking Test Logger
  *
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
- * @copyright           2020 Michiel Uitdehaag for muis IT
+ * @copyright           2020 - 2024 Michiel Uitdehaag for muis IT
  * @licenses            GPL-3.0-or-later
  *
  * This file is part of evf-ranking.
@@ -24,23 +24,12 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace EVFRanking\Models;
+namespace EVFRanking\Lib;
 
-class Migration0001 extends MigrationObject
+class TestLogger
 {
-    public function __construct($id = null, $forceload = false)
+    public function log($txt)
     {
-        parent::__construct($id, $forceload);
-        $this->name = "001: Adjust Event Table";
-    }
-
-    public function up()
-    {
-        $this->rawQuery("alter table TD_Event drop column event_EVF_fee");
-        $this->rawQuery("alter table TD_Event add column event_frontend int null");
-    }
-
-    public function down()
-    {
+        error_log($txt);
     }
 }

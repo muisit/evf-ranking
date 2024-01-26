@@ -2,10 +2,10 @@
 
 /**
  * EVF-Ranking Weapon Model
- * 
+ *
  * @package             evf-ranking
  * @author              Michiel Uitdehaag
- * @copyright           2020 Michiel Uitdehaag for muis IT
+ * @copyright           2020 - 2024 Michiel Uitdehaag for muis IT
  * @licenses            GPL-3.0-or-later
  *
  * This file is part of evf-ranking.
@@ -24,10 +24,10 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Models;
 
- namespace EVFRanking\Models;
-
- class Weapon extends Base {
+class Weapon extends Base
+{
     public $table = "TD_Weapon";
     public $pk = "weapon_id";
     public $fields = array("weapon_id", "weapon_abbr", "weapon_name", "weapon_gender");
@@ -55,12 +55,13 @@
         return $retval;
     }
 
-    public function selectAll($offset=0,$pagesize=0,$filter=null,$sort=null,$special=null) {
+    public function selectAll($offset = 0, $pagesize = 0, $filter = null,$sort = null,$special = null)
+    {
         return $this->select('*')->orderBy('weapon_id')->get();
     }
 
-    public function count($filter=null,$special=null) {
+    public function count($filter = null, $special = null)
+    {
         return $this->numrows()->count();
     }
- }
- 
+}

@@ -31,41 +31,21 @@ class Event extends Base
 {
     public $table = "TD_Event";
     public $pk="event_id";
-    public $fields=array("event_id","event_name","event_open","event_registration_open","event_registration_close","event_year", 
-        "event_duration","event_email", "event_web", "event_location", "event_country","event_type",
-        "event_currency_symbol","event_currency_name","event_base_fee", "event_competition_fee",
-        "event_bank","event_account_name","event_organisers_address","event_iban","event_swift","event_reference",
-        "event_in_ranking", "event_factor", "event_frontend", "event_payments","event_feed","event_config",
+    public $fields=array("event_id","event_name","event_open","event_year", 
+        "event_type",
+        "event_in_ranking", "event_factor", "event_frontend", "event_feed","event_config",
         "type_name","country_name",
     );
     public $fieldToExport=array(
         "event_id" => "id",
         "event_name" => "name",
         "event_open" => "opens",
-        "event_registration_open" => "reg_open",
-        "event_registration_close" => "reg_close",
         "event_year" => "year",
-        "event_duration" => "duration",
-        "event_email" => "email",
-        "event_web" => "web",
-        "event_location" => "location",
-        "event_country" => "country",
         "event_type" => "type",
-        "event_currency_symbol" => "symbol",
-        "event_currency_name" => "currency",
-        "event_base_fee"=>"base_fee",
-        "event_competition_fee" => "competition_fee",
-        "event_bank" => "bank",
-        "event_account_name" => "account",
-        "event_organisers_address" => "address",
-        "event_iban" => "iban",
-        "event_swift" => "swift",
-        "event_reference" => "reference",
         "event_in_ranking" => "in_ranking",
         "event_factor" => "factor",
         "event_frontend" => "frontend",
         "event_type_name" => "type_name",
-        "event_payments" => "payments",
         "event_feed" => "feed",
         "event_config" => "config",
         "country_name" => "country_name",
@@ -74,35 +54,16 @@ class Event extends Base
         "event_id" => "skip",
         "event_name" => array("label"=>"Name", "rules"=>"trim|lte=100|required","message"=>"Name is required"),
         "event_open" => array("label"=>"Opens", "rules"=>"date|gt=2000-01-01|lt=2100-01-01|required","message"=>"Opening date is required"),
-        "event_registration_open" => array("label"=>"Registration Start", "rules"=>"date|gt=2000-01-01|lt=2100-01-01","message"=>"Registration start date must be a valid date"),
-        "event_registration_close" => array("label"=>"Registration Close", "rules"=>"date|gt=2000-01-01|lt=2100-01-01","message"=>"Registration close date must be a valid date"),
         "event_year" => array("label"=>"Year", "rules"=>"int|gte=2000|lt=2100|required","message"=>"Year of the event is required"),
-        "event_duration" => array("label"=>"Duration", "rules"=>"int"),
-        "event_email" => array("label"=>"E-mail", "rules"=>"email", "message"=>"E-mail address is incorrect"),
-        "event_web" => array("label"=>"Website", "rules"=>"url","message"=>"Website address is incorrect"),
-        "event_location" => array("label"=>"Location", "rules"=>"trim|lte=45"),
-        "event_country" => array("label"=>"Country", "rules"=>"model=Country","message"=>"Please select a valid country"),
         "event_type" => array("label"=>"Type", "rules"=>"model=EventType", "message"=>"Please select a valid type"),
-        "event_currency_symbol" => array("label"=>"Currency symbol", "rules"=>"trim|lte=10"),
-        "event_currency_name" => array("label"=>"Currency name", "rules"=>"trim|lte=30"),
-        "event_base_fee"=> array("label"=>"Base fee","rules"=>"float"),
-        "event_competition_fee"=> array("label"=>"Competition fee","rules"=>"float"),
-        "event_bank" => array("label"=>"Bank name", "rules"=>"trim|lte=100"),
-        "event_account_name" => array("label"=>"Bank account", "rules"=>"trim|lte=100"),
-        "event_organisers_address" => array("label"=>"Account address", "rules"=>"trim"),
-        "event_iban" => array("label"=>"IBAN number", "rules"=>"trim|lte=40"),
-        "event_swift" => array("label"=>"SWIFT code", "rules"=>"trim|lte=20"),
-        "event_reference" => array("label"=>"Account reference", "rules"=>"trim|lte=255"),
         "event_in_ranking" => array("label"=>"In-Ranking", "rules"=>"bool"),
         "event_factor" => array("label" => "Factor","rules"=>"float"),
         "event_frontend" => array("label"=>"Select a valid, published front-end event", "rules"=>"model=Posts"),
-        "event_payments" => array("label"=>"Select a valid payment method", "rules"=>"enum=all,group,individual"),
         "event_feed" => array("label"=>"Live feed","rules"=>"trim"),
         "event_config" => array("label"=>"Configuration","rules"=>"trim"),
         "event_type_name" => "skip",
         "country_name" => "skip",
         "competitions" => "contains=Competition,competition_list",
-        "sides" => "contains=SideEvent,sides_list",
         "roles" => "contains=EventRole,roles_list"
     );
 
@@ -125,7 +86,6 @@ class Event extends Base
             $this->basic['weapons'] = \EVFRanking\Models\Weapon::ExportAll();
             $this->basic['categories'] = \EVFRanking\Models\Category::ExportAll();
             $this->basic['roles'] = \EVFRanking\Models\Role::ExportAll();
-            $this->basic['sides'] = \EVFRanking\Models\SideEvent::ExportAll($this);
             $this->basic['competitions'] = \EVFRanking\Models\Competition::ExportAll($this);
         }
     }
@@ -149,8 +109,6 @@ class Event extends Base
             case 'T': $orderBy[]="event_type_name desc"; break;
             case 'r': $orderBy[]="event_in_ranking asc"; break;
             case 'R': $orderBy[]="event_in_ranking desc"; break;
-            case 'l': $orderBy[]="event_location asc"; break;
-            case 'L': $orderBy[]="event_location desc"; break;
             }
         }
         return $orderBy;
@@ -213,12 +171,12 @@ class Event extends Base
         return $retval;
     }
 
+    // need this to keep matching competitions and side events
     public function sides($id=null, $asObject=false) {
         if($id === null) $id = $this->getKey();
         // find the side events belonging to this event
         $model = new SideEvent();
         $dt = $model->listByEvent(intval($id));
-
         $retval = array();
         if (!empty($dt) && is_array($dt)) {
             foreach ($dt as $c) {
@@ -232,7 +190,7 @@ class Event extends Base
         }
         return $retval;
     }
-
+        
     public function roles($id = null, $asObject = false) {
         if ($id === null) $id = $this->{$this->pk};
         // find the roles belonging to this event
@@ -275,7 +233,9 @@ class Event extends Base
             $allowed = array(
                 "allow_registration_lower_age" => "bool",
                 "allow_more_teams" => "bool",
-                "no_accreditations" => "bool"
+                "no_accreditations" => "bool",
+                "use_registration" => "bool",
+                "use_accreditation" => "bool"
             );
             $cfg = array_intersect_keys($allowed, $cfg);
 
@@ -343,45 +303,6 @@ class Event extends Base
                 $c->delete();
             }
         }
-
-        if(isset($this->sides_list)) {
-            $old = $this->sides(null,true); // this includes any new competitions added above
-            foreach($this->sides_list as $c) {
-                $c->event_id = $this->getKey();
-                $c->save();
-
-                for($i=0;$i<sizeof($old);$i++) {
-                    if($old[$i]->identical($c)) {
-                        unset($old[$i]);
-                        $old = array_values($old);
-                    }
-                }
-            }
-            foreach($old as $c) {
-                // do not remove side events linked to a competition. These are removed with the competition above
-                if(!isset($c->competition_id) || intval($c->competition_id)<0) {
-                    $c->delete();
-                }
-            }
-        }
-
-        if (isset($this->roles_list)) {
-            $old = $this->roles(null, true); // this includes any new competitions added above
-            foreach ($this->roles_list as $c) {
-                $c->event_id = $this->getKey();
-                $c->save();
-
-                for ($i = 0; $i < sizeof($old); $i++) {
-                    if ($old[$i]->identical($c)) {
-                        unset($old[$i]);
-                        $old = array_values($old);
-                    }
-                }
-            }
-            foreach ($old as $c) {
-                $c->delete();
-            }
-        }        
         return true;
     }
 
@@ -412,39 +333,6 @@ class Event extends Base
         // we take a grace period of 1 day between closing date and 'passed' status
         $closes = strtotime($this->event_open) + ((intval($this->event_duration) + 1) * 24 * 60 * 60);
         return $now >= $closes;
-    }
-
-    public function cleanEvents()
-    {
-        // find all events in the future
-        $opens = date('Y-m-d', time() - 24 * 60 * 60);
-        $res = $this->select('*')->where("event_open", ">", $opens)->get();
-        if (!empty($res) && count($res)) {
-            foreach ($res as $row) {
-                $event = new Event($row);
-                $config = $event->getConfig();
-                if ($event->exists() && isset($config['no_accreditations']) && $config['no_accreditations']) {
-                    $job = new \EVFRanking\Jobs\CleanAccreditations();
-                    $job->queue->event_id = $event->getKey();
-                    $job->create();
-                }
-            }
-        }
-
-        // then find all events in the past that still have files
-        // We take all events that have closed at least a month
-        $opens = date('Y-m-d', time() - 30 * 24 * 60 * 60);
-        $res = $this->select('*')->where("event_open", "<", $opens)->get();
-        if (!empty($res) && count($res)) {
-            foreach ($res as $row) {
-                $path = \EVFRanking\Util\PDFManager::PDFPath($row->event_id);
-                if (file_exists($path) && is_dir($path)) {
-                    $job = new \EVFRanking\Jobs\CleanAccreditations();
-                    $job->queue->event_id = $row->event_id;
-                    $job->create();
-                }
-            }
-        }
     }
 
     public function findOpenEvents() {
@@ -478,8 +366,8 @@ class Event extends Base
         // see if there is an event with this front-end id
         $retval="closed";
 
-        // if the user has manage_registration rights, return it as system role
-        if(current_user_can('manage_registration')) {
+        // if the user has manage_ranking rights, return it as system role
+        if(current_user_can('manage_ranking')) {
             return "system";
         }
 
@@ -519,56 +407,6 @@ class Event extends Base
 
         return $retval;
     }
-
-    // this is similar to SideEvents::registrations except it selects on the overall event
-    public function registrations()
-    {
-        $qb = SideEvent::BaseRegistrationSelection($this);
-        return $qb->where("TD_Registration.registration_mainevent", $this->getKey())->get();
-    }
-
-    public function statistics($id)
-    {
-        $retval = array();
-        $event = new self($id, true);
-        if (!$event->exists()) {
-            return $retval;
-        }
-
-        // total number of athletes, support-roles and officials
-        $result = $this->query()->select("CASE WHEN se.competition_id IS NULL THEN IFNULL(rt.org_declaration, 'Other') ELSE IFNULL(rt.org_declaration, 'Athlete') END as tp, COUNT(*) as cnt")
-            ->from("TD_Registration r")
-            ->join("TD_Fencer", "f", "r.registration_fencer=f.fencer_id")
-            ->join("TD_Role", "rl", "rl.role_id = r.registration_role")
-            ->join("TD_Role_Type", "rt", "rt.role_type_id = rl.role_type")
-            ->join("TD_Event_Side", "se", "se.id = r.registration_event")
-            ->groupBy("tp")
-            ->where("r.registration_mainevent", $event->getKey())
-            ->get();
-
-        $retval["participants"] = array();
-        foreach ($result as $row) {
-            $retval["participants"][$row->tp] = $row->cnt;
-        }
-
-        $result = $this->query()->select("IFNULL(f.fencer_picture, 'N') as state,  COUNT(*) as cnt")
-            ->from("TD_Registration r")
-            ->join("TD_Fencer", "f", "r.registration_fencer=f.fencer_id")
-            ->groupBy("IFNULL(f.fencer_picture, 'N')")
-            ->where("r.registration_mainevent", $event->getKey())
-            ->get();
-
-        $retval["pictures"] = array();
-        foreach ($result as $row) {
-            $retval["pictures"][$row->state] = $row->cnt;
-        }
-    
-        $queue = new Queue();
-        $retval["queue"] = $queue->count(null, ["waiting" => true]);
-
-        return $retval;
-    }
-
 
     public function listRankedEvents()
     {

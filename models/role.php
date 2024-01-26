@@ -121,30 +121,5 @@
         return false;
     }
 
-    public function selectAccreditations($event) {
-        $templateIdByType = AccreditationTemplate::TemplateIdsByRole($event);
-        $key="r".$this->getKey();
-        $acceptableTemplates = isset($templateIdByType[$key]) ? $templateIdByType[$key] : array();
-
-        $id = intval($this->getKey());
-        if($id < 0) $id = 0;
-        $accr = new Accreditation();
-
-        $res = $accr->select('*')
-            ->where_exists(function($qb) use ($id) {
-                $qb->select("*")->from("TD_Registration")
-                  ->where("registration_fencer=TD_Accreditation.fencer_id")
-                  ->where("registration_mainevent=TD_Accreditation.event_id")
-                  ->where("registration_role",$id);
-            })
-            ->where_in("template_id",$acceptableTemplates)
-            ->where("event_id",$event->getKey())
-            ->get();
-        $retval = array();
-        if (!empty($res)) {
-            foreach ($res as $r) $retval[] = new Accreditation($r);
-        }
-        return $retval;
-    }
 }
  

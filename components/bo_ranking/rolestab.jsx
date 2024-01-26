@@ -1,25 +1,25 @@
-import { roletypes } from "../api.js";
+import { roles } from "../api.js";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 
 import React from 'react';
-import PagedTab from '../pagedtab';
-import RoleTypeDialog from './dialogs/roletypedialog';
+import PagedTab from '../pagedtab.jsx';
+import RoleDialog from './dialogs/roledialog';
 
 const fieldToSorterList={
     "id":"i",
     "name":"n"
 };
 
-export default class RoleTypeTab extends PagedTab {
+export default class RolesTab extends PagedTab {
     constructor(props, context) {
         super(props, context);
         this.dt = React.createRef();
-        this.abortType='roletypes';
+        this.abortType='roles';
     }
 
     apiCall = (o,p,f,s) => {
-        return roletypes(o,p,f,s);
+        return roles(o,p,f,s);
     }
 
     fieldToSorter = (fld) => {
@@ -28,16 +28,16 @@ export default class RoleTypeTab extends PagedTab {
 
     toastMessage = (type,item) => {
         if(type == "save") {
-            return { severity: 'info', summary: 'Role Type Saved', detail: 'Role Type was succesfully stored in the database', life: 3000 };
+            return { severity: 'info', summary: 'Role Saved', detail: 'Role ' + item.name + ' was succesfully stored in the database', life: 3000 };
         }
         if(type == "delete") {
-            return { severity: 'info', summary: 'Role Type Deleted', detail: 'Role Type was succesfully removed from the database', life: 3000 };
+            return { severity: 'info', summary: 'Role Deleted', detail: 'Role ' + item.name + ' was succesfully removed from the database', life: 3000 };
         }
         return {"severity":"info","summary":"Unknown","detail":"","life":1};
     }
 
     renderDialog() {
-        return (<RoleTypeDialog onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />);
+        return (<RoleDialog onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onDelete={this.onDelete} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />);
     }
 
     renderTable(pager) {
@@ -53,7 +53,7 @@ export default class RoleTypeTab extends PagedTab {
     >
     <Column field="id" header="ID" sortable={true} />
     <Column field="name" header="Name" sortable={true}/>
-    <Column field="org_declaration" header="Org" sortable={true}/>
+    <Column field="type_name" header="Type" sortable={false}/>
 </DataTable>
 );
     }

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source  .env
+export NODE_OPTIONS=--openssl-legacy-provider
 
 RELEASE="1"
 MAJOR="0"
@@ -33,7 +34,7 @@ do
     if [[ "x$arg" = "x-h" ]]
     then
         echo "Deploy to Wordpress script"
-        echo "Copyright (C) 2020-2021 muis IT https://www.muisit.nl"
+        echo "Copyright (C) 2020 - 2024 muis IT https://www.muisit.nl"
         echo ""
         echo "deploy_to_wordpress [options]"
         echo ""
@@ -138,7 +139,6 @@ then
     echo "Dry-run, no execution"
 else
     # perform a production build before we deploy
-    export NODE_OPTIONS=--openssl-legacy-provider
     npm run build
 fi
 
@@ -186,15 +186,6 @@ do
         cp -v $i $DEPLOYDIR/models
     fi
 done
-for i in `find ./models/migrations -type f  -maxdepth 1`
-do
-    if [[ "x$DRY" = "x1" ]]
-    then
-        echo "cp -v $i $DEPLOYDIR/models/migrations"
-    else
-        cp -v $i $DEPLOYDIR/models/migrations
-    fi
-done
 for i in `find ./ -type f -path ./lib/\*`
 do
     if [[ "x$DRY" = "x1" ]]
@@ -204,40 +195,13 @@ do
         cp -v $i $DEPLOYDIR/lib
     fi
 done
-for i in `find ./ -type f -path ./jobs/\*`
-do
-    if [[ "x$DRY" = "x1" ]]
-    then
-        echo "cp -v $i $DEPLOYDIR/jobs"
-    else
-        cp -v $i $DEPLOYDIR/jobs
-    fi
-done
-for i in `find ./util -maxdepth 1 -type f`
-do
-    if [[ "x$DRY" = "x1" ]]
-    then
-        echo "cp -v $i $DEPLOYDIR/util"
-    else
-        cp -v $i $DEPLOYDIR/util
-    fi
-done
-for i in `find ./util/fonts -maxdepth 1 -type f`
-do
-    if [[ "x$DRY" = "x1" ]]
-    then
-        echo "cp -v $i $DEPLOYDIR/util/fonts"
-    else
-        cp -v $i $DEPLOYDIR/util/fonts
-    fi
-done
 
 if [[ "x$DRY" = "x1" ]]
 then
-    echo "cp -r dist/fonts dist/images dist/app.js dist/ranking.js dist/results.js dist/registrations.js dist/registrationsfe.js $DEPLOYDIR/dist"
+    echo "cp -r dist/images dist/app.js dist/ranking.js dist/results.js $DEPLOYDIR/dist"
     echo "cp css/evfranking.css $DEPLOYDIR/css"
 else
-    cp -r dist/fonts dist/images dist/app.js dist/ranking.js dist/results.js dist/registrations.js dist/registrationsfe.js $DEPLOYDIR/dist
+    cp -r dist/images dist/app.js dist/ranking.js dist/results.js $DEPLOYDIR/dist
     cp dist/app.css $DEPLOYDIR/dist
 
     cd /tmp
@@ -246,4 +210,3 @@ else
     mv $PROJECT.zip $DEPLOYDIR
     rm -rf /tmp/$PROJECT
 fi
-

@@ -31,7 +31,6 @@ class PictureManager extends BaseLib {
 
     public function display($fencer) {
         global $evflogger;
-        $evflogger->log("picturemanager: display");
         if ($fencer->fencer_picture != 'N') {
             $filename = $fencer->getPath();
             if (file_exists($filename)) {
@@ -72,71 +71,12 @@ class PictureManager extends BaseLib {
         return null;
     }
 
-    public function template($template, $fileid) {
-        $templatecontent = json_decode($template->content,true);
-        if(isset($templatecontent["pictures"])) {
-            foreach($templatecontent["pictures"] as $img) {
-                if($img["file_id"] == $fileid) {
-                    $upload_dir = wp_upload_dir();
-                    $dirname = $upload_dir['basedir'] . '/templates';
-
-                    $filename = $dirname ."/img_". $template->getKey() ."_". $img["file_id"] .".". $img["file_ext"];
-
-                    if (file_exists($filename)) {
-                        header('Content-Disposition: inline;');
-                        header('Content-Type: '.$this->extToMime($img["file_ext"]));
-                        header('Expires: ' . (time() + 2 * 24 * 60 * 60));
-                        header('Cache-Control: must-revalidate');
-                        header('Pragma: public');
-                        header('Content-Length: ' . filesize($filename));
-                        readfile($filename);
-                        exit();
-                    }
-
-                }
-            }
-        }
-        die(403);
-    }
-
-    public function importTemplate($template) {
-        $retval = array();
-        if ($template->exists()) {
-            // basename of the model upload dir, requires common knowledge of the wp_base_upload_dir in
-            // both the picture manager and the accreditation-template model.... not so pretty
-            $this->createUploadDir(basename($template->getDir("pictures")));
-
-            foreach ($_FILES as $username => $content) {
-                $type = $content["type"];
-                $loc = $content["tmp_name"];
-                $fname = $content["name"];
-                $ext = $this->mimeToExt($type);
-
-                if (!empty($loc) && !empty($ext) && file_exists($loc) && is_readable($loc)) {
-                    $id = uniqid();
-                    $filename = $template->getPath("pictures", $id, $ext);
-                    @move_uploaded_file($loc,  $filename);
-                    if (file_exists($filename)) {
-                        $size=getimagesize($filename);
-                        $tmpl = array("width" => $size[0], "height"=>$size[1], "file_ext" => $ext, "file_id" => $id, "file_name" => basename($fname));
-                        $template->addPicture($tmpl);
-                        $template->save();
-                        $retval["picture"] = $tmpl;
-                    }
-                } else {
-                    $retval["error"] = "Unable to convert image, please upload a valid photo";
-                }
-            }
-        }
-        return $retval;
-    }
-
     public function import($fencer)
     {
         global $evflogger;
         $retval = array();
         if ($fencer->exists()) {
-            $this->createUploadDir("accreditations");
+            $this->createUploadDir("/fencers");
             $evflogger->log("FILES is " . json_encode($_FILES));
             foreach ($_FILES as $username => $content) {
                 $loc = $content["tmp_name"];
@@ -165,18 +105,17 @@ class PictureManager extends BaseLib {
     }
 
     private function createUploadDir($dirname) {
-        $upload_dir = wp_upload_dir();
-        $dirname = $upload_dir['basedir'] . '/' . $dirname;
+        $dirname = realpath('/home/veterans/api_storage/app/' . $dirname);
         if (!file_exists($dirname)) wp_mkdir_p($dirname);
 
         // make sure there is a .htaccess file inside to prevent file access
-        $filename = $dirname.'/.htaccess';
+        $filename = $dirname . '/.htaccess';
         if(!file_exists($filename)) {
             $contents = <<< DEMARK
 order deny,allow
 deny from all
 DEMARK;
-            @file_put_contents($filename, $contents); 
+            @file_put_contents($filename, $contents);
         }
     }
 

@@ -17,13 +17,6 @@ namespace {
         return !empty($cando);
     }
 
-    function do_action($hookname, $arg)
-    {
-        if ($hookname == "extlibraries_hookup" && $arg == "tcpdf") {
-            require_once('../../../ext-libraries/libraries/tcpdf/tcpdf.php');
-        }
-    }
-
     function esc_sql($query)
     {
         return addslashes($query);

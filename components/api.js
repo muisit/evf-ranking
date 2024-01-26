@@ -157,10 +157,6 @@ export function competitions(id) {
     var obj = {id:id};
     return fetchJson('events','events/competitions',obj);
 }
-export function sideevents(id) {
-    var obj = {id:id};
-    return fetchJson('events','events/sides',obj);
-}
 export function eventroles(id) {
     var obj = {id:id};
     return fetchJson('events','events/roles',obj);
@@ -192,14 +188,6 @@ export function ranking(action,fields) {
 }
 
 // Administration
-export function migrations(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('migrations','migrations',obj);
-}
-export function migration(action,fields) {
-    return fetchJson('migrations','migrations/'+action,fields);
-}
-
 export function roles(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
     return fetchJson('roles','roles',obj);
@@ -221,16 +209,6 @@ export function registrars(offset,pagesize,filter,sort) {
 export function registrar(action, fields) {
     return fetchJson('registrars','registrars/' + action,fields);
 }
-export function registrations(offset,pagesize,filter,sort,special) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
-    return fetchJson('registrations','registration',obj);
-}
-export function registration(action, fields) {
-    return fetchJson('registrations','registration/' + action,fields);
-}
-export function accreditation(action,fields) {
-    return fetchJson("registrations","accreditation/" + action,fields);
-}
 export function users(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
     return fetchJson('registrars','users',obj);
@@ -238,14 +216,4 @@ export function users(offset,pagesize,filter,sort) {
 export function posts(offset,pagesize,filter,sort,special) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
     return fetchJson('events','posts',obj);
-}
-export function templates(offset,pagesize,filter,sort,special) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
-    return fetchJson('templates','templates',obj);
-}
-export function template(action,fields) {
-    return fetchJson('templates','templates/' + action,fields);
-}
-export function templateexample(fields) {
-    return fetchAttachment('templates','templates/example',fields);
 }

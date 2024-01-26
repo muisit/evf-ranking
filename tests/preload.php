@@ -36,7 +36,7 @@ namespace {
     {
         public function log($txt)
         {
-            fwrite(STDERR, $txt . "\r\n");
+            //fwrite(STDERR, $txt . "\r\n");
             //echo $txt . "\r\n";
         }
     }

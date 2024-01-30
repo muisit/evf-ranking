@@ -85,10 +85,11 @@ HEREDOC;
         // insert a small piece of html to load the ranking react script
         wp_enqueue_script( 'evfranking', $script, array('jquery','wp-element'), EVFRANKING_VERSION );
         $dat = new API();
-        $nonce = wp_create_nonce( $dat->createNonceText() );
+        $nonce = wp_create_nonce($dat->createNonceText());
         $params = array_merge(Display::$jsparams, array(
             'url' => admin_url('admin-ajax.php?action=evfranking'),
-            'nonce' => $nonce
+            'nonce' => $nonce,
+            'capabilities' => (new Policy())->getCapabilities()
         ));
         wp_localize_script('evfranking', 'evfranking', $params);
     }
@@ -167,7 +168,7 @@ HEREDOC;
         }
         $event = Display::$policy->feEventToBeEvent($id);
         if ($event != null) {
-            $caps = Display::$policy->eventCaps($event);
+            $caps = $event->eventCaps();
 
             if (in_array($caps, array("system","organiser","cashier","accreditation", "open","registrar","hod","hod-view"))) {
                 $location = "https://register.veteransfencing.eu?event=" . $event->getKey();

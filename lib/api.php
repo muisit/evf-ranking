@@ -342,12 +342,13 @@ class API extends BaseLib {
         return $retval;
     }
 
-    protected function save($model, $data) {
-        $retval=array();
+    protected function save($model, $data)
+    {
+        $retval = [];
 
-        $caps="none"; // no capabilities by default, unless we have an event to base it on
-        if (current_user_can( 'manage_ranking' ) || current_user_can( 'manage_registration' )) {
-            $caps="system";
+        $caps = "none"; // no capabilities by default, unless we have an event to base it on
+        if (current_user_can('manage_ranking')) {
+            $caps = "system";
         }
         $data = $model->filterData($data, $caps);
 

@@ -200,9 +200,9 @@ export default class RankingPage extends React.Component {
                             })}
                         </select>
                       </div>
-                      <div className='col'>
+                      { evfranking.capabilities && evfranking.capabilities.download && (<div className='col'>
                         <a href={ downloadUrl } class='pi pi-icon pi-cloud-download'></a>
-                      </div>
+                      </div>)}
                     </div>
                     <div className='row'>
                         <div className='col-12'>

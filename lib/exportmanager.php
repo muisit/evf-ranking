@@ -44,7 +44,7 @@ class ExportManager
         
         switch ($type) {
             case 'ranking':
-                $withDetails = isset($user['downloadRankings']) && $user['downloadRankings'];
+                $withDetails = isset($user['download']) && $user['download'];
                 return $this->downloadRankings($withDetails);
         }
 

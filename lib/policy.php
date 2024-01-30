@@ -41,27 +41,25 @@ class Policy extends BaseLib
         return $model->get($id);
     }
 
-    public function eventCaps($event)
+    public function getCapabilities()
     {
-        if (!empty($event)) {
-            return $event->eventCaps();
+        $retval = [];
+        if (current_user_can('manage_ranking')) {
+            $retval["manage"] = true;
         }
-        return "";
+        if (current_user_can('download_ranking')) {
+            $retval["download"] = true;
+        }
+        return $retval;
     }
 
     public function findUser()
     {
-        $userdata = array("id" => null, "rankings" => false, 'downloadRankings' => false);
+        $userdata = array("id" => null, "manage" => false, 'download' => false);
         $user = wp_get_current_user();
         if (!empty($user)) {
             $userdata["id"] = $user->ID;
-
-            if (current_user_can('manage_ranking')) {
-                $userdata["rankings"] = true;
-            }
-            if (current_user_can('download_ranking')) {
-                $userdata["downloadRankings"] = true;
-            }
+            $userdata = array_merge($userdata, $this->getCapabilities());
         }
         return $userdata;
     }
@@ -127,7 +125,7 @@ class Policy extends BaseLib
         switch ($base) {
             // has manage_rankings capability, a super-user power
             case "rank":
-                return $userdata["rankings"] === true;
+                return $userdata["manage"] === true;
             default:
                 break;
         }

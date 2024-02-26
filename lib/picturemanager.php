@@ -24,19 +24,19 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 namespace EVFRanking\Lib;
 
-class PictureManager extends BaseLib {
-
-    public function display($fencer) {
+class PictureManager extends BaseLib
+{
+    public function display($fencer)
+    {
         global $evflogger;
         if ($fencer->fencer_picture != 'N') {
             $filename = $fencer->getPath();
             if (file_exists($filename)) {
                 header('Content-Disposition: inline;');
                 header('Content-Type: image/jpeg');
-                header('Expires: ' . (time() + 2*24*60*60));
+                header('Expires: ' . (time() + 2 * 24 * 60 * 60));
                 header('Cache-Control: must-revalidate');
                 header('Pragma: public');
                 header('Content-Length: ' . filesize($filename));
@@ -83,7 +83,7 @@ class PictureManager extends BaseLib {
                 if (!empty($loc) && file_exists($loc)) {
                     $type = mime_content_type($loc);
 
-                    $loc = $this->convertToAccreditation($loc, $type);
+                    $loc = $this->convertToPhotoId($loc, $type);
                     if (!empty($loc) && file_exists($loc) && is_readable($loc)) {
                         $filename = $fencer->getPath();
                         @move_uploaded_file($loc, $filename);
@@ -119,7 +119,7 @@ DEMARK;
         }
     }
 
-    private function convertToAccreditation($filename, $type)
+    private function convertToPhotoId($filename, $type)
     {
         global $evflogger;
         $evflogger->log('converting accreditation picture for ' . json_encode([$filename, $type]));

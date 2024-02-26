@@ -24,10 +24,10 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Models;
 
- namespace EVFRanking\Models;
-
- class Country extends Base {
+class Country extends Base
+{
     public $table = "TD_Country";
     public $pk="country_id";
     public $fields=array("country_id","country_abbr","country_name","country_registered", "country_flag_path");
@@ -39,7 +39,7 @@
         "country_flag_path" => "flag"
     );
     public $rules = array(
-        "country_id"=>"skip",
+        "country_id" => "skip",
         "country_abbr" => "trim|upper|eq=3|required",
         "country_name" => "trim|gte=3|required",
         "country_registered" => "bool|required",
@@ -131,29 +131,4 @@
         }
         return false;
     }
-
-    public function selectAccreditations($event) {
-        // only select accreditations with an athlete or federative role template
-        //$ses = SideEvent::SelectCompetitions($event);
-        //$sids = array();
-        //foreach ($ses as $sid) $sids[] = $sid->id;
-
-        $templateIdByType = AccreditationTemplate::TemplateIdsByRoleType($event);
-        $rtype = RoleType::FindByType("Country");
-        $athleteTemplates = isset($templateIdByType["r0"]) ? $templateIdByType["r0"] : array();
-        $federativeTemplates = isset($templateIdByType["r".$rtype->getKey()]) ? $templateIdByType["r".$rtype->getKey()] : array();
-        $acceptableTemplates=array_merge($athleteTemplates, $federativeTemplates);
-
-        $accr=new Accreditation();
-        $res = $accr->select('*')
-            ->join("TD_Fencer","f","f.fencer_id=TD_Accreditation.fencer_id","inner")
-            ->where('f.fencer_country', $this->getKey())
-            ->where_in("TD_Accreditation.template_id",$acceptableTemplates)
-            ->where("event_id",$event->getKey())
-            ->get();
-        $retval = array();
-        foreach ($res as $r) $retval[] = new Accreditation($r);
-        return $retval;
-    }
- }
- 
+}

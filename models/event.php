@@ -31,8 +31,8 @@ class Event extends Base
 {
     public $table = "TD_Event";
     public $pk="event_id";
-    public $fields=array("event_id","event_name","event_open","event_year", 
-        "event_type",
+    public $fields=array("event_id","event_name","event_open","event_year",
+        "event_type", "event_country", "event_location",
         "event_in_ranking", "event_factor", "event_frontend", "event_feed","event_config",
         "type_name","country_name",
     );
@@ -42,6 +42,8 @@ class Event extends Base
         "event_open" => "opens",
         "event_year" => "year",
         "event_type" => "type",
+        "event_country" => "country",
+        "event_location" => "location",
         "event_in_ranking" => "in_ranking",
         "event_factor" => "factor",
         "event_frontend" => "frontend",
@@ -56,6 +58,8 @@ class Event extends Base
         "event_open" => array("label"=>"Opens", "rules"=>"date|gt=2000-01-01|lt=2100-01-01|required","message"=>"Opening date is required"),
         "event_year" => array("label"=>"Year", "rules"=>"int|gte=2000|lt=2100|required","message"=>"Year of the event is required"),
         "event_type" => array("label"=>"Type", "rules"=>"model=EventType", "message"=>"Please select a valid type"),
+        "event_location" => array("label"=>"Location", "rules"=>"trim|lte=45"),
+        "event_country" => array("label"=>"Country", "rules"=>"model=Country","message"=>"Please select a valid country"),
         "event_in_ranking" => array("label"=>"In-Ranking", "rules"=>"bool"),
         "event_factor" => array("label" => "Factor","rules"=>"float"),
         "event_frontend" => array("label"=>"Select a valid, published front-end event", "rules"=>"model=Posts"),
@@ -67,7 +71,8 @@ class Event extends Base
         "roles" => "contains=EventRole,roles_list"
     );
 
-    public function export($result=null) {
+    public function export($result = null)
+    {
         $retval = parent::export($result);
         if (isset($retval["config"])) {
             $retval["config"] = json_decode($retval["config"], true);
@@ -229,19 +234,17 @@ class Event extends Base
         // check the config array, only allow settings we use
         // this avoids allowing hackers to enter arbitrary data in this database field
         $cfg = json_decode($this->config, true);
-        if($cfg!==false && is_array($cfg)) {
+        if ($cfg !== false && is_array($cfg)) {
             $allowed = array(
-                "allow_registration_lower_age" => "bool",
-                "allow_more_teams" => "bool",
-                "no_accreditations" => "bool",
-                "use_registration" => "bool",
-                "use_accreditation" => "bool"
+                "use_registration" => "bool"
             );
             $cfg = array_intersect_keys($allowed, $cfg);
 
             // make sure each value is correctly typed
             foreach ($cfg as $key => $val) {
-                if ($allowed[$key] == "bool") $cfg[$key] = boolval($val);
+                if ($allowed[$key] == "bool") {
+                    $cfg[$key] = boolval($val);
+                }
             }
         }
         else {

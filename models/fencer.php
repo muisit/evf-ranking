@@ -253,10 +253,10 @@ class Fencer extends Base {
             ->where("c.country_abbr",$name)->where("fencer_gender",$gender)->get();
     }
 
-    public function getPath() {
-        $upload_dir = wp_upload_dir();
-        $dirname = $upload_dir['basedir'] . '/accreditations';
-        $filename = $dirname . "/fencer_" . $this->getKey() . ".jpg";
+    public function getPath()
+    {
+        $dirname = "home/veterans/api_storage/app/fencers";
+        $filename = $dirname . "/fencer_" . $this->getKey() . ".dat";
         return $filename;
     }
 
@@ -264,29 +264,7 @@ class Fencer extends Base {
     {
         $this->fencer_name = Fencer::Sanitize($this->fencer_surname);
         $this->fencer_firstname = Fencer::Sanitize($this->fencer_firstname);
-        if (parent::save()) {
-            $accr = new Accreditation();
-            $accr->makeDirty($this->getKey());
-
-            return true;
-        }
-        return false;
-    }
-
-    public function filterData($data, $caps) {
-        // filter out irrelevant data depending on the capability
-        $retval=array();
-        if(in_array($caps, array("accreditation"))) {
-            $retval=array(
-                "id" => isset($data["id"]) ? intval($data["id"]) :-1,
-                "picture" => isset($data["picture"]) ? $data["picture"] : 'N'
-            );
-        }
-        // system and registrars can save all fencer data
-        else if(in_array($caps, array("system", "organiser", "registrar","hod","hod-view"))) {
-            $retval=$data;
-        }
-        return parent::filterData($retval,$caps);
+        return parent::save();
     }
 
     public function preSaveCheck($modeldata) {
@@ -329,6 +307,7 @@ class Fencer extends Base {
             return array("error"=> true, "messages"=>array("Cannot merge fencer with him/herself"));
         }
 
+        // this is the one place we retain the link to Accreditation and Registration
         $this->query()->from("TD_Accreditation")->set("fencer_id",$model1->getKey())->set('is_dirty',date('Y-m-d H:i:s'))->where("fencer_id",$model2->getKey())->update();
         $this->query()->from("TD_Registration")->set("registration_fencer",$model1->getKey())->where("registration_fencer",$model2->getKey())->update();
         $this->query()->from("TD_Result")->set("result_fencer",$model1->getKey())->where("result_fencer",$model2->getKey())->update();

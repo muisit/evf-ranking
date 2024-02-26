@@ -55,6 +55,7 @@ export default class EventDialog extends React.Component {
             compindex: 1,
             weapons: [],
             categories: [],
+            countries: [],
             peruseDialog: false,
             addCompetitionDialog: false
         };
@@ -147,8 +148,6 @@ export default class EventDialog extends React.Component {
         case 'type':
         case 'year':
         case 'duration':
-        case 'email':
-        case 'web':
         case 'location':
         case 'country':
         case 'factor':
@@ -337,6 +336,18 @@ export default class EventDialog extends React.Component {
         <label>Name</label>
         <div className='input'>
             <InputText name='name' value={this.props.value.name} onChange={this.onChangeEl} placeholder='Name'/>
+        </div>
+      </div>
+      <div>
+        <label>Location</label>
+        <div className='input'>
+            <InputText name='location' value={this.props.value.location} onChange={this.onChangeEl} placeholder='Location'/>
+        </div>
+      </div>
+      <div>
+        <label>Country</label>
+        <div className='input'>
+            <Dropdown optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} name='country'/>
         </div>
       </div>
       <div>

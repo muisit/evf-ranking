@@ -92,4 +92,10 @@ class SideEvent extends Base
         }
         return null;
     }
+
+    public function listByEvent($event)
+    {
+        return $this->select('*')->where("event_id", intval($event))->orderBy(array("starts", "title","costs"))->get();
+    }
+
 }

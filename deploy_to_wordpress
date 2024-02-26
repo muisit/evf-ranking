@@ -197,10 +197,10 @@ fi
 
 if [[ "x$DRY" = "x1" ]]
 then
-    echo "cp -r dist/images dist/app.js dist/ranking.js dist/results.js $DEPLOYDIR/dist"
+    echo "cp -r dist/images dist/app.js dist/ranking.js dist/results.js dist/fonts $DEPLOYDIR/dist"
     echo "cp css/evfranking.css $DEPLOYDIR/css"
 else
-    cp -r dist/images dist/app.js dist/ranking.js dist/results.js $DEPLOYDIR/dist
+    cp -r dist/images dist/app.js dist/ranking.js dist/results.js dist/fonts $DEPLOYDIR/dist
     cp dist/app.css $DEPLOYDIR/dist
 
     cd /tmp

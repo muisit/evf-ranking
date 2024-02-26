@@ -108,11 +108,11 @@ fi
 cd ..
 
 #php8.1 /usr/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
-php8.1 /usr/bin/phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
+php8.1 vendor/bin/phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
 if [[ ! "x$?" = "x0" ]]
 then
     echo "PHPUnit tests fail, please run tests yourself"
-    echo "php8.1 /usr/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
+    echo "php8.1 vendor/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
     exit 1
 else
     echo "PHPUnit tests succeed"
@@ -136,10 +136,12 @@ fi
 
 if [[ "x$DRY" = "x1" ]]
 then
-    echo "Dry-run, no execution"
+    echo "npm run build"
 else
     # perform a production build before we deploy
     npm run build
+    rm -rf vendor
+    php8.1 /usr/bin/composer install --no-dev
 fi
 
 BASE=`pwd`
@@ -208,4 +210,8 @@ else
     zip -r $PROJECT $PROJECT
     mv $PROJECT.zip $DEPLOYDIR
     rm -rf /tmp/$PROJECT
+    cd $BASE
+
+    rm -rf vendor
+    php8.1 /usr/bin/composer install
 fi

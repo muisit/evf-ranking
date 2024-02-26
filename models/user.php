@@ -38,10 +38,10 @@
         "user_login" => "login"
     );
 
-    public function __construct($id=null,$forceload=false) {
+    public function __construct($id = null, $forceload = false) {
         global $wpdb;
-        $this->table = $wpdb->base_prefix.$this->table;
-        parent::__construct($id,$forceload);
+        $this->table = $wpdb->base_prefix . $this->table;
+        parent::__construct($id, $forceload);
     }
 
     public function save() {
@@ -55,8 +55,9 @@
         return array("user_nicename asc","ID desc");
     }
 
-    private function addFilter($qb, $filter, $special) {
-        if (!empty(trim($filter))) {
+    private function addFilter($qb, $filter, $special)
+    {
+        if (!empty(trim($filter ?? ''))) {
             global $wpdb;
             $filter = esc_sql($wpdb->esc_like($filter));
             $qb->where(function ($qb2) use ($filter) {

@@ -59,7 +59,7 @@
     }
 
     private function addFilter($qb, $filter,$special) {
-        if(!empty(trim($filter))) {
+        if(!empty(trim($filter ?? ''))) {
             $filter=str_replace("%","%%",$filter);
             $qb->where("role_type_name","like","%$filter%");
         }

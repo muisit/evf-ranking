@@ -113,7 +113,8 @@ HEREDOC;
         return $output;
     }
 
-    public function feedShortCode($attributes) {
+    public function feedShortCode($attributes)
+    {
         $attributes = shortcode_atts(array(
             "id" => -1,
             "name" => ""
@@ -128,27 +129,56 @@ HEREDOC;
             // if we have an id, make sure it matches
             if (isset($attributes["id"]) && intval($attributes["id"]) > 0) {
                 if (intval($attributes["id"]) == intval($e->getKey())) {
-                    $found = $e;
-                    break;
+                    if (!empty($e->event_feed)) {
+                        $found = $e->event_feed;
+                        break;
+                    }
                 }
             }
             // if we have part of a title, make sure it matches
-            else if(isset($attributes["name"]) && strlen($attributes["name"])) {
+            else if (isset($attributes["name"]) && strlen($attributes["name"])) {
                 if (strpos(strtolower($e->event_name), strtolower($attributes["name"])) !== false) {
-                    $found = $e;
-                    break;
+                    if (!empty($e->event_feed)) {
+                        $found = $e->event_feed;
+                        break;
+                    }
                 }
             }
-            else if (strlen($e->event_feed)) {
+            else if (!empty($e->event_feed)) {
                 // take the first event with a live feed url
-                $found = $e;
+                $found = $e->event_feed;
                 break;
             }
         }
         
-        if (!empty($found) && strlen($found->event_feed)) {
+        if (empty($found)) {
+            // else find all tribe events
+            $args = array(
+                'post_type' => 'tribe_events',
+                'post_status' => 'publish',
+                'orderby' => 'meta_value',
+                'meta_type' => 'DATETIME',
+                'meta_key' => '_EventStartDate',
+                'meta_query' => array(
+                    array(
+                        'key' => '_EventEndDate',
+                        'value' => (new \DateTimeImmutable())->sub((new \DateInterval("P4D")))->format('Y-m-d'),
+                        'compare' => '>=',
+                        'type' => 'DATETIME'
+                    )
+                )
+            );
+            $query = new \WP_Query($args);
+            while ($query->have_posts()) {
+                error_log(json_encode($query->post));
+                $found = $this->getLiveFeedFromWPPost($query->post);
+                break;
+            }
+        }
+
+        if (!empty($found)) {
             wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
-            return "<a href='" . addslashes($found->event_feed) . "' target='_blank'><div class='live-feed'></div></a>";
+            return "<a href='" . addslashes($found) . "' target='_blank'><div class='live-feed'></div></a>";
         }
         return "";
     }
@@ -160,9 +190,9 @@ HEREDOC;
     }
 
     // action called from the Event template to generate a button inside the listed event
-    public function eventButton($event)
+    public function eventButton($wpEvent)
     {
-        $id = is_object($event) ? $event->ID : intval($event);
+        $id = is_object($wpEvent) ? $wpEvent->ID : intval($wpEvent);
         if (Display::$policy === null) {
             Display::$policy = new Policy();
         }
@@ -177,13 +207,25 @@ HEREDOC;
                 $location = home_url("/entries/$id");
                 echo "<a href='$location'><div class='evfranking-entries'></div></a>";
             }
-
-            // if the event has a live feed, just display it
-            if (strlen($event->event_feed ?? '')) {
-                // add the style sheet so we can style the front end button
-                wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
-                echo "<a href='" . addslashes($event->event_feed) . "' target='_blank'><div class='evfranking-livefeed'></div></a>";
-            }
         }
+
+        $url = '';
+        if (is_object($wpEvent)) {
+            $url = $this->getLiveFeedFromWPPost($wpEvent);
+        }
+        elseif ($event != null && strlen($event->event_feed ?? '')) {
+            $url = $event->event_feed;
+        }
+        if (!empty($url)) {
+            // add the style sheet so we can style the front end button
+            wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
+            echo "<a href='" . addslashes($url) . "' target='_blank'><div class='evfranking-livefeed'></div></a>";
+        }
+    }
+
+    private function getLiveFeedFromWPPost($post)
+    {
+        $retval = get_post_meta($post->ID, 'live_results', true);
+        return $retval;
     }
 }

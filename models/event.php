@@ -319,14 +319,14 @@ class Event extends Base
 
     public function isOpen() {
         $now = time();
-        $opens = strtotime($this->event_registration_open);
-        $closes = strtotime($this->event_registration_close);
+        $opens = strtotime($this->event_registration_open ?? '');
+        $closes = strtotime($this->event_registration_close ?? '');
         return $now >= $opens && $now < $closes;
     }
 
     public function isOpenForView() {
         $now = time();
-        $closes = strtotime($this->event_registration_close);
+        $closes = strtotime($this->event_registration_close ?? '');
         return $now >= $closes;
     }
 

@@ -127,8 +127,9 @@ class API extends BaseLib {
         $this->checkNonce($nonce);
         $fencer = $this->fromPost("fencer");
         $retval = array("error" => true);
+        $upload = $this->fromPost("upload");
 
-        if (!empty($event) && $upload == "true") {
+        if ($upload == "true") {
             $fencer = $this->loadModel("Fencer", $fencer);
 
             if ($fencer->exists()) {

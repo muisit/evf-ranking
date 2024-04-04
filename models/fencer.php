@@ -255,7 +255,7 @@ class Fencer extends Base {
 
     public function getPath()
     {
-        $dirname = "home/veterans/api_storage/app/fencers";
+        $dirname = "/home/veterans/api_storage/app/fencers";
         $filename = $dirname . "/fencer_" . $this->getKey() . ".dat";
         return $filename;
     }

@@ -179,7 +179,7 @@ HEREDOC;
             }
 
             // if the event has a live feed, just display it
-            if (strlen($event->event_feed)) {
+            if (strlen($event->event_feed ?? '')) {
                 // add the style sheet so we can style the front end button
                 wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
                 echo "<a href='" . addslashes($event->event_feed) . "' target='_blank'><div class='evfranking-livefeed'></div></a>";

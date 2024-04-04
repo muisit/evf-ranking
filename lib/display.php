@@ -165,12 +165,17 @@ HEREDOC;
                         'value' => (new \DateTimeImmutable())->sub((new \DateInterval("P4D")))->format('Y-m-d'),
                         'compare' => '>=',
                         'type' => 'DATETIME'
+                    ),
+                    array(
+                        'key' => '_EventStartDate',
+                        'value' => (new \DateTimeImmutable())->add((new \DateInterval("P2D")))->format('Y-m-d'),
+                        'compare' => '<=',
+                        'type' => 'DATETIME'
                     )
                 )
             );
             $query = new \WP_Query($args);
             while ($query->have_posts()) {
-                error_log(json_encode($query->post));
                 $found = $this->getLiveFeedFromWPPost($query->post);
                 break;
             }

@@ -2,6 +2,7 @@ import { Button } from 'primereact/button';
 import { ToggleButton } from 'primereact/togglebutton';
 import { Toast } from 'primereact/toast';
 import { InputNumber } from 'primereact/inputnumber';
+import { InputText } from 'primereact/inputtext';
 import PerusalDialog from './dialogs/perusaldialog';
 import { abort_all_calls, ranking, singleevent, competitions, result } from "../api.js";
 
@@ -14,7 +15,9 @@ export default class ActionsTab extends React.Component {
         this.state = {
             peruseDialog: false,
             events: [],
-            cutoff: 5
+            cutoff: 5,
+            apiuser: -1,
+            apikey: ''
         };
     }
 
@@ -25,10 +28,10 @@ export default class ActionsTab extends React.Component {
                     this.setState({events :res.data.list});
                 }
             });
-        ranking('cutoff', {})
+        ranking('apidata', {})
             .then ((res) => {
                 if (res && res.data) {
-                    this.setState({cutoff: res.data});
+                    this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
                 }
             });
     }
@@ -74,6 +77,10 @@ export default class ActionsTab extends React.Component {
         switch (name) {
             case 'cutoff':
                 this.setState({cutoff:value});
+            case 'apikey':
+                this.setState({apikey:value});
+            case 'apiuser':
+                this.setState({apiuser:value});
         }
     }
 
@@ -101,11 +108,29 @@ export default class ActionsTab extends React.Component {
     onStore = (name) => {
         switch(name) {
             case 'cutoff':
-                ranking('cutoff', { cutoff: this.state.cutoff})
+                ranking('apidata', { cutoff: this.state.cutoff})
                     .then((res) => {
                         if (res && res.data) {
-                            this.setState({cutoff: res.data});
+                            this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
                             this.toast.show({severity:'info',summary:'Count stored',detail:'The configured include count for cut-off of ranking points was stored'});                            
+                        }
+                    })
+                break;
+            case 'apikey':
+                ranking('apidata', { apikey: this.state.apikey})
+                    .then((res) => {
+                        if (res && res.data) {
+                            this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
+                            this.toast.show({severity:'info',summary:'Key stored',detail:'The configured API key was stored'});
+                        }
+                    })
+                break;
+            case 'apiuser':
+                ranking('apidata', { apiuser: this.state.apiuser})
+                    .then((res) => {
+                        if (res && res.data) {
+                            this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
+                            this.toast.show({severity:'info',summary:'User stored',detail:'The configured API user ID was stored'});                            
                         }
                     })
                 break;
@@ -179,6 +204,32 @@ export default class ActionsTab extends React.Component {
                     );
                 })}
                 </tbody></table>
+            </div>
+        </div>
+        <div className='row'>
+            <div className='col-2'>
+                <label>API Key</label>
+            </div>
+            <div className='col-10'>
+                <InputText className='input' name='apikey' onChange={(event) => this.onChange('apikey', event.value)}
+                        onBlur={() => this.onStore('apikey')}
+                        value={this.state.apikey}></InputText>
+                <p className='small'>
+                    Provide the API key to the back-end API
+                </p>
+            </div>
+        </div>
+        <div className='row'>
+            <div className='col-2'>
+                <label>API User</label>
+            </div>
+            <div className='col-10'>
+                <InputText className='input' name='apiuser' onChange={(event) => this.onChange('apiuser', event.value)}
+                        onBlur={() => this.onStore('apiuser')}
+                        value={this.state.apiuser}></InputText>
+                <p className='small'>
+                    Provide the API user ID
+                </p>
             </div>
         </div>
     </div>

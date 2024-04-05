@@ -177,14 +177,31 @@ class Ranking extends Base
 
     private function getCutoff()
     {
-        $cutoff = intval(get_option("evfranking_ranking_count_included"));
-        if (empty($cutoff)) {
-            $cutoff = 5;
+        $data = intval(get_option("evfranking_ranking_count_included"));
+        if (empty($data)) {
+            $data = 5;
         }
-        return $cutoff;
+        return $data;
     }
 
-    public function setCutoff($data)
+    private function getApiKey()
+    {
+        $data = intval(get_option("evf_internal_key"));
+        if (empty($data)) {
+            $data = '';
+        }
+        return $data;
+    }
+
+    private function getApiUser()
+    {
+        $data = intval(get_option("evf_internal_user"));
+        if (empty($data)) {
+            $data = wp_get_current_user()->ID;
+        }
+        return $data;
+    }
+    public function setApiData($data)
     {
         $data = (array)$data;
         if (!empty($data) && isset($data['cutoff'])) {
@@ -195,8 +212,28 @@ class Ranking extends Base
             else {
                 update_option('evfranking_ranking_count_included', intval($data['cutoff']));
             }
+
+            $opt = get_option("evf_internal_key");
+            if (empty($opt)) {
+                add_option('evf_internal_key', $data['apikey']);
+            }
+            else {
+                update_option('evf_internal_key', $data['apikey']);
+            }
+
+            $opt = get_option("evf_internal_user");
+            if (empty($opt)) {
+                add_option('evf_internal_user', intval($data['apiuser']));
+            }
+            else {
+                update_option('evf_internal_user', intval($data['apiuser']));
+            }
         }
-        return $this->getCutoff();
+        return [
+            'cutoff' => $this->getCutoff(),
+            'apikey' => $this->getApiKey(),
+            'apiuser' => $this->getApiUser()
+        ];
     }
 
     public function calculateRankings()

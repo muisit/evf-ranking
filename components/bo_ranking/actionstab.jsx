@@ -45,6 +45,7 @@ export default class ActionsTab extends React.Component {
         .then((res) => {
             if(res && res.data && res.data.total) {
                 this.toast.show({severity:'info',summary:'Rankings Reset',detail:'The points used for calculating the ranking were re-evaluated, ' + res.data.total + ' results are included'});
+                this.callApiForRankingStore();
             }
         });
     }
@@ -74,13 +75,17 @@ export default class ActionsTab extends React.Component {
     }
 
     onChange = (name, value) => {
+        console.log('setting ', name, value);
         switch (name) {
             case 'cutoff':
                 this.setState({cutoff:value});
+                break;
             case 'apikey':
                 this.setState({apikey:value});
+                break;
             case 'apiuser':
                 this.setState({apiuser:value});
+                break;
         }
     }
 
@@ -105,7 +110,28 @@ export default class ActionsTab extends React.Component {
         });
     }
 
+    callApiForRankingStore = () => {
+        const fetchOptions = {
+            credentials: "include",
+            redirect: "manual",
+            method: 'GET',
+            headers: {
+                'Authorize': 'Bearer ' + this.state.apikey
+            }
+        };
+    
+        fetch(evfranking.api + '/ranking/create', fetchOptions)
+            .then(() => {
+                this.toast.show({severity:'info',summary:'Ranking stored',detail:'The recalculated ranking was stored as a new version'});
+            })
+            .catch(err => {
+                console.log("error in fetch: ", err);
+                alert("Error calling the API backend to store the ranking");
+            });
+    }
+
     onStore = (name) => {
+        console.log('on store ', name);
         switch(name) {
             case 'cutoff':
                 ranking('apidata', { cutoff: this.state.cutoff})
@@ -211,7 +237,7 @@ export default class ActionsTab extends React.Component {
                 <label>API Key</label>
             </div>
             <div className='col-10'>
-                <InputText className='input' name='apikey' onChange={(event) => this.onChange('apikey', event.value)}
+                <InputText className='input' name='apikey' onChange={(event) => this.onChange('apikey', event.target.value)}
                         onBlur={() => this.onStore('apikey')}
                         value={this.state.apikey}></InputText>
                 <p className='small'>
@@ -224,7 +250,7 @@ export default class ActionsTab extends React.Component {
                 <label>API User</label>
             </div>
             <div className='col-10'>
-                <InputText className='input' name='apiuser' onChange={(event) => this.onChange('apiuser', event.value)}
+                <InputText className='input' name='apiuser' onChange={(event) => this.onChange('apiuser', event.target.value)}
                         onBlur={() => this.onStore('apiuser')}
                         value={this.state.apiuser}></InputText>
                 <p className='small'>

@@ -58,13 +58,6 @@ class Display
 HEREDOC;
     }
 
-    public function registration()
-    {
-        echo <<<HEREDOC
-        <div id="evfregistration-root"></div>
-HEREDOC;
-    }
-
     public function scripts($page)
     {
         if (in_array($page, array("toplevel_page_evfrankings"))) {
@@ -88,6 +81,7 @@ HEREDOC;
         $nonce = wp_create_nonce($dat->createNonceText());
         $params = array_merge(Display::$jsparams, array(
             'url' => admin_url('admin-ajax.php?action=evfranking'),
+            'api' => API_URL,
             'nonce' => $nonce,
             'capabilities' => (new Policy())->getCapabilities()
         ));

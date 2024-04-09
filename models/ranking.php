@@ -186,7 +186,7 @@ class Ranking extends Base
 
     private function getApiKey()
     {
-        $data = intval(get_option("evf_internal_key"));
+        $data = get_option("evf_internal_key");
         if (empty($data)) {
             $data = '';
         }
@@ -212,7 +212,9 @@ class Ranking extends Base
             else {
                 update_option('evfranking_ranking_count_included', intval($data['cutoff']));
             }
+        }
 
+        if (!empty($data) && isset($data['apikey'])) {
             $opt = get_option("evf_internal_key");
             if (empty($opt)) {
                 add_option('evf_internal_key', $data['apikey']);
@@ -220,7 +222,9 @@ class Ranking extends Base
             else {
                 update_option('evf_internal_key', $data['apikey']);
             }
+        }
 
+        if (!empty($data) && isset($data['apiuser'])) {
             $opt = get_option("evf_internal_user");
             if (empty($opt)) {
                 add_option('evf_internal_user', intval($data['apiuser']));

@@ -77,7 +77,18 @@ class OverviewPage extends VirtualPage
 
         $ranking = new \EVFRanking\Models\Ranking();
 
-        array_walk($this->competitions, function ($comp) use ($ranking) {
+        $catmodel = new \EVFRanking\Models\Category();
+        $cats = $catmodel->select('*')->where('category_type', 'I')->get();
+        $catsByAbbr = [];
+        foreach ($cats as $cat) {
+            if ($cat->category_type == 'I') {
+                $catsByAbbr[$cat->category_abbr] = [$cat];
+            }
+        }
+        $catsByAbbr['T'] = [$catsByAbbr['1'][0], $catsByAbbr['2'][0]];
+        $catsByAbbr['T(G)'] = [$catsByAbbr['3'][0], $catsByAbbr['4'][0]];
+
+        array_walk($this->competitions, function ($comp) use ($ranking, $catsByAbbr) {
             array_walk($comp->registrations, function ($reg) use ($comp) {
                 $fencer = new \EVFRanking\Models\Fencer($reg);
                 $country = new \EVFRanking\Models\Country($reg);
@@ -86,12 +97,14 @@ class OverviewPage extends VirtualPage
                 $this->fencers[$key] = $fencer;
             });
 
-            $compRanking = $ranking->listResults($comp->weapon->getKey(), $comp->category);
-            if (!empty($compRanking)) {
-                array_walk($compRanking, function ($entry) use ($comp) {
-                    $key = $comp->weapon->weapon_abbr . '#' . $comp->category->category_abbr . '#' . $entry['id'];
-                    $this->ranking[$key] = $entry;
-                });
+            foreach ($catsByAbbr[$comp->category->category_abbr] as $cat) {
+                $compRanking = $ranking->listResults($comp->weapon->getKey(), $cat);
+                if (!empty($compRanking)) {
+                    array_walk($compRanking, function ($entry) use ($comp, $cat) {
+                        $key = $comp->weapon->weapon_abbr . '#' . $comp->category->category_abbr . '#' . $entry['id'];
+                        $this->ranking[$key] = $entry;
+                    });
+                }
             }
         });
     }
@@ -367,9 +380,10 @@ class OverviewPage extends VirtualPage
     {
         $surname = $this->encode(strtoupper($fencer->fencer_surname));
         $name = $this->encode($fencer->fencer_firstname);
+        $key = $competition->weapon->weapon_abbr . '#' . $competition->category->category_abbr . '#' . $fencer->getKey();
+
 
         $position = null;
-        $key = $competition->weapon->weapon_abbr . '#' . $competition->category->category_abbr . '#' . $fencer->getKey();
         if (isset($this->ranking[$key])) {
             $position = $this->ranking[$key]['pos'];
         }

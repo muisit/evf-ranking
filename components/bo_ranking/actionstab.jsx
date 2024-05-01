@@ -116,7 +116,7 @@ export default class ActionsTab extends React.Component {
             redirect: "manual",
             method: 'GET',
             headers: {
-                'Authorize': 'Bearer ' + this.state.apikey
+                'Authorization': 'Bearer ' + this.state.apikey
             }
         };
     

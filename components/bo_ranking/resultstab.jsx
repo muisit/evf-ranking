@@ -15,6 +15,7 @@ const fieldToSorterList = {
     "id": "i",
     "fencer_surname": "n",
     "fencer_firstname": "f",
+    "fencer_dob": "b",
     "place": "p",
     "country": "c",
     "points": "s",
@@ -287,6 +288,7 @@ export default class ResultsTab extends PagedTab {
             <Column field="fencer_surname" header="Name" sortable={true} />
             <Column field="fencer_firstname" header="Firstname" sortable={true} />
             <Column field="country" header="Country" sortable={true} />
+            <Column field="fencer_dob" header="DOB" sortable={true} />
             <Column field="points" header="Points" sortable={true} />
             <Column field="total_points" header="Total" sortable={true} />
             <Column field="ranked" header="Rnk" />

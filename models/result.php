@@ -52,6 +52,7 @@ class Result extends Base {
         "result_in_ranking" => "ranked",
         "fencer_firstname" => "fencer_firstname",
         "fencer_surname" => "fencer_surname",
+        "fencer_dob" => "fencer_dob",
         "country_abbr" => "country",
         "country_id" => "country_id",
         "event_name" => "event_name",
@@ -66,6 +67,7 @@ class Result extends Base {
         "result_competition" => "skip",
         "fencer_firstname" => "skip",
         "fencer_surname" => "skip",
+        "fencer_dob" => "skip",
         "country_abbr" => "skip",
         "country_id" => "skip",
         "result_fencer" => array("rules" => "model=Fencer|required","message"=>"Please select a valid fencer"),
@@ -93,6 +95,8 @@ class Result extends Base {
             case 'S': $orderBy[]="result_points desc"; break;
             case 'i': $orderBy[]="result_id asc"; break;
             case 'I': $orderBy[]="result_id desc"; break;
+            case 'b': $orderBy[]="f.fencer_dob asc"; break;
+            case 'B': $orderBy[]="f.fencer_dob desc"; break;
             case 'n': $orderBy[]="f.fencer_surname asc"; break;
             case 'N': $orderBy[]="f.fencer_surname desc"; break;
             case 'f': $orderBy[]="f.fencer_firstname asc"; break;
@@ -146,7 +150,7 @@ class Result extends Base {
     }
 
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
-        $qb = $this->select('TD_Result.*, f.fencer_id, f.fencer_surname, f.fencer_firstname, c.country_abbr, c.country_id')
+        $qb = $this->select('TD_Result.*, f.fencer_id, f.fencer_surname, f.fencer_firstname, f.fencer_dob, c.country_abbr, c.country_id')
             ->join("TD_Fencer","f","TD_Result.result_fencer=f.fencer_id")
             ->join("TD_Country","c","f.fencer_country=c.country_id")
             ->join("TD_Competition", "cm", "TD_Result.result_competition=cm.competition_id")

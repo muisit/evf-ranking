@@ -13,7 +13,7 @@ while [ $# -gt 0 ]
 do
     arg=$1
     shift
-    
+
     if [[ "x$arg" = "x-v" ]]
     then
         RELEASE="1"
@@ -22,12 +22,12 @@ do
 
     if [[ "x$arg" = "x-r" ]]
     then
-        RELEASE="1"        
+        RELEASE="1"
         MAJOR="1"
     fi
 
     if [[ "x$arg" = "x-n" ]]
-    then    
+    then
         DRY="1"
     fi
 
@@ -96,7 +96,7 @@ else
 fi
 
 cd oldtests
-php8.1 ./run.php > /dev/null 2>&1
+php8.2 ./run.php > /dev/null 2>&1
 if [[ ! "x$?" = "x0" ]]
 then
     echo "PHP tests fail, please run tests yourself"
@@ -107,12 +107,12 @@ else
 fi
 cd ..
 
-#php8.1 /usr/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
-php8.1 vendor/bin/phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
+#php8.2 /usr/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests 
+php8.2 vendor/bin/phpunit --bootstrap tests/preload.php --stderr tests 2>/dev/null
 if [[ ! "x$?" = "x0" ]]
 then
     echo "PHPUnit tests fail, please run tests yourself"
-    echo "php8.1 vendor/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
+    echo "php8.2 vendor/bin/phpunit --bootstrap tests/preload.php --testdox --colors=always tests"
     exit 1
 else
     echo "PHPUnit tests succeed"
@@ -141,7 +141,7 @@ else
     # perform a production build before we deploy
     npm run build
     rm -rf vendor
-    php8.1 /usr/bin/composer install --no-dev
+    php8.2 /usr/bin/composer install --no-dev
 fi
 
 BASE=`pwd`
@@ -213,5 +213,5 @@ else
     cd $BASE
 
     rm -rf vendor
-    php8.0 /usr/bin/composer install
+    php8.2 /usr/bin/composer install
 fi

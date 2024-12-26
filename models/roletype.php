@@ -42,6 +42,10 @@
         "org_declaration"=> "trim|enum=Country,Org,EVF,FIE"
     );
 
+    public $role_type_id = null;
+    public $role_type_name = null;
+    public $org_declaration = null;
+
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";
         $orderBy=array();

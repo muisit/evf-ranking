@@ -44,6 +44,11 @@ class Weapon extends Base
         "weapon_gender" => "enum=M,F"
     );
 
+    public $weapon_id = null;
+    public $weapon_name = null;
+    public $weapon_abbr = null;
+    public $weapon_gender = null;
+
     public static function ExportAll($export = true)
     {
         $model = new Weapon();

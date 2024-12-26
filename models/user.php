@@ -38,6 +38,11 @@
         "user_login" => "login"
     );
 
+    public $ID = null;
+    public $user_nicename = null;
+    public $user_email = null;
+    public $user_login = null;
+
     public function __construct($id = null, $forceload = false) {
         global $wpdb;
         $this->table = $wpdb->base_prefix . $this->table;

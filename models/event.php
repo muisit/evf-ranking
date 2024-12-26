@@ -34,13 +34,14 @@ class Event extends Base
     public $fields=array("event_id","event_name","event_open","event_year",
         "event_type", "event_country", "event_location",
         "event_in_ranking", "event_factor", "event_frontend", "event_feed","event_config",
-        "type_name","country_name",
+//        "type_name","country_name",
     );
     public $fieldToExport=array(
         "event_id" => "id",
         "event_name" => "name",
         "event_open" => "opens",
         "event_year" => "year",
+        "event_duration" => "duration",
         "event_type" => "type",
         "event_country" => "country",
         "event_location" => "location",
@@ -57,6 +58,7 @@ class Event extends Base
         "event_name" => array("label"=>"Name", "rules"=>"trim|lte=100|required","message"=>"Name is required"),
         "event_open" => array("label"=>"Opens", "rules"=>"date|gt=2000-01-01|lt=2100-01-01|required","message"=>"Opening date is required"),
         "event_year" => array("label"=>"Year", "rules"=>"int|gte=2000|lt=2100|required","message"=>"Year of the event is required"),
+        "event_duration" => array("label"=>"Duration", "rules"=>"int|gte=1|lt=21|required","message"=>"Duration of the event is required"),
         "event_type" => array("label"=>"Type", "rules"=>"model=EventType", "message"=>"Please select a valid type"),
         "event_location" => array("label"=>"Location", "rules"=>"trim|lte=45"),
         "event_country" => array("label"=>"Country", "rules"=>"model=Country","message"=>"Please select a valid country"),
@@ -75,6 +77,7 @@ class Event extends Base
     public $event_name = null;
     public $event_open = null;
     public $event_year = null;
+    public $event_duration = 3;
     public $event_type = null;
     public $event_location = null;
     public $event_country = null;
@@ -82,14 +85,13 @@ class Event extends Base
     public $event_factor = null;
     public $event_frontend = null;
     public $event_feed = null;
-    public $event_config = [];
+    public $event_config = '{}';
 
     // submodels
     public $event_type_name = null;
     public $country_name = null;
     public $competitions = [];
     public $roles = [];
-
 
     public function __construct($id=null,$forceload=false) {
         parent::__construct($id, $forceload);
@@ -261,7 +263,7 @@ class Event extends Base
     public function save() {
         // check the config array, only allow settings we use
         // this avoids allowing hackers to enter arbitrary data in this database field
-        $cfg = json_decode($this->event_config, true);
+        $cfg = is_string($this->event_config) ? json_decode($this->event_config, true) : $this->event_config;
         if ($cfg !== false && is_array($cfg)) {
             $allowed = [
                 "use_registration" => "bool",

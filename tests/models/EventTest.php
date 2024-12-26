@@ -192,7 +192,7 @@ class EventTest extends BaseTestCase
         $queries = $this->dbLog();
         $this->assertEquals(1, count($queries));
         //$this->assertEquals(json_encode($queries[0]), "SELECT COUNT(*) as cnt FROM TD_Registration WHERE registration_role = " . RoleFixture::ROLE_ID_1);
-        $this->assertEquals($queries[0], '["set","TD_Event",800,{"event_name":"TestMe","event_open":"2000-01-01","event_year":2004,"event_type":2,"event_country":3,"event_location":"Somewhere","event_in_ranking":"Y","event_factor":1.2,"event_frontend":12,"event_feed":"","event_config":"{\"use_registration\":true,\"allow_registration_lower_age\":true,\"allow_more_teams\":true,\"no_accreditations\":true,\"use_accreditation\":true,\"require_cards\":true,\"require_documents\":true,\"allow_incomplete_checkin\":true,\"allow_hod_checkout\":true,\"mark_process_start\":true,\"combine_checkin_checkout\":true}","country_name":null}]');
+        $this->assertEquals($queries[0], '["set","TD_Event",800,{"event_name":"TestMe","event_open":"2000-01-01","event_year":2004,"event_type":2,"event_country":3,"event_location":"Somewhere","event_in_ranking":"Y","event_factor":1.2,"event_frontend":12,"event_feed":"","event_config":"{\"use_registration\":true,\"allow_registration_lower_age\":true,\"allow_more_teams\":true,\"no_accreditations\":true,\"use_accreditation\":true,\"require_cards\":true,\"require_documents\":true,\"allow_incomplete_checkin\":true,\"allow_hod_checkout\":true,\"mark_process_start\":true,\"combine_checkin_checkout\":true}"}]');
 
         $event = new Event();
         $event->event_name = 'TestMe';
@@ -213,8 +213,8 @@ class EventTest extends BaseTestCase
         $queries = $this->dbLog();
         $this->assertEquals(2, count($queries));
         //$this->assertEquals(json_encode($queries[0]), "SELECT COUNT(*) as cnt FROM TD_Registration WHERE registration_role = " . RoleFixture::ROLE_ID_1);
-        $this->assertEquals($queries[0], '["save","TD_Event",{"event_name":"TestMe","event_open":"2000-01-01","event_year":2004,"event_type":2,"event_country":3,"event_location":"Somewhere","event_in_ranking":"Y","event_factor":1.2,"event_frontend":12,"event_feed":"","event_config":"{\"allow_registration_lower_age\":true}","country_name":null}]');
-        $this->assertEquals($queries[1], '["set","TD_Event",2,{"event_name":"TestMe","event_open":"2000-01-01","event_year":2004,"event_type":2,"event_country":3,"event_location":"Somewhere","event_in_ranking":"Y","event_factor":1.2,"event_frontend":12,"event_feed":"","event_config":"{\"allow_registration_lower_age\":true}","country_name":null,"event_id":2}]');
+        $this->assertEquals($queries[0], '["save","TD_Event",{"event_name":"TestMe","event_open":"2000-01-01","event_year":2004,"event_type":2,"event_country":3,"event_location":"Somewhere","event_in_ranking":"Y","event_factor":1.2,"event_frontend":12,"event_feed":"","event_config":"{\"allow_registration_lower_age\":true}"}]');
+        $this->assertEquals($queries[1], '["set","TD_Event",2,{"event_name":"TestMe","event_open":"2000-01-01","event_year":2004,"event_type":2,"event_country":3,"event_location":"Somewhere","event_in_ranking":"Y","event_factor":1.2,"event_frontend":12,"event_feed":"","event_config":"{\"allow_registration_lower_age\":true}","event_id":2}]');
 
 
     }

@@ -42,6 +42,14 @@ class SideEvent extends Base
     );
     public $rules = [];
 
+    public $id = null;
+    public $event_id = null;
+    public $title = null;
+    public $description = null;
+    public $starts = null;
+    public $costs = null;
+    public $competition_id = null;
+
     // cannot save sideevents through this interface
     public function save()
     {

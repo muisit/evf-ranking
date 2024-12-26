@@ -34,3 +34,6 @@ tests/expected_output_pdfs
 tests/coverage
 
 vendor
+
+.phpunit.result.cache
+jstests/coverage/

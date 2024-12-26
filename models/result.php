@@ -80,6 +80,25 @@ class Result extends Base {
         "result_in_ranking" => array("rules" => "required|enum=Y,N,E")
     );
 
+    public $result_id = null;
+    public $result_competition = null;
+    public $result_fencer = null;
+    public $result_place = null;
+    public $result_points = null;
+    public $result_entry = null;
+    public $result_de_points = null;
+    public $result_podium_points = null;
+    public $result_total_points = null;
+    public $result_in_ranking = null;
+
+    // submodels
+    public $fencer_firstname = null;
+    public $fencer_surname = null;
+    public $fencer_dob = null;
+    public $country_abbr = null;
+    public $country_id = null;
+
+
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";
         $orderBy=array();

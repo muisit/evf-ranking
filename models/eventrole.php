@@ -46,6 +46,12 @@
         "role_type" => array("rules"=>"enum=organiser,registrar,accreditation,cashier|required","message"=>"Please set the role for the user in this event"),
     );
 
+    public $id = null;
+    public $event_id = null;
+    public $user_id = null;
+    public $user_nicename = null;
+    public $role_type = null;
+
     public function selectAll($offset,$pagesize,$filter,$sort,$special=null) {
         global $wpdb;
         return $this->select('*, u.user_nicename')

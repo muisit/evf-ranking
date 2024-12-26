@@ -46,6 +46,14 @@
         "org_declaration" => "skip"
     );
 
+    public $role_id = null;
+    public $role_name = null;
+    public $role_type = null;
+
+    // submodels
+    public $role_type_name = null;
+    public $org_declaration = null;
+
 
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";

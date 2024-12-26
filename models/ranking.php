@@ -33,6 +33,13 @@ class Ranking extends Base
     public $pk="result_id";
     public $fields=array("event_id","competition_id","category_id","weapon_id","fencer_id","result_id");
 
+    public $event_id = null;
+    public $competition_id = null;
+    public $category_id = null;
+    public $weapon_id = null;
+    public $fencer_id = null;
+    public $result_id = null;
+
     public function unselectOldTournaments() {
         // only take tournaments into account that are less than 2 years ago
         global $wpdb;

@@ -83,7 +83,7 @@ class TestDatabase
 
     public function set($table, $id, $model)
     {
-        $this->queryLog[] = json_encode(array("set", $table, $id));
+        $this->queryLog[] = json_encode(array("set", $table, $id, $model));
         $table = strtolower($table);
         $id = "k$id";
         if (!isset($this->data[$table])) {

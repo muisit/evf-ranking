@@ -48,6 +48,13 @@
         "competition_weapon_check" => "date"
     );
 
+    public $competition_id = null;
+    public $competition_event = null;
+    public $competition_category = null;
+    public $competition_weapon = null;
+    public $competition_opens = null;
+    public $competition_weapon_check = null;
+
     public static function ExportAll($event)
     {
         $model = new Competition();

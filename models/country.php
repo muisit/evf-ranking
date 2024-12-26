@@ -46,6 +46,12 @@ class Country extends Base
         "country_flag_path" => "trim"
     );
 
+    public $country_id = null;
+    public $country_abbr = null;
+    public $country_name = null;
+    public $country_registered = null;
+    public $country_flag_path = null;
+
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";
         $orderBy=array();

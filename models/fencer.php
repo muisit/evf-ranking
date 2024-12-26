@@ -54,6 +54,17 @@ class Fencer extends Base {
         "fencer_picture" => array("rules" => "enum=Y,N,A,R")
     );
 
+    public $fencer_id = null;
+    public $fencer_firstname = null;
+    public $fencer_surname = null;
+    public $fencer_country = null;
+    public $fencer_dob = null;
+    public $fencer_gender = null;
+    public $fencer_picture = null;
+
+    // Submodels
+    public $country_name = null;
+
     public function __construct($id=null,$forceload=false) {
         parent::__construct($id,$forceload);
         $this->rules["fencer_dob"]["rule"]="date|lt=".date('Y-m-d',strtotime(time() - 20*365*24*60*60));

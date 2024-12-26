@@ -46,6 +46,14 @@
         "user_nicename" => "skip"
     );
 
+    public $id = null;
+    public $user_id = null;
+    public $country_id = null;
+
+    // submodels
+    public $country_name = null;
+    public $user_nicename = null;
+
 
     private function sortToOrder($sort) {
         if(empty($sort)) $sort="i";

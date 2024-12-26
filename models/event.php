@@ -71,6 +71,34 @@ class Event extends Base
         "roles" => "contains=EventRole,roles_list"
     );
 
+    public $event_id = null;
+    public $event_name = null;
+    public $event_open = null;
+    public $event_year = null;
+    public $event_type = null;
+    public $event_location = null;
+    public $event_country = null;
+    public $event_in_ranking = true;
+    public $event_factor = null;
+    public $event_frontend = null;
+    public $event_feed = null;
+    public $event_config = [];
+
+    // submodels
+    public $event_type_name = null;
+    public $country_name = null;
+    public $competitions = [];
+    public $roles = [];
+
+
+    public function __construct($id=null,$forceload=false) {
+        parent::__construct($id, $forceload);
+        $this->event_duration = 2;
+        $this->event_config = [
+
+        ];
+    }
+
     public function export($result = null)
     {
         $retval = parent::export($result);
@@ -120,7 +148,7 @@ class Event extends Base
     }
 
     private function addFilter($qb, $filter,$special) {
-        if(!empty(trim($filter))) {
+        if(is_string($filter) && !empty(trim($filter))) {
             global $wpdb;
             $filter=esc_sql($wpdb->esc_like($filter));
             //$filter=str_replace("%","%%",$filter);
@@ -233,12 +261,24 @@ class Event extends Base
     public function save() {
         // check the config array, only allow settings we use
         // this avoids allowing hackers to enter arbitrary data in this database field
-        $cfg = json_decode($this->config, true);
+        $cfg = json_decode($this->event_config, true);
         if ($cfg !== false && is_array($cfg)) {
-            $allowed = array(
-                "use_registration" => "bool"
-            );
-            $cfg = array_intersect_keys($allowed, $cfg);
+            $allowed = [
+                "use_registration" => "bool",
+                'allow_registration_lower_age' => "bool",
+                'allow_more_teams' => "bool",
+                'no_accreditations' => "bool",
+                'no_accreditations' => "bool",
+                'use_accreditation' => "bool",
+                'use_registration' => "bool",
+                'require_cards' => "bool",
+                'require_documents' => "bool",
+                'allow_incomplete_checkin' => "bool",
+                'allow_hod_checkout' => "bool",
+                'mark_process_start' => "bool",
+                'combine_checkin_checkout' => "bool"
+            ];
+            $cfg = array_intersect_key($allowed, $cfg);
 
             // make sure each value is correctly typed
             foreach ($cfg as $key => $val) {
@@ -250,7 +290,7 @@ class Event extends Base
         else {
             $cfg = array();
         }
-        $this->config = json_encode($cfg);
+        $this->event_config = json_encode($cfg);
         return parent::save();
     }
 

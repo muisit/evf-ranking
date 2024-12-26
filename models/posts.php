@@ -39,6 +39,12 @@
         "post_content" => "content"
     );
 
+    public $ID = null;
+    public $post_title = null;
+    public $post_status = null;
+    public $post_type = null;
+    public $post_content = null;
+
     public function __construct($id=null,$forceload=false) {
         global $wpdb;
         $this->table = $wpdb->base_prefix . $this->table;

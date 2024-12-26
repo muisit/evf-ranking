@@ -363,6 +363,15 @@ export default class EventDialog extends React.Component {
         </div>
       </div>
       <div>
+        <label>Duration</label>
+        <div className='input'>
+          <InputNumber className='inputint' name='duration' onChange={(ev) => this.onChangeEl('duration',ev.value)} min={1} max={30}  mode="decimal" useGrouping={false} 
+             value={duration}
+             showButtons buttonLayout="horizontal" step={1} decrementButtonClassName="p-button-success" incrementButtonClassName="p-button-success" 
+             incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"></InputNumber>
+        </div>
+      </div>
+      <div>
         <label>Year</label>
         <div className='input'>
             <InputNumber className='inputint' name='year' onChange={(ev) => this.onChangeEl('year',ev.value)} min={2000} max={2100}  mode="decimal" useGrouping={false} 

@@ -65,6 +65,20 @@ class Registration extends Base {
         "registration_country" => "model=Country,null"
     );
 
+    public $registration_id = null;
+    public $registration_fencer = null;
+    public $registration_role = null;
+    public $registration_mainevent = null;
+    public $registration_event = null;
+    public $registration_costs = null;
+    public $registration_date = null;
+    public $registration_paid = null;
+    public $registration_paid_hod = null;
+    public $registration_payment = null;
+    public $registration_state = null;
+    public $registration_team = null;
+    public $registration_country = null;
+
     public function export($result=null) {
         if (empty($result)) {
             $result = $this;

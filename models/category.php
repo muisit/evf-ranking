@@ -46,6 +46,12 @@ class Category extends Base {
         "category_value" => "int"
     );
 
+    public $category_id = null;
+    public $category_name = null;
+    public $category_abbr = null;
+    public $category_type = null;
+    public $category_value = null;
+
     public static function ExportAll($export = true)
     {
         $model = new Category();

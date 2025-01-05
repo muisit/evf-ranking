@@ -36,7 +36,8 @@ class Result extends Base {
         "result_id","result_competition","result_fencer", 
         "result_place","result_points", "result_entry",
         "result_de_points","result_podium_points","result_total_points",
-        "fencer_firstname", "fencer_surname", "country_abbr", "country_id", "result_in_ranking"
+        "result_in_ranking"
+        //"fencer_firstname", "fencer_surname", "country_abbr", "country_id", 
     );
 
     public $fieldToExport = array(

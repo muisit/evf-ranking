@@ -32,7 +32,7 @@ class Fencer extends Base {
     public $table = "TD_Fencer";
     public $pk = "fencer_id";
     public $fields = array("fencer_id","fencer_firstname","fencer_surname","fencer_country","fencer_dob",
-        "fencer_gender", "fencer_picture","country_name");
+        "fencer_gender", "fencer_picture");
     public $fieldToExport = array(
         "fencer_id" => "id",
         "fencer_firstname" => "firstname",

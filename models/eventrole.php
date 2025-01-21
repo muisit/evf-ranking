@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class EventRole extends Base {
+#[AllowDynamicProperties]
+class EventRole extends Base {
     public $table = "TD_Event_Role";
     public $pk="id";
     public $fields=array("id","event_id","user_id","role_type");

@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Role extends Base {
+#[AllowDynamicProperties]
+class Role extends Base {
     public $table = "TD_Role";
     public $pk="role_id";
     public $fields=array("role_id","role_name","role_type");

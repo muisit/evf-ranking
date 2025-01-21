@@ -27,6 +27,7 @@
 
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class EventType extends Base {
     public $table = "TD_Event_Type";
     public $pk = "event_type_id";

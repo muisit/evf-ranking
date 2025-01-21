@@ -24,9 +24,9 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class Ranking extends Base
 {
     public $table = "VW_Ranking";

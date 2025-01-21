@@ -27,6 +27,7 @@
 
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class Event extends Base
 {
     public $table = "TD_Event";
@@ -320,6 +321,8 @@ class Event extends Base
                     $se = new SideEvent();
                     $se->event_id=$this->getKey();
                     $se->competition_id=$c->getKey();
+                    $se->description = '';
+                    $se->costs = 0.0;
                 }
                 else {
                     $se = $sides["c_".$c->getKey()];

@@ -26,6 +26,7 @@
 
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class Country extends Base
 {
     public $table = "TD_Country";

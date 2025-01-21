@@ -29,6 +29,7 @@ namespace EVFRanking\Models;
 
 use \DateTimeImmutable;
 
+#[AllowDynamicProperties]
 class Result extends Base {
     public $table = "TD_Result";
     public $pk="result_id";

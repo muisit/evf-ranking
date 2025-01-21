@@ -24,10 +24,10 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Models;
 
- namespace EVFRanking\Models;
-
- class QueryBuilder {
+#[AllowDynamicProperties]
+class QueryBuilder {
     private $_model=null;
     private $_issub=false;
     private $_action="select";

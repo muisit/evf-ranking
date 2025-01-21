@@ -24,10 +24,10 @@
  * along with evf-ranking.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+namespace EVFRanking\Models;
 
- namespace EVFRanking\Models;
-
- class User extends Base {
+#[AllowDynamicProperties]
+class User extends Base {
     public $table = "users";
     public $pk = "ID";
     public $fields = array("ID", "user_nicename", "user_email", "user_login");

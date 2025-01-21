@@ -27,6 +27,7 @@
 
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class Validator {
     public $model=null;
     public $errors=array();

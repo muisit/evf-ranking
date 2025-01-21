@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Registrar extends Base {
+#[AllowDynamicProperties]
+class Registrar extends Base {
     public $table = "TD_Registrar";
     public $pk="id";
     public $fields=array("id","user_id","country_id");

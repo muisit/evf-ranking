@@ -10,8 +10,10 @@ class OverviewPage extends VirtualPage
 
     private function findEvent($eid)
     {
-        $policy = new Policy();
-        $event = $policy->feEventToBeEvent($eid);
+        $boid = get_post_meta($eid, 'backofficeid', true);
+        $model = new \EVFRanking\Models\Event();
+        $event = $model->get($boid);
+
         if (empty($event) || !$event->exists()) {
             $event = null;
         }
@@ -54,7 +56,7 @@ class OverviewPage extends VirtualPage
     public function createContent($event, $title)
     {
         $this->createCaches($event);
-        usort($this->competitions, fn ($a1, $a2) => $a1->sideEvent->title <=> $a2->sideEvent->title);
+        usort($this->competitions, fn ($a1, $a2) => $a1->sideEvent?->title <=> $a2->sideEvent?->title);
 
         $output = $this->renderOverview($this->competitions, $title);
         foreach ($this->competitions as $competition) {
@@ -69,7 +71,7 @@ class OverviewPage extends VirtualPage
             $comp->sideEvent = $comp->getSideEvent();
             $comp->weapon = $comp->getWeapon();
             $comp->category = $comp->getCategory();
-            $comp->registrations = $comp->sideEvent->registrations();
+            $comp->registrations = $comp->sideEvent?->registrations();
             $comp->teams = $this->separateIntoTeams($comp->registrations);
             $comp->_abbreviation = $comp->abbreviation();
             return $comp;
@@ -89,13 +91,15 @@ class OverviewPage extends VirtualPage
         $catsByAbbr['T(G)'] = [$catsByAbbr['3'][0], $catsByAbbr['4'][0]];
 
         array_walk($this->competitions, function ($comp) use ($ranking, $catsByAbbr) {
-            array_walk($comp->registrations, function ($reg) use ($comp) {
-                $fencer = new \EVFRanking\Models\Fencer($reg);
-                $country = new \EVFRanking\Models\Country($reg);
-                $fencer->country = $country;
-                $key = '#' . $fencer->getKey();
-                $this->fencers[$key] = $fencer;
-            });
+            if (!empty($comp->registrations)) {
+                array_walk($comp->registrations, function ($reg) use ($comp) {
+                    $fencer = new \EVFRanking\Models\Fencer($reg);
+                    $country = new \EVFRanking\Models\Country($reg);
+                    $fencer->country = $country;
+                    $key = '#' . $fencer->getKey();
+                    $this->fencers[$key] = $fencer;
+                });
+            }
 
             foreach ($catsByAbbr[$comp->category->category_abbr] as $cat) {
                 $compRanking = $ranking->listResults($comp->weapon->getKey(), $cat);
@@ -112,17 +116,19 @@ class OverviewPage extends VirtualPage
     private function separateIntoTeams($registrations)
     {
         $teamspercountry = [];
-        foreach ($registrations as $reg) {
-            if (!empty($reg->registration_country) && !empty($reg->registration_team)) {
-                $key = $reg->registration_country . '-' . $reg->registration_team;
-                if (!isset($teamspercountry[$key])) {
-                    $country = new \EVFRanking\Models\Country($reg->registration_country);
-                    $teamspercountry[$key] = [
-                        "country" => $country,
-                        "registrations" => [],
-                    ];
+        if (!empty($registrations)) {
+            foreach ($registrations as $reg) {
+                if (!empty($reg->registration_country) && !empty($reg->registration_team)) {
+                    $key = $reg->registration_country . '-' . $reg->registration_team;
+                    if (!isset($teamspercountry[$key])) {
+                        $country = new \EVFRanking\Models\Country($reg->registration_country);
+                        $teamspercountry[$key] = [
+                            "country" => $country,
+                            "registrations" => [],
+                        ];
+                    }
+                    $teamspercountry[$key]['registrations'][] = $reg;
                 }
-                $teamspercountry[$key]['registrations'][] = $reg;
             }
         }
         return $teamspercountry;

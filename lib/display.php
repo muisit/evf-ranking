@@ -195,7 +195,8 @@ HEREDOC;
         if (Display::$policy === null) {
             Display::$policy = new Policy();
         }
-        $event = Display::$policy->feEventToBeEvent($id);
+        $model = new \EVFRanking\Models\Event();
+        $event = $model->get($this->getBOIdFromWPPost($id));
         if ($event != null) {
             $caps = $event->eventCaps();
 
@@ -225,6 +226,12 @@ HEREDOC;
     private function getLiveFeedFromWPPost($post)
     {
         $retval = get_post_meta($post->ID, 'live_results', true);
+        return $retval;
+    }
+
+    private function getBOIdFromWPPost($postid)
+    {
+        $retval = get_post_meta($postid, 'backofficeid', true);
         return $retval;
     }
 }

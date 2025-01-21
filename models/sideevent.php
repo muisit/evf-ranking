@@ -26,6 +26,7 @@
 
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class SideEvent extends Base
 {
     public $table = "TD_Event_Side";
@@ -50,18 +51,6 @@ class SideEvent extends Base
     public $costs = null;
     public $competition_id = null;
 
-    // cannot save sideevents through this interface
-    public function save()
-    {
-        return false;
-    }
-
-    public function delete($id = null)
-    {
-        // cannot delete sideevents through this interface
-        return false;
-    }
-    
     public static function BaseRegistrationSelection($obj) {
         $qb=new QueryBuilder($obj);
         return $qb->select(array(

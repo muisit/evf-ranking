@@ -28,6 +28,7 @@ namespace EVFRanking\Models;
 
 use \DateTimeImmutable;
 
+#[AllowDynamicProperties]
 class Fencer extends Base {
     public $table = "TD_Fencer";
     public $pk = "fencer_id";

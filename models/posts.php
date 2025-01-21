@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Posts extends Base {
+#[AllowDynamicProperties]
+class Posts extends Base {
     public $table = "posts";
     public $pk = "ID";
     public $fields = array("ID", "post_title", "post_status", "post_type","post_content");

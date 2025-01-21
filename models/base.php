@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
-
- class Base {
+namespace EVFRanking\Models;
+ 
+#[AllowDynamicProperties]
+class Base {
 
     public $table="";
     public $fields=array();

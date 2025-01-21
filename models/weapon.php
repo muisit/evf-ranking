@@ -26,6 +26,7 @@
 
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class Weapon extends Base
 {
     public $table = "TD_Weapon";

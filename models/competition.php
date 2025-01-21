@@ -25,9 +25,10 @@
  */
 
 
- namespace EVFRanking\Models;
+namespace EVFRanking\Models;
 
- class Competition extends Base {
+#[AllowDynamicProperties]
+class Competition extends Base {
     public $table = "TD_Competition";
     public $pk="competition_id";
     public $fields=array("competition_id","competition_event","competition_category","competition_weapon", "competition_opens","competition_weapon_check");

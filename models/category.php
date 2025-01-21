@@ -27,6 +27,7 @@
 
 namespace EVFRanking\Models;
 
+#[AllowDynamicProperties]
 class Category extends Base {
     public $table = "TD_Category";
     public $pk = "category_id";

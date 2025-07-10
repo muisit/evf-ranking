@@ -44,14 +44,6 @@ module.exports = {
           extensions: ['.jsx','.css']
         },
       },
-      {    
-        test: /\.(woff|woff2|eot|ttf|otf)$/,
-        loader: "file-loader",
-        options: {
-          name: "[name].[ext]",
-          outputPath: "fonts/"
-        }
-      },
       {
         test: /\.(jpe?g|png|gif|svg)$/i, 
         loader: "file-loader",

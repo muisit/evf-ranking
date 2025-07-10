@@ -159,7 +159,7 @@ export default class PagedTab extends React.Component {
     <div className='p-d-inline-block links'>
       <Paginator pageLinkSize={this.state.pages} template="PageLinks" first={this.state.offset} totalRecords={this.state.count} rows={this.state.pagesize} onPageChange={this.onPageChange} />
     </div>
-    <div className='p-d-inline-block pagesize fixed'>
+    <div className='p-d-inline-block pagesize'>
       <Dropdown value={this.state.pagesize} options={pagesizes} onChange={this.onPagesizeChange} placeholder="Results" />
     </div>
 </div>);
@@ -194,7 +194,7 @@ export default class PagedTab extends React.Component {
       {this.renderAdd()}
       {this.renderFilter()}
       {this.state.items && this.state.items.length>0 && this.renderTable(pager)}
-      {(!this.state.items || this.state.items.length == 0) && (<p>No data found</p>)}
+      {(!this.state.items || this.state.items.length == 0) && (<p className='p-datatable'>No data found</p>)}
     </div>
     {this.renderDialog()}
 </div>);

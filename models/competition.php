@@ -38,7 +38,8 @@ class Competition extends Base {
         "competition_category"=>"category",
         "competition_weapon" => "weapon",
         "competition_opens"=>"opens",
-        "competition_weapon_check" => "weapon_check"
+        "competition_weapon_check" => "weapon_check",
+        "result_total" => "total"
     );
     public $rules=array(
         "competition_id" => "skip",
@@ -72,7 +73,13 @@ class Competition extends Base {
     }
 
     public function listByEvent($event) {
-        return $this->select('*')->where("competition_event",intval($event))->orderBy(array("competition_weapon","competition_category"))->get();
+        $result = new Result();
+        return $this->select('competition_id, competition_event, competition_category, competition_weapon, competition_opens, competition_weapon_check, count(*) as result_total')
+            ->where("competition_event", intval($event))
+            ->join($result->table, 'result', 'result.result_competition = competition_id')
+            ->orderBy(array("competition_weapon","competition_category"))
+            ->groupBy('competition_id, competition_event, competition_category, competition_weapon, competition_opens, competition_weapon_check')
+            ->get();
     }
 
     public function getWeapon()

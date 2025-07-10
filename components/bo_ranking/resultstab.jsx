@@ -260,7 +260,7 @@ export default class ResultsTab extends PagedTab {
     <div className='p-d-inline-block links'>
       <Paginator pageLinkSize={this.state.pages} template="PageLinks" first={this.state.offset} totalRecords={this.state.count} rows={this.state.pagesize} onPageChange={this.onPageChange} />
     </div>
-    <div className='p-d-inline-block pagesize fixed'>
+    <div className='p-d-inline-block pagesize'>
       <Dropdown value={this.state.pagesize} options={pagesizes} onChange={this.onPagesizeChange} placeholder="Results" />
     </div>
 </div>);
@@ -271,7 +271,7 @@ export default class ResultsTab extends PagedTab {
         var evname=this.state.events.filter((e) => e.id == this.props.eventId).map((e)=> e.name);
         var comptitle=''+evname +' ' + this.state.competition.weapon_name + " " + this.state.competition.category_name;
 
-        return (<div>
+        return (<div className='table-title'>
             <h4>{comptitle}</h4>
             <DataTable
             ref={this.dt}
@@ -302,15 +302,19 @@ export default class ResultsTab extends PagedTab {
     }
 
     renderCompetitionTable(pager) {
-        return (<DataTable
+        var evtitle=this.state.events.filter((e) => e.id == this.props.eventId).map((e)=> e.name);
+        return (<div className='table-title'>
+            <h4>{evtitle}</h4>
+            <DataTable
             ref={this.dt}
             value={this.state.competitions}
             className="p-datatable-striped"
             onRowDoubleClick={this.selectComp}            
         >
-            <Column field="weapon_name" header="Weapon" sortable={false} />
-            <Column field="category_name" header="Category" sortable={false} />
-        </DataTable>);
+            <Column field="weapon_name" header="Weapon" sortable={false} style={{width: '20%'}}/>
+            <Column field="category_name" header="Category" sortable={false} style={{width: '20%'}}/>
+            <Column field="total" header="Entries" sortable={false} />
+        </DataTable></div>);
     }
 
     renderTable(pager) {

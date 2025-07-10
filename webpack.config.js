@@ -30,7 +30,7 @@ module.exports = {
           loader: "babel-loader",
           options: {
             presets: ['@babel/preset-env', '@babel/preset-react'],
-            plugins: ["@babel/plugin-proposal-class-properties", "@babel/plugin-transform-react-jsx"]
+            plugins: ["@babel/plugin-transform-class-properties", "@babel/plugin-transform-react-jsx"]
           }
         }
       },
@@ -54,7 +54,7 @@ module.exports = {
       },
       {
         test: /\.(jpe?g|png|gif|svg)$/i, 
-        loader: "file-loader?name=/public/icons/[name].[ext]",
+        loader: "file-loader",
         options: {
           name: "[name].[ext]",
           outputPath: "images/"
@@ -74,19 +74,5 @@ module.exports = {
   plugins: [
 //    new CleanWebpackPlugin(),
     new MiniCssExtractPlugin()
-  ],
-  node: {
-    // prevent webpack from injecting useless setImmediate polyfill because Vue
-    // source contains it (although only uses it if it's native).
-    setImmediate: false,
-    // prevent webpack from injecting mocks to Node native modules
-    // that does not make sense for the client
-    dgram: 'empty',
-    fs: 'empty',
-    net: 'empty',
-    tls: 'empty',
-    child_process: 'empty',
-    // prevent webpack from injecting eval / new Function through global polyfill
-//    global: false
-  }
+  ]
 };

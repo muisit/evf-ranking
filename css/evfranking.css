@@ -44,7 +44,7 @@ table.compact { width: auto; }
 .p-tabview .p-tabview-panels { padding: 10px 5px; }
 .datatable { position:relative; min-height: 50px;}
 .datatable .p-inputtext { width: 100%; }
-.datatable .search-input { width: 300px; display: block; float: right;padding-bottom:5px;}
+.datatable .search-input { width: 300px; display: block; float: left;padding-bottom:5px;}
 .datatable .search-input .pi-search { margin-top: -12px; }
 .datatable .search-input-results { width: auto; }
 .datatable p { margin: 0px; padding: 10px;}

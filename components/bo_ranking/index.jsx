@@ -38,25 +38,33 @@ export default class IndexPage extends React.Component {
         };
     }
     componentDidMount = () => {
+        console.log('component did mount of index page');
         countries(0,1000,'',"n")
             .then(json => {
-                if(json) this.setState({ "countries": json.data.list, "countries_count": json.data.total});
-                this.checkInit();
+                if(json) this.setState({ "countries": json.data.list, "countries_count": json.data.total}, () => this.checkInit());
         });
         eventtypes(0,1000,'','n')
             .then(json => {
-                if(json) this.setState({"eventtypes": json.data.list, "eventtypes_count": json.data.total});
-                this.checkInit();
+                if(json) this.setState({"eventtypes": json.data.list, "eventtypes_count": json.data.total}, () => this.checkInit());
         });
         users(0, 1000, '', 'n')
             .then(json => {
-                if (json) this.setState({ "users": json.data.list, "users_count": json.data.total });
-                this.checkInit();
+                console.log('received users', json);
+                if (json) {
+                    console.log('setting users count on state to ', json.data.total);
+                    this.setState({ "users": json.data.list, "users_count": json.data.total }, () => this.checkInit());
+                }
             });
     }
 
     checkInit = () => {
-        if (this.state.countries_count>=0 && this.state.eventtypes_count>=0 && this.state.users_count>=0) this.setState({ initializing: false });
+        if (this.state.countries_count>=0 && this.state.eventtypes_count>=0 && this.state.users_count>=0) {
+            console.log('checking initialization, all items loaded');
+            this.setState({ initializing: false });
+        }
+        else {
+            console.log('checking initialization: still waiting ', this.state.countries_count, this.state.eventtypes_count, this.state.users_count);
+        }
     }
 
     setDialogs = (dialog) => {

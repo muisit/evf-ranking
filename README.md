@@ -7,7 +7,7 @@ Wordpress plugin to register and peruse results and rankings for the European Ve
 @babel/core
 @babel/preset-env -> integration with browserlist
 @babel/preset-react -> babel presets for React development
-@babel/plugin-proposal-class-properties -> transforms class properties
+@babel/plugin-transform-class-properties -> transforms class properties
 @babel/plugin-transform-react-jsx -> transforms jsx files to js
 
 #### Webpack

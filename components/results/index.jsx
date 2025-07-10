@@ -95,28 +95,10 @@ export default class ResultsPage extends React.Component {
                         <th scope='col'></th>
                       </tr>
                     </thead>
-                    <tbody>
                       {this.state.events && this.state.events.length>0 && this.state.events.map((itm,idx) => (
+                      <tbody>
                         <tr key={itm.id} className={(idx%2)==1 ? "odd":"even"}>
-                            <td className='event'>
-                                {itm.name}
-                                {this.state.item && this.state.item.id == itm.id 
-                                && this.state.competitions && this.state.competitions.length>0 
-                                && this.state.competitions.map((cmp) => (
-                                    <div className="competition" key={cmp.id}>
-                                        <div className="wpn">{this.idToWpn(cmp.weapon).name}</div>
-                                        <div className="cat">{this.idToCat(cmp.category).name}</div>
-                                        <div className="opens">{cmp.opens}</div>
-                                        <div className="action">
-                                          <span className="p-input-icon-left view-detail">
-                                            <a href='#' onClick={() => this.onDetail(cmp)}>
-                                              <i className="pi pi-search-plus"></i>
-                                            </a>
-                                           </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </td>
+                            <td className='event'>{itm.name}</td>
                             <td>{itm.location}</td>
                             <td>{itm.year}</td>
                             <td>
@@ -134,8 +116,31 @@ export default class ResultsPage extends React.Component {
                               </div>)}
                             </td>
                         </tr>
-                      ))}
+                        {this.state.item && this.state.item.id == itm.id 
+                            && this.state.competitions && this.state.competitions.length>0 
+                            && (
+                        <tr>
+                          <td colspan='4'>
+                            <table className='details'>
+                            {this.state.competitions.map((cmp) => (
+                                <tr className="competition" key={cmp.id}>
+                                    <td className="wpn">{this.idToWpn(cmp.weapon).name}</td>
+                                    <td className="cat">{this.idToCat(cmp.category).name}</td>
+                                    <td className="opens">{cmp.opens}</td>
+                                    <td className="action">
+                                    <span className="p-input-icon-left view-detail">
+                                        <a href='#' onClick={() => this.onDetail(cmp)}>
+                                        <i className="pi pi-search-plus"></i>
+                                        </a>
+                                    </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            </table>
+                          </td>
+                        </tr>)}
                     </tbody>
+                ))}
                 </table>
                 <ResultDetailDialog display={this.state.displayDialog} onClose={this.onClose} value={this.state.competition} results={this.state.results}/>
             </div>

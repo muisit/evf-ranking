@@ -24,7 +24,7 @@ export default class ResultDetailDialog extends React.Component {
     </div>);
 
         return (
-                <Dialog header="Results" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+                <Dialog header="Results" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} className="ranking-dialog">
                   <table className='detail'>
                     <thead>
                         <tr>

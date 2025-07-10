@@ -209,11 +209,20 @@ export default class RankingPage extends React.Component {
                         <table className='list'>
                           <thead>
                             <tr>
-                              <th scope='col' onClick={(e)=>this.changeSort('r')} className='pos'>Pos.&nbsp;<i className={possortactive}>&nbsp;</i></th>
-                              <th scope='col' onClick={(e)=>this.changeSort('n')}>Name&nbsp;<i className={namesortactive}></i></th>
-                              <th scope='col'>First name</th>
-                              <th scope='col' onClick={(e)=>this.changeSort('c')}>Country&nbsp;<i className={cntsortactive}></i></th>
-                              <th scope='col'>Points</th>
+                              <th scope='col' onClick={(e)=>this.changeSort('r')} className='pos'>
+                                <label>Pos.</label>
+                                <i className={possortactive}>&nbsp;</i>
+                              </th>
+                              <th scope='col' onClick={(e)=>this.changeSort('n')}>
+                                <label>Name</label>
+                                <i className={namesortactive}></i>
+                              </th>
+                              <th scope='col'><label>First name</label></th>
+                              <th scope='col' onClick={(e)=>this.changeSort('c')}>
+                                <label>Country</label>
+                                <i className={cntsortactive}></i>
+                                </th>
+                              <th scope='col'><label>Points</label></th>
                               <th scope='col'></th>
                             </tr>
                           </thead>

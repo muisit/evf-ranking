@@ -28,7 +28,7 @@ export default class DetailDialog extends React.Component {
 
         var firstentry=this.props.detail[0];
         return (
-                <Dialog header="Details" position="center" visible={this.props.display} style={{ width: '70vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+                <Dialog header="Details" position="center" visible={this.props.display} style={{ width: '70vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} className="ranking-dialog">
                   <div className='personaldetail'>
                     <div className='fencer'>
                         <span className='name'>{firstentry.surname},&nbsp;</span>
@@ -43,13 +43,13 @@ export default class DetailDialog extends React.Component {
                             <th scope='col'>Event</th>
                             <th scope='col'>Year</th>
                             <th scope='col'>Location</th>
-                            <th scope='col'>Weapon</th>
-                            <th scope='col'>Entry</th>
+                            <th scope='col' className='mobhide'>Weapon</th>
+                            <th scope='col' className='mobhide'>Entry</th>
                             <th scope='col'>Place</th>
-                            <th scope='col'>Points</th>
-                            <th scope='col'>DE</th>
-                            <th scope='col'>Podium</th>
-                            <th scope='col'>Factor</th>
+                            <th scope='col' className='mobhide'>Points</th>
+                            <th scope='col' className='mobhide'>DE</th>
+                            <th scope='col' className='mobhide'>Podium</th>
+                            <th scope='col' className='mobhide'>Factor</th>
                             <th scope='col'>Total</th>
                         </tr>
                     </thead>
@@ -60,13 +60,13 @@ export default class DetailDialog extends React.Component {
                           <td>{comp.event}</td>
                           <td>{comp.year}</td>
                           <td>{comp.location}</td>
-                          <td>{comp.weapon}</td>
-                          <td className='pos'>{comp.entry}</td>
+                          <td className='mobhide'>{comp.weapon}</td>
+                          <td className='pos mobhide'>{comp.entry}</td>
                           <td className='pos'>{comp.place}</td>
-                          <td className='pos'>{comp.points}</td>
-                          <td className='pos'>{comp.de}</td>
-                          <td className='pos'>{comp.podium}</td>
-                          <td className='pos'>{comp.factor}</td>
+                          <td className='pos mobhide'>{comp.points}</td>
+                          <td className='pos mobhide'>{comp.de}</td>
+                          <td className='pos mobhide'>{comp.podium}</td>
+                          <td className='pos mobhide'>{comp.factor}</td>
                           <td className='pos'>{comp.total}</td>
                       </tr>
                         ))}

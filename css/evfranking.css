@@ -119,20 +119,42 @@ div.table-action i a { padding: 0; }
 
 .ranking-select-catwpn { padding-bottom: 10px; }
 .ranking-select-catwpn .drop { width: 200px;}
+
+/* front end ranking application */
+.p-dialog-mask { z-index: 2000 !important; }
 .ranking-results { }
+.ranking-results thead label { float: left;}
+.ranking-results thead .pi-icon { float: left; padding-left: 5px; margin-top: 12px;}
 .ranking-results table { border-collapse: collapse; min-width: 500px; width: 100%;}
 .ranking-results table thead tr { border: 1px solid black; border-width: 0px 0px 2px 0px; }
 .ranking-results table thead tr th { padding: 2px 4px 2px 0px; text-align: left; font-weight: bold; font-size: 14pt; border: 1px solid black; border-width: 0px 0px 2px 0px; text-align: left;}
 .ranking-results table td { white-space: nowrap; padding: 1px 4px; }
 .ranking-results table.list tbody tr.odd td { background-color: #ddd; }
-.ranking-results table thead th.pos { width: 1%; white-space:nowrap;}
+.ranking-results table thead th.pos { width: 11%; white-space:nowrap;}
 .ranking-results table thead th i.pi.active { color: #003366; }
 .ranking-results table tr td.pos { text-align: right; }
 .ranking-results table tr td.icon { text-align: center; }
-table tr.counting { background-color: #acffd8; color: black; }
-table tr.excluded { background-color: #ff9999; color: black; text-decoration: line-through; }
-table tr.excluded td { text-decoration: line-through; }
-table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
+
+.ranking-dialog .detail td { padding: 2px 4px; }
+.ranking-dialog table tr.counting { background-color: #acffd8; color: black; }
+.ranking-dialog table tr.excluded { background-color: #ff9999; color: black; text-decoration: line-through; }
+.ranking-dialog table tr.excluded td { text-decoration: line-through; }
+.ranking-dialog table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
+.ranking-dialog .p-dialog-header { padding: 1.5rem; }
+.ranking-dialog .p-dialog-header .p-dialog-title { font-weight: 600; font-size: 1.5rem; box-sizing: border-box;}
+.ranking-dialog .p-dialog-content { padding: 0 1.5rem 2rem 1.5rem; }
+.ranking-dialog .p-dialog-footer { padding: 0 1.5rem 2rem 1.5rem; }
+.ranking-dialog button { 
+    border-radius: 3px;
+    background-color:  #003366;
+    color:white;
+    font-family: var(--font-family);
+    font-feature-settings: var(--font-feature-settings);
+    font-size: 1rem;
+    background-image:none;
+    border-width: 0px;
+}
+.ranking-dialog button .p-button-icon { padding-right: 0.5rem; }
 
 .personaldetail { padding: 10px 5px; position: relative; width: 100%; }
 .personaldetail .fencer span { font-weight: bold;}
@@ -166,3 +188,18 @@ table tr.notcounting { background-color: #8fa9ff; color: #ffffff; }
 .suggestiontable .p-button { padding: 0; }
 .suggestiontable .p-button .p-button-label { margin-top: 5px; }
 
+@media screen and (max-width: 782px) {
+    .ranking-results table { max-width: 90vw; min-width: auto;width: 100%; table-layout: auto;}
+    .ranking-results table td { vertical-align: top; white-space: normal; font-size: 0.8rem; line-height: 0.9rem;}
+    .ranking-results table td .details td { width: auto; }
+
+    .ranking-dialog { width: 100vw !important; }
+
+    .ranking-results thead th { vertical-align: top; }
+    .ranking-results thead label { font-size: 0.85rem; }
+    .ranking-results thead .pi-icon { clear: both; }
+    .ranking-results thead th { width: 1%; }
+
+    .ranking-dialog .detail { font-size: 0.8rem;}
+    .ranking-dialog .detail .mobhide { display: none; }
+}

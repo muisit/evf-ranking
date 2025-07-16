@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             3.0.2
+ * Version:             3.0.3
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag
@@ -39,7 +39,7 @@
  */
 
 define('EVFRANKING_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('EVFRANKING_VERSION', "3.0.2");
+define('EVFRANKING_VERSION', "3.0.3");
 
 if (defined('WP_DEBUG')) {
     // wait time before we automatically refresh a dirty accreditation

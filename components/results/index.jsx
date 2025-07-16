@@ -96,8 +96,8 @@ export default class ResultsPage extends React.Component {
                       </tr>
                     </thead>
                       {this.state.events && this.state.events.length>0 && this.state.events.map((itm,idx) => (
-                      <tbody>
-                        <tr key={itm.id} className={(idx%2)==1 ? "odd":"even"}>
+                      <tbody key={itm.id}>
+                        <tr className={(idx%2)==1 ? "odd":"even"}>
                             <td className='event'>{itm.name}</td>
                             <td>{itm.location}</td>
                             <td>{itm.year}</td>
@@ -120,8 +120,8 @@ export default class ResultsPage extends React.Component {
                             && this.state.competitions && this.state.competitions.length>0 
                             && (
                         <tr>
-                          <td colspan='4'>
-                            <table className='details'>
+                          <td colSpan='4'>
+                            <table className='details'><tbody>
                             {this.state.competitions.map((cmp) => (
                                 <tr className="competition" key={cmp.id}>
                                     <td className="wpn">{this.idToWpn(cmp.weapon).name}</td>
@@ -136,7 +136,7 @@ export default class ResultsPage extends React.Component {
                                     </td>
                                 </tr>
                             ))}
-                            </table>
+                            </tbody></table>
                           </td>
                         </tr>)}
                     </tbody>

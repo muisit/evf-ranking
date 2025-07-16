@@ -36,19 +36,32 @@ export default class ResultDetailDialog extends React.Component {
                         </tr>
                     </thead>
                     <tbody>
-                        {this.props.results.map((res,idx) => (
-                      <tr key={idx}>
-                          <td className='pos'>{res.place}</td>
-                          <td>{res.fencer_surname}</td>
-                          <td>{res.fencer_firstname}</td>
-                          <td>{res.country}</td>
-                          <td className='pos'>{res.total_points}</td>
-                      </tr>
-                        ))}
+                        {this.props.results.map((res,idx) => this.renderResultLine(res))}
                     </tbody>
                   </table>
                 </Dialog>
             );
         }
+    
+    renderResultLine(res) {
+        if (res.ranked == 'E') {
+            return (
+                <tr key={res.id}>
+                  <td className='pos'>{res.place}</td>
+                  <td colSpan='2' style={{'text-align':'center'}}><i>excluded</i></td>
+                  <td colSpan='2'>&nbsp;</td>
+                </tr>
+            );
+        }
+        return (
+          <tr key={res.id}>
+            <td className='pos'>{res.place}</td>
+            <td>{res.fencer_surname}</td>
+            <td>{res.fencer_firstname}</td>
+            <td>{res.country}</td>
+            <td className='pos'>{res.total_points}</td>
+          </tr>  
+        )
+    }
 }
 

@@ -197,6 +197,7 @@ class Ranking extends Base
         if (empty($data)) {
             $data = '';
         }
+        error_log("evf_internal_key $data");
         return $data;
     }
 
@@ -210,35 +211,23 @@ class Ranking extends Base
     }
     public function setApiData($data)
     {
+        // silly wordpress API does not do an add if the option already exists, but fails on update if
+        // the option does not exist. So we always add it (which fails for existing options) and then
+        // update it (which will then always succeed).
         $data = (array)$data;
         if (!empty($data) && isset($data['cutoff'])) {
-            $opt = get_option("evfranking_ranking_count_included");
-            if (empty($opt)) {
-                add_option('evfranking_ranking_count_included', intval($data['cutoff']));
-            }
-            else {
-                update_option('evfranking_ranking_count_included', intval($data['cutoff']));
-            }
+            add_option('evfranking_ranking_count_included', intval($data['cutoff'])); // fails if it already exists
+            update_option('evfranking_ranking_count_included', intval($data['cutoff'])); // succeeds always now
         }
 
         if (!empty($data) && isset($data['apikey'])) {
-            $opt = get_option("evf_internal_key");
-            if (empty($opt)) {
-                add_option('evf_internal_key', $data['apikey']);
-            }
-            else {
-                update_option('evf_internal_key', $data['apikey']);
-            }
+            add_option('evf_internal_key', $data['apikey']);
+            update_option('evf_internal_key', $data['apikey']);
         }
 
         if (!empty($data) && isset($data['apiuser'])) {
-            $opt = get_option("evf_internal_user");
-            if (empty($opt)) {
-                add_option('evf_internal_user', intval($data['apiuser']));
-            }
-            else {
-                update_option('evf_internal_user', intval($data['apiuser']));
-            }
+            add_option('evf_internal_user', intval($data['apiuser']));
+            update_option('evf_internal_user', intval($data['apiuser']));
         }
         return [
             'cutoff' => $this->getCutoff(),

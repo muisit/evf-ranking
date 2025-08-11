@@ -5,6 +5,7 @@ import IndexPage from '../components/bo_ranking/index.jsx';
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    ReactDOM.createRoot(document.getElementById('evfranking-root')).render((<IndexPage />));
+    const el = document.getElementById('evfranking-root');
+    ReactDOM.createRoot(el).render((<IndexPage />));
     
 });

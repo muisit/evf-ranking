@@ -8,15 +8,19 @@ export function abort_all_calls(type) {
     }
 }
 
-//Internal API
-
-function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor) {
+// Internal API
+function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor = null, useApi = false) {
     if(!controllers[cnt]) {
         controllers[cnt]=new AbortController();
     }
     const contentHeaders = Object.assign({
         "Accept": "application/json",
         "Content-Type": "application/json"} , headers);
+    
+    console.log('simpleFetch of ', path, useApi);
+    if (useApi) {
+        contentHeaders['Authorization'] = 'Bearer ' + evfranking.key;
+    }
 
     const data = {
         path: path,
@@ -33,7 +37,8 @@ function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor) {
     });
 
     //console.log('calling fetch using '+JSON.stringify(data));
-    return fetch(evfranking.url, fetchOptions)
+    const url = useApi ? (evfranking.api + path) : evfranking.url;
+    return fetch(url, fetchOptions)
         .then(postprocessor())
         .catch(err => {
             if(err.name === "AbortError") {
@@ -62,9 +67,9 @@ function validateResponse() {
     };
 }
 
-function fetchJson(cnt,path, data={}, options = {}, headers = {}) {
+function fetchJson(cnt,path, data={}, options = {}, headers = {}, useApi = false) {
     //console.log('valid fetch using data '+JSON.stringify(data));
-    return simpleFetch(cnt,path,data,options,headers,validateResponse);
+    return simpleFetch(cnt,path,data,options,headers,validateResponse, useApi);
 }
 
 function attachmentResponse() {
@@ -132,7 +137,12 @@ export function fencers(offset,pagesize,filter,sort) {
 }
 
 export function fencer(action, fields) {
-    return fetchJson('fencers','fencers/' + action,fields);
+    if (action == 'view') {
+        return fetchJson('fencers','/fencers/' + action, fields, {}, {}, true);
+    }
+    else {
+        return fetchJson('fencers','fencers/' + action,fields);
+    }
 }
 
 // Country
@@ -216,4 +226,10 @@ export function users(offset,pagesize,filter,sort) {
 export function posts(offset,pagesize,filter,sort,special) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
     return fetchJson('events','posts',obj);
+}
+
+// Ranking
+export function createRanking() {
+    console.log('calling createRanking in api');
+    return fetchJson('events', '/ranking/create', {}, {}, {}, true);
 }

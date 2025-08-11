@@ -4,7 +4,7 @@ import { Toast } from 'primereact/toast';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
 import PerusalDialog from './dialogs/perusaldialog';
-import { abort_all_calls, ranking, singleevent, competitions, result } from "../api.js";
+import { abort_all_calls, ranking, singleevent, competitions, result, createRanking } from "../api.js";
 
 import React from 'react';
 
@@ -81,7 +81,9 @@ export default class ActionsTab extends React.Component {
                 this.setState({cutoff:value});
                 break;
             case 'apikey':
-                this.setState({apikey:value});
+                if (this.state.apikey != value) {
+                    this.setState({apikey:value});
+                }
                 break;
             case 'apiuser':
                 this.setState({apiuser:value});
@@ -111,23 +113,13 @@ export default class ActionsTab extends React.Component {
     }
 
     callApiForRankingStore = () => {
-        const fetchOptions = {
-            credentials: "include",
-            redirect: "manual",
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + this.state.apikey
-            }
-        };
-    
-        fetch(evfranking.api + '/ranking/create', fetchOptions)
-            .then(() => {
-                this.toast.show({severity:'info',summary:'Ranking stored',detail:'The recalculated ranking was stored as a new version'});
-            })
-            .catch(err => {
-                console.log("error in fetch: ", err);
-                alert("Error calling the API backend to store the ranking");
-            });
+        createRanking().then(() => {
+            this.toast.show({severity:'info',summary:'Ranking stored',detail:'The recalculated ranking was stored as a new version'});
+        })
+        .catch(err => {
+            console.log("error in fetch: ", err);
+            alert("Error calling the API backend to store the ranking");
+        });
     }
 
     onStore = (name) => {
@@ -143,13 +135,15 @@ export default class ActionsTab extends React.Component {
                     })
                 break;
             case 'apikey':
-                ranking('apidata', { apikey: this.state.apikey})
-                    .then((res) => {
-                        if (res && res.data) {
-                            this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
-                            this.toast.show({severity:'info',summary:'Key stored',detail:'The configured API key was stored'});
-                        }
-                    })
+                if (this.state.apikey && this.state.apikey.length) {
+                    ranking('apidata', { apikey: this.state.apikey})
+                        .then((res) => {
+                            if (res && res.data) {
+                                this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
+                                this.toast.show({severity:'info',summary:'Key stored',detail:'The configured API key was stored'});
+                            }
+                        })
+                }
                 break;
             case 'apiuser':
                 ranking('apidata', { apiuser: this.state.apiuser})

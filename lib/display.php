@@ -82,6 +82,7 @@ HEREDOC;
         $params = array_merge(Display::$jsparams, array(
             'url' => admin_url('admin-ajax.php?action=evfranking'),
             'api' => API_URL,
+            'key' => get_option("evf_internal_key"),
             'nonce' => $nonce,
             'capabilities' => (new Policy())->getCapabilities()
         ));

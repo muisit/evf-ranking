@@ -104,7 +104,9 @@ class Role extends Base {
         $qb = $this->select('TD_Role.*, rt.role_type_name, rt.org_declaration')->join("TD_Role_Type","rt","TD_Role.role_type=rt.role_type_id")
           ->offset($offset)->limit($pagesize)->orderBy($this->sortToOrder($sort));
         $this->addFilter($qb,$filter,$special);
-        return $qb->get();
+        $data = $qb->get();
+        error_log("roles says " . json_encode($data));
+        return $data;
     }
 
     public function count($filter, $special = null)

@@ -45,6 +45,8 @@ export default class PagedTab extends React.Component {
                     if((maxpages * this.state.pagesize ) < json.data.total) {
                         maxpages+=1;
                     }
+
+                    console.log('setting new state based on return value of call');
                     this.setState({ 
                         "items": json.data.list, 
                         "count": json.data.total, 

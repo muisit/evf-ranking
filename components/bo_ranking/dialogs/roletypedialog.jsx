@@ -73,6 +73,7 @@ export default class RoleTypeDialog extends React.Component {
                 this.delete();
             })
             .catch((err) => {
+                console.log("caught ", err);
                 if(err.response.data.messages && err.response.data.messages.length) {
                     var txt="";
                     for(var i=0;i<err.response.data.messages.length;i++) {

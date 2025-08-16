@@ -57,7 +57,7 @@ function validateResponse() {
         return res.json().then(json => {
             //console.log('validate response ',json);
             if (!json || !json.success) {
-                //console.log('no success entry found or success is false');
+                console.log('no success entry found or success is false');
                 const error = new Error(res.statusText);
                 error.response = json;
                 throw error;
@@ -94,14 +94,15 @@ export function upload_file(cnt, selectedFile, add_data, options={}, headers={})
 
     const contentHeaders = Object.assign({
         "Accept": "application/json",
-        "Content-Type": "removeme"
-        } , headers);
+        "Content-Type": "removeme",
+        'Authorization': 'Bearer ' + evfranking.key
+    } , headers);
 
     delete contentHeaders['Content-Type'];
 
     var data = new FormData()
     data.append('picture', selectedFile);
-    data.append('nonce',evfranking.nonce);
+    data.append('nonce', evfranking.nonce);
     data.append('upload','true');
     Object.keys(add_data).map((key)=> {
         data.append(key,add_data[key]);
@@ -114,9 +115,9 @@ export function upload_file(cnt, selectedFile, add_data, options={}, headers={})
         signal: controllers[cnt].signal,
         body: data
     });
-    //console.log(fetchOptions);
-
-    return fetch(evfranking.url, fetchOptions)
+    console.log(fetchOptions);
+    console.log(evfranking.api + '/fencers/upload');
+    return fetch(evfranking.api + '/fencers/upload', fetchOptions)
         .then(validateResponse())
         .catch(err => {
             if(err.name === "AbortError") {
@@ -132,17 +133,14 @@ export function upload_file(cnt, selectedFile, add_data, options={}, headers={})
 
 // Fencers
 export function fencers(offset,pagesize,filter,sort) {
+    // all migrated to the new api
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('fencers','fencers',obj);
+    return fetchJson('fencers','/fencers',obj, {}, {}, true);
 }
 
 export function fencer(action, fields) {
-    if (action == 'view') {
-        return fetchJson('fencers','/fencers/' + action, fields, {}, {}, true);
-    }
-    else {
-        return fetchJson('fencers','fencers/' + action,fields);
-    }
+    // all migrated to the new api
+    return fetchJson('fencers','/fencers/' + action, fields, {}, {}, true);
 }
 
 // Country
@@ -207,10 +205,10 @@ export function role(action, fields) {
 }
 export function roletypes(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('roletypes','roletypes',obj);
+    return fetchJson('roletypes','/roletypes',obj, {}, {}, true);
 }
 export function roletype(action, fields) {
-    return fetchJson('roletypes','roletypes/' + action,fields);
+    return fetchJson('roletypes','/roletypes/' + action,fields, {}, {}, true);
 }
 export function registrars(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};

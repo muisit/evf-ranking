@@ -6,6 +6,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { InputMask } from 'primereact/inputmask';
 import DuplicateFencer from './duplicatefencer';
+import SecureImage from '../SecureImage';
 import { parse_net_error, get_yob, format_date, random_hash } from '../functions';
 
 export default class FencerDialog extends React.Component {
@@ -44,7 +45,8 @@ export default class FencerDialog extends React.Component {
 
     onFileChange = (event) => {
         var selectedFile=event.target.files[0];
-        upload_file("events",selectedFile,{
+        console.log('onFileChange for fencer image');
+        upload_file("fencers",selectedFile,{
             fencer: this.props.value.id,
         })
         .then((json) => {
@@ -52,7 +54,8 @@ export default class FencerDialog extends React.Component {
             if (json.data.model) {
                 itm = Object.assign({}, itm, json.data.model);
             }
-            console.log("saving fencer ",itm);
+            console.log('item after upload is ', itm, json.data.model);
+            if(this.props.onChange) this.props.onChange(itm);
             if(this.props.onSave) this.props.onSave(itm);
             this.setState({imageHash: random_hash()});
         })
@@ -60,6 +63,7 @@ export default class FencerDialog extends React.Component {
     }
 
     actualSave = (obj) => {
+        console.log('actual save of fencer');
         fencer('save',obj)
             .then((json) => {
                 this.loading(false);
@@ -162,7 +166,7 @@ export default class FencerDialog extends React.Component {
     renderPicture () {
         // display the accreditation photo
         // anyone that can view this dialog can upload a better image
-        var canapprove=this.props.value.picture != 'N';
+        var canapprove=this.props.value.picture != 'N'; // no image, no approval dropdown
         if(evfranking && evfranking.eventcap) {
             canapprove=["accreditor","organiser","system"].includes(evfranking.eventcap) && this.props.value.picture!='N';
         }
@@ -186,10 +190,10 @@ export default class FencerDialog extends React.Component {
         }
         return (<div className='col-12'>
             <label className='header'>Accreditation Photo</label>
-            <div>
-            {['Y','A','R'].includes(this.props.value.picture) && (
+            <div>{this.props.value.picture}/{picstate}
+            {['Y','A','R'].includes(picstate) && (
                 <div className='accreditation'>
-                  <img className='photoid' src={evfranking.url + "&picture="+this.props.value.id + "&nonce=" + evfranking.nonce + '&hash='+this.state.imageHash}></img>
+                  <SecureImage fid={this.props.value.id} hash={this.state.imageHash} />
                 </div>
             )}
             <div className='textcenter'>
@@ -200,6 +204,7 @@ export default class FencerDialog extends React.Component {
                   <Dropdown name={'picture'} appendTo={document.body} optionLabel="name" optionValue="id" value={picstate} options={approvestates} onChange={this.onChangeEl} />
                 </div>
             )}
+            {!canapprove && (<div>Cannot approve</div>)}
             </div>
         </div>);
     }    
@@ -246,10 +251,10 @@ export default class FencerDialog extends React.Component {
                 <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
         }
-        let genders = [{ name: 'M', code: 'M' }, { name: 'W', code: 'F' }];
+        let genders = [{ name: 'Male', code: 'M' }, { name: 'Female', code: 'F' }];
 
         var country = (
-          <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
+          <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={'' + this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
         );
         if(this.props.country) {
             var cname = "";
@@ -286,8 +291,8 @@ export default class FencerDialog extends React.Component {
           <Dropdown name='gender' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.gender} options={genders} placeholder="Gender" onChange={this.onChangeEl}/>
         </div>
       </div>
-      { this.renderResults() }
-      {this.renderPicture()}
+      {this.props.value && this.props.value.id >0 && this.renderResults()}
+      {this.props.value && this.props.value.id >0 && this.renderPicture()}
     </div>
     <DuplicateFencer display={this.state.suggestiondialog} suggestions={this.state.suggestions} pending={this.state.pendingSave} onSave={()=>this.actualSave(this.state.pendingSave)} onClose={()=>this.close()} />
 </Dialog>

@@ -20,11 +20,11 @@ export default class ResultDetailDialog extends React.Component {
 
     render() {
         var footer=(<div>
-            <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
+            <Button label="Close" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
     </div>);
 
         return (
-                <Dialog header="Results" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} className="ranking-dialog">
+                <Dialog header={"Results " + this.props.title} position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog} className="ranking-dialog">
                   <table className='detail'>
                     <thead>
                         <tr>
@@ -58,7 +58,7 @@ export default class ResultDetailDialog extends React.Component {
             <td className='pos'>{res.place}</td>
             <td>{res.fencer_surname}</td>
             <td>{res.fencer_firstname}</td>
-            <td>{res.country}</td>
+            <td>{res.country_abbr}</td>
             <td className='pos'>{res.total_points}</td>
           </tr>  
         )

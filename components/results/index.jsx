@@ -72,11 +72,11 @@ export default class ResultsPage extends React.Component {
     }
 
     onDetail = (itm) => {
-        var special = JSON.stringify({ competition_id: itm.id });
         // sort by place, then name, then country
-        results(0, 10000, '', 'pnc', special)
+        results(0, 10000, '', 'pnc', itm.id)
             .then((res) => {
-                this.setState({displayDialog:true, competition:itm, results: res.data.list});
+                const title = this.idToWpn(itm.weaponId).name + ' ' + this.idToCat(itm.categoryId).name + ' ' + itm.starts;
+                this.setState({displayDialog:true, competition:itm, results: res.data.list, title});
             });
     }
 
@@ -124,9 +124,9 @@ export default class ResultsPage extends React.Component {
                             <table className='details'><tbody>
                             {this.state.competitions.map((cmp) => (
                                 <tr className="competition" key={cmp.id}>
-                                    <td className="wpn">{this.idToWpn(cmp.weapon).name}</td>
-                                    <td className="cat">{this.idToCat(cmp.category).name}</td>
-                                    <td className="opens">{cmp.opens}</td>
+                                    <td className="wpn">{this.idToWpn(cmp.weaponId).name}</td>
+                                    <td className="cat">{this.idToCat(cmp.categoryId).name}</td>
+                                    <td className="opens">{cmp.starts}</td>
                                     <td className="action">
                                     <span className="p-input-icon-left view-detail">
                                         <a href='#' onClick={() => this.onDetail(cmp)}>
@@ -142,7 +142,7 @@ export default class ResultsPage extends React.Component {
                     </tbody>
                 ))}
                 </table>
-                <ResultDetailDialog display={this.state.displayDialog} onClose={this.onClose} value={this.state.competition} results={this.state.results}/>
+                <ResultDetailDialog display={this.state.displayDialog} onClose={this.onClose} value={this.state.competition} results={this.state.results} title={this.state.title}/>
             </div>
         );
     }

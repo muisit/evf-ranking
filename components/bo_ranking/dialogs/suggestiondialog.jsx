@@ -42,9 +42,9 @@ export default class SuggestionDialog extends React.Component {
 
     onNew = () => {
         this.setState({displayFencerDialog: true, item: {
-            name: this.props.value.lastname,
+            name: this.props.value.name,
             firstname: this.props.value.firstname,
-            country: this.props.value.country_id,
+            country_id: this.props.value.country_id,
             id: -1, // make a new entry
             birthday: this.props.value.birthday,
             gender: this.props.value.gender
@@ -53,9 +53,9 @@ export default class SuggestionDialog extends React.Component {
 
     onUpdate = () => {
       this.setState({displayFencerDialog: true, item: {
-          name: this.props.value.lastname,
+          name: this.props.value.name,
           firstname: this.props.value.firstname,
-          country: this.props.value.country_id,
+          country_id: this.props.value.country_id,
           id: this.props.value.fencer_id,
           birthday: this.props.value.birthday,
           gender: this.props.value.gender
@@ -70,6 +70,7 @@ export default class SuggestionDialog extends React.Component {
             this.setState({displayFencerDialog: false});
         }
         else if(tp == 'save') {
+            console.log('selecting suggestion after save', itm);
             this.selectSuggestion(itm);
         }
     }
@@ -82,7 +83,7 @@ export default class SuggestionDialog extends React.Component {
             var val = event.target.value.toUpperCase();
             item[event.target.name] = val; break;
         case 'firstname':
-        case 'country':
+        case 'country_id':
         case 'birthday':
         case 'gender':item[event.target.name] = event.target.value; break;
         }
@@ -90,14 +91,16 @@ export default class SuggestionDialog extends React.Component {
     }
 
     selectSuggestion = (itm) => {
-        var item=Object.assign({},this.props.value);
-        item.lastname = itm.name;
-        item.firstname = itm.firstname;
-        item.country_id=itm.country;
-        item.country = this.state.countryById["k"+itm.country].abbr;
+        console.log('selecting suggestion', itm);
+        var item = Object.assign({},this.props.value);
+        // Do not! override the names, so we can add the new spelling to the accepted (mis)spellings
+        //item.name = itm.name;
+        //item.firstname = itm.firstname;
+        item.country_id = itm.country_id;
+        item.country = this.state.countryById["k" + itm.country_id].abbr;
         item.fencer_id = itm.id;
         item.birthday = itm.birthday;
-        item.gender=itm.gender;
+        item.gender = itm.gender;
 
         item.lastname_check="ok";
         item.lastname_text='';
@@ -132,7 +135,7 @@ export default class SuggestionDialog extends React.Component {
           <div>
             <label>Last name</label>
             <div className='input'>
-              <InputText name='lastname' value={this.props.value.lastname} placeholder='Name' readOnly={true}/>
+              <InputText name='lastname' value={this.props.value.name} placeholder='Name' readOnly={true}/>
             </div>
           </div>
           <div>
@@ -144,7 +147,7 @@ export default class SuggestionDialog extends React.Component {
           <div>
             <label>Country</label>
             <div className='input'>
-            <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country_id} options={this.props.countries} placeholder="Country"  readOnly={true}/>
+            <Dropdown name='country_id' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country_id} options={this.props.countries} placeholder="Country"  readOnly={true}/>
             </div>
           </div>
           <div>
@@ -179,17 +182,18 @@ export default class SuggestionDialog extends React.Component {
       return this.props.value.suggestions.map((itm,idx) => this.renderSuggestion(itm, idx));
     }
 
-    renderSuggestion(fencer, idx) 
+    renderSuggestion(suggestion, idx) 
     {
-      var lnameClass = (fencer.inLn == 'nok') ? 'nok' : 'ok';
-      var fnameClass = (fencer.inFn == 'nok') ? 'nok' : 'ok';
-      var countryClass = (fencer.inCn == 'nok') ? 'nok' : 'ok';
-      var ageClass = fencer.inAge == 'nok' ? 'nok' : 'ok';
+      var lnameClass = (suggestion.checks.filter((c) => c.type === 'lastname').length > 0) ? 'nok' : 'ok';
+      var fnameClass = (suggestion.checks.filter((c) => c.type === 'firstname').length > 0) ? 'nok' : 'ok';
+      var countryClass = (suggestion.checks.filter((c) => c.type === 'country').length > 0) ? 'nok' : 'ok';
+      var ageClass = (suggestion.checks.filter((c) => c.type === 'age').length > 0) ? 'nok' : 'ok';
+      var fencer = suggestion.fencer;
       return (
         <tr key={idx} className={fencer.id == this.props.value.fencer_id ? "selected" : "unselected"}>
           <td className={lnameClass}>{fencer.name}</td>
           <td className={fnameClass}>{fencer.firstname}</td>
-          <td className={countryClass}>{this.state.countryById["k"+fencer.country] && this.state.countryById["k"+fencer.country].abbr}</td>
+          <td className={countryClass}>{this.state.countryById["k"+fencer.country_id] && this.state.countryById["k"+fencer.country_id].abbr}</td>
           <td className={ageClass}>{fencer.birthday}</td>
           <td>{fencer.gender}</td>
           <td className='icon'>

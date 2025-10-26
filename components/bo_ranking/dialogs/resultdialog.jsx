@@ -76,12 +76,9 @@ export default class ResultDialog extends React.Component {
         case 'ranked':
         case 'points':
         case 'place':
-        case 'nat_points':
         case 'de_points':
         case 'podium_points':
-        case 'entry':
-        case 'total_points':        
-        case 'factor':item[name] = value;break;
+        case 'entry':item[name] = value;break;
         }
         if (this.props.onChange) this.props.onChange(item);
     }
@@ -89,7 +86,7 @@ export default class ResultDialog extends React.Component {
     onDeleteDialog = (event) => {
         if(confirm('Are you sure you want to delete the result for fencer '+ this.props.value.fencer_surname + "? This action cannot be undone!")) {
             this.loading(true);
-            result('delete',{ id: this.props.value.id})
+            result('delete',this.props.value)
             .then((json) => {
                 this.loading(false);
                 this.delete();
@@ -108,10 +105,6 @@ export default class ResultDialog extends React.Component {
             })
     
         }
-    }
-
-    onSearchFencer = (ev) => {
-        
     }
 
     render() {
@@ -137,19 +130,19 @@ export default class ResultDialog extends React.Component {
             <div>
                 <label>Surname</label>
                 <div className='input'>
-                    <InputText name='name' className="p-inputtext-sm" value={this.props.value.fencer_surname} placeholder="Surname" onChange={this.onSearchFencer} />
+                    <InputText name='name' className="p-inputtext-sm" value={this.props.value.fencer_surname} placeholder="Surname" disabled/>
                 </div>
             </div>
             <div>
                 <label>Firstname</label>
                 <div className='input'>
-                    <InputText name='name' className="p-inputtext-sm" value={this.props.value.fencer_firstname} placeholder="First name" onChange={this.onSearchFencer} />
+                    <InputText name='name' className="p-inputtext-sm" value={this.props.value.fencer_firstname} placeholder="First name" disabled/>
                 </div>
             </div>
             <div>
                 <label>Country</label>
                 <div className='input'>
-                    <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country_id} options={this.props.countries} placeholder="Country" onChange={this.onSearchFencer} />
+                    <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country_id} options={this.props.countries} placeholder="Country" disabled/>
                 </div>
             </div>
             <div>
@@ -173,14 +166,6 @@ export default class ResultDialog extends React.Component {
                 </div>
             </div>
             <div>
-                <label>National Points</label>
-                <div className='input'>
-                    <InputNumber className='inputint' name='nat_points' onChange={this.onChangeEl}
-                        mode="decimal" inputMode='decimal' minFractionDigits={1} maxFractionDigits={5} min={0} useGrouping={false}
-                        value={this.props.value.nat_points}></InputNumber>
-                </div>
-            </div>
-            <div>
                 <label>DE Points</label>
                 <div className='input'>
                     <InputNumber className='inputint' name='de_points' onChange={this.onChangeEl}
@@ -199,7 +184,7 @@ export default class ResultDialog extends React.Component {
             <div>
                 <label>Total Points</label>
                 <div className='input'>
-                    <InputNumber className='inputint' name='total_points' onChange={this.onChangeEl}
+                    <InputNumber className='inputint' name='total_points' disabled
                         mode="decimal" inputMode='decimal' minFractionDigits={1} maxFractionDigits={5} min={0} useGrouping={false}
                         value={this.props.value.total_points}></InputNumber>
                 </div>

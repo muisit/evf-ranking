@@ -40,11 +40,17 @@ export default class EventsTab extends PagedTab {
 
         this.setState({ item: { 
             id: -1, 
-            year: year, 
-            base_fee: 50.0, 
-            competition_fee: 30.0, 
+            name: '',
+            location: '',
+            countryId: 0,
+            year: year,
             duration: 2,
-            opens: format_date(dt)
+            type_id: 0,
+            opens: format_date(dt),
+            competitions: [],
+            inRanking: 'N',
+            factor: 1.0,
+            config: {}
         }}, () => this.props.onAction({event: 'openDialog'}));
     }
 
@@ -91,7 +97,7 @@ export default class EventsTab extends PagedTab {
     >
     <Column field="id" header="ID" sortable={true} />
     <Column field="name" header="Name" sortable={true}/>
-    <Column field="type_name" header="Type" sortable={true}/>
+    <Column field="type.name" header="Type" sortable={true}/>
     <Column field="year" header="Year" sortable={true}/>
     <Column field="opens" header="Open" sortable={true} />
 </DataTable>);

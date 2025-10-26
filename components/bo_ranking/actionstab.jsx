@@ -1,10 +1,10 @@
 import { Button } from 'primereact/button';
-import { ToggleButton } from 'primereact/togglebutton';
+import { ToggleButton } from '../togglebutton';
 import { Toast } from 'primereact/toast';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
-import PerusalDialog from './dialogs/perusaldialog';
-import { abort_all_calls, ranking, singleevent, competitions, result, createRanking } from "../api.js";
+import PerusalDialog from './dialogs/perusaldialog.jsx';
+import { abort_all_calls, ranking, singleevent, competitions, result, apidata } from "../api.js";
 
 import React from 'react';
 
@@ -17,21 +17,16 @@ export default class ActionsTab extends React.Component {
             events: [],
             cutoff: 5,
             apiuser: -1,
-            apikey: ''
+            apikey: '',
+            toggleTest: 'N'
         };
     }
 
     componentDidMount = () => {
-        ranking('events', {})
-            .then((res) => {
-                if (res && res.data && res.data.total) {
-                    this.setState({events :res.data.list});
-                }
-            });
-        ranking('apidata', {})
+        apidata()
             .then ((res) => {
                 if (res && res.data) {
-                    this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
+                    this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey, events: res.data.events});
                 }
             });
     }
@@ -45,17 +40,16 @@ export default class ActionsTab extends React.Component {
         .then((res) => {
             if(res && res.data && res.data.total) {
                 this.toast.show({severity:'info',summary:'Rankings Reset',detail:'The points used for calculating the ranking were re-evaluated, ' + res.data.total + ' results are included'});
-                this.callApiForRankingStore();
             }
         });
     }
 
-    onToggleRanking = (event, value) => {       
-        singleevent('ranking', {id: event.id, in_ranking: value ? 'Y' : 'N'})
+    onToggleRanking = (event, value) => {
+        singleevent('ranking', {id: event.id, inRanking: value ? 'Y' : 'N'})
             .then(() => {
                 var events = this.state.events.map((ev) => {
                     if (ev.id == event.id) {
-                        ev.in_ranking = value ? 'Y' : 'N';
+                        ev.inRanking = value ? 'Y' : 'N';
                     }
                     return ev;
                 });
@@ -75,7 +69,6 @@ export default class ActionsTab extends React.Component {
     }
 
     onChange = (name, value) => {
-        console.log('setting ', name, value);
         switch (name) {
             case 'cutoff':
                 this.setState({cutoff:value});
@@ -92,17 +85,13 @@ export default class ActionsTab extends React.Component {
     }
 
     recalculateResults = (event) => {
-        console.log("getting competitions for ", event);
         competitions(event.id).then((data) => {
-            console.log("competitions is ", data.data.list);
             if (data && data.data.list) {
                 var compsToCalc = [];
                 data.data.list.map((cmp) => {
-                    console.log("recalculating for ", cmp);
                     result("recalculate",{competition_id: cmp.id})
                         .then((res) => {
                             compsToCalc.push(cmp.id);
-                            console.log("compsToCalc ", compsToCalc);
                             if (compsToCalc.length == data.data.list.length) {
                                 alert("All competitions recalculated");
                             }
@@ -112,21 +101,10 @@ export default class ActionsTab extends React.Component {
         });
     }
 
-    callApiForRankingStore = () => {
-        createRanking().then(() => {
-            this.toast.show({severity:'info',summary:'Ranking stored',detail:'The recalculated ranking was stored as a new version'});
-        })
-        .catch(err => {
-            console.log("error in fetch: ", err);
-            alert("Error calling the API backend to store the ranking");
-        });
-    }
-
     onStore = (name) => {
-        console.log('on store ', name);
         switch(name) {
             case 'cutoff':
-                ranking('apidata', { cutoff: this.state.cutoff})
+                apidata({ cutoff: this.state.cutoff})
                     .then((res) => {
                         if (res && res.data) {
                             this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
@@ -136,7 +114,7 @@ export default class ActionsTab extends React.Component {
                 break;
             case 'apikey':
                 if (this.state.apikey && this.state.apikey.length) {
-                    ranking('apidata', { apikey: this.state.apikey})
+                    apidata({ apikey: this.state.apikey})
                         .then((res) => {
                             if (res && res.data) {
                                 this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
@@ -146,7 +124,7 @@ export default class ActionsTab extends React.Component {
                 }
                 break;
             case 'apiuser':
-                ranking('apidata', { apiuser: this.state.apiuser})
+                apidata({ apiuser: this.state.apiuser})
                     .then((res) => {
                         if (res && res.data) {
                             this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey});
@@ -186,7 +164,7 @@ export default class ActionsTab extends React.Component {
             </div>
             <div className='col-10'>
                 <InputNumber className='inputint' name='cutoff' onChange={(event) => this.onChange('cutoff', event.value)}
-                        mode="decimal" inputMode='decimal' step={1} min={2} useGrouping={false} onBlur={() => this.onStore('cutoff')}
+                        mode="decimal" inputMode='decimal' step={1} min={1} useGrouping={false} onBlur={() => this.onStore('cutoff')}
                         value={this.state.cutoff}></InputNumber>
                 <p className='small'>
                     Indicate the number of events to include in the ranking out of all eligible events
@@ -215,7 +193,7 @@ export default class ActionsTab extends React.Component {
                             <td>{ev.name}</td>
                             <td>{ev.opens}</td>
                             <td>
-                                <ToggleButton onLabel='Included' offLabel='Excluded' checked={ev.in_ranking == 'Y'} onChange={(e) => this.onToggleRanking(ev, e.value)} />
+                                <ToggleButton onLabel='Included' offLabel='Excluded' checked={ev.inRanking == 'Y'} onChange={(e) => this.onToggleRanking(ev, e)} />
                             </td>
                             <td>
                                 <i className="pi pi-replay"></i><a onClick={()=>this.recalculateResults(ev)}>Recalculate</a>

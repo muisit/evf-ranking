@@ -52,7 +52,7 @@ export default class RegistrarsTab extends PagedTab {
     sortMode="multiple" multiSortMeta={this.state.multiSortMeta} onSort={this.onSort}
     >
     <Column field="id" header="ID" sortable={true} />
-    <Column field="name" header="Name" sortable={true}/>
+    <Column field="user_name" header="Name" sortable={true}/>
     <Column field="country_name" header="Country" sortable={true} />
 </DataTable>
 );

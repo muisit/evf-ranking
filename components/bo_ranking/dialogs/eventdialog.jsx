@@ -1,5 +1,5 @@
 import React from 'react';
-import { singleevent, weapons, categories, ranking } from "../../api.js";
+import { singleevent, weapons, categories } from "../../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { TabView,TabPanel } from 'primereact/tabview';
@@ -11,8 +11,8 @@ import { format_date, parse_date } from '../../functions';
 import AddCompetitionDialog from './addcompetitiondialog.jsx';
 
 function Competition(props) {
-    var opens=props.cmp.opens.length ? parse_date(props.cmp.opens) : null;
-    var weapon_check=props.cmp.weapon_check.length ? parse_date(props.cmp.weapon_check) : null;
+    var opens=props.cmp.starts?.length ? parse_date(props.cmp.starts) : null;
+    var weapon_check=props.cmp.weaponsCheck.length ? parse_date(props.cmp.weaponsCheck) : null;
     var ourstart=props.start;
     var ourend=props.end;
 
@@ -37,8 +37,8 @@ function Competition(props) {
 
     return (
         <div className='competition'>
-      <Dropdown className='catdrop' name={'ccat-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.category} options={props.ddcats} placeholder="Category" />
-      <Dropdown className='wpndrop' name={'cwpn-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.weapon} options={props.ddwpns} placeholder="Weapon" />
+      <Dropdown className='catdrop' name={'ccat-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.categoryId} options={props.ddcats} placeholder="Category" />
+      <Dropdown className='wpndrop' name={'cwpn-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} optionLabel="name" optionValue="id" value={props.cmp.weaponId} options={props.ddwpns} placeholder="Weapon" />
       <Calendar name={'copens-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={opens.toDate()} viewDate={vdate1.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
       <Calendar name={'ccheck-' + props.cmp.id} appendTo={document.body} onChange={props.onChangeEl} minDate={ourstart.toDate()} maxDate={ourend.toDate()} dateFormat="yy-mm-dd" value={weapon_check.toDate()} viewDate={vdate2.toDate()} monthNavigator yearNavigator yearRange={range} numberOfMonths={numofmonths}></Calendar>
       <span className="p-input-icon-left add-button">
@@ -87,12 +87,33 @@ export default class EventDialog extends React.Component {
     onCloseDialog = (event) => {
         this.loading(true);
 
-        return singleevent('save',this.props.value)
+        var obj = {
+            id: this.props.value.id,
+            name: this.props.value.name,
+            countryId: this.props.value.countryId,
+            type_id: this.props.value.type_id ?? this.props.value.type.id ?? 1,
+            location: this.props.value.location,
+            opens: this.props.value.opens,
+            duration: this.props.value.duration,
+            year: this.props.value.year,
+            config: this.props.value.config,
+            competitions: this.props.value.competitions,
+            inRanking: this.props.value.inRanking,
+            factor: this.props.value.factor
+        }
+
+        const self = this;
+        singleevent('save',obj)
             .then((json) => {
-                this.loading(false);
-                if(json) {
-                    this.save(this.props.value);
+                self.loading(false);
+                var itm=Object.assign({},self.props.value);
+                if(json.data && json.data.id) {
+                    itm.id = json.data.id;
                 }
+                if(json.data.model) {
+                    itm = Object.assign({},itm,json.data.model);
+                }
+                self.save(itm);
             })
             .catch((err) => {
                 if(err.response.data.messages && err.response.data.messages.length) {
@@ -114,16 +135,20 @@ export default class EventDialog extends React.Component {
             singleevent('delete',{ id: this.props.value.id})
             .then((json) => {
                 if(json) {
+                    if(this.props.onDelete) this.props.onDelete(this.props.value);
                     this.close();
                 }
             })
             .catch((err) => {
-                if(err.response.data.messages && err.response.data.messages.length) {
+                if(err.response.data?.messages && err.response.data?.messages.length) {
                     var txt="";
                     for(var i=0;i<err.response.data.messages.length;i++) {
                         txt+=err.response.data.messages[i]+"\r\n";
                     }
                     alert(txt);
+                }
+                else if (err.response.message) {
+                    alert(err.response.message);
                 }
                 else {
                     alert('Error removing the data. Please try again');
@@ -133,7 +158,7 @@ export default class EventDialog extends React.Component {
     }
 
     onChangeEl = (event,attrvalue) => {
-        var item=this.props.value;
+        var item=Object.assign({}, this.props.value);
         var name=attrvalue ? event : (event.target ? event.target.name : event.originalEvent.target.name);
         var value=attrvalue ? attrvalue : (event.target ? event.target.value : event.value);
         var els=name.split('-');
@@ -145,13 +170,13 @@ export default class EventDialog extends React.Component {
 
         switch (name) {
         case 'name':
-        case 'type':
+        case 'type_id':
         case 'year':
         case 'duration':
         case 'location':
-        case 'country':
+        case 'countryId':
         case 'factor':
-        case 'in_ranking':
+        case 'inRanking':
         case 'feed':
             item[name] = value;
             break;
@@ -177,16 +202,16 @@ export default class EventDialog extends React.Component {
                 if(cmp.id == id) {
                     switch(name) {
                     case 'ccat':
-                        cmp.category=value;
+                        cmp.categoryId=value;
                         break;
                     case 'cwpn':
-                        cmp.weapon=value;
+                        cmp.weaponId=value;
                         break;
                     case 'copens':
-                        cmp.opens=format_date(value);
+                        cmp.starts=format_date(value);
                         break;
                     case 'ccheck':
-                        cmp.weapon_check=format_date(value);
+                        cmp.weaponsCheck=format_date(value);
                         break;
                     }
                     comps[i]=cmp;
@@ -205,7 +230,7 @@ export default class EventDialog extends React.Component {
         var cindex=this.state.compindex;
         if(!pushed) pushed=[];
         if(tp == 'one') {
-            pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'category':-1,'weapon':-1,'opens':this.props.value.opens,'weapon_check':this.props.value.opens})
+            pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'categoryId':-1,'weaponId':-1,'starts':this.props.value.opens,'weaponsCheck':this.props.value.opens})
             cindex+=1;
         }
         else if(tp == 'all') {
@@ -221,7 +246,8 @@ export default class EventDialog extends React.Component {
                 for(var j in this.state.categories) {
                     var key="w_" + this.state.weapons[i].id + "_c_" + this.state.categories[j].id;
                     if(!allcombos[key]) {
-                        pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'category':this.state.categories[j].id,'weapon':this.state.weapons[i].id,'opens':this.props.value.opens,'weapon_check':this.props.value.opens})
+                        console.log('pushing competition ', this.state.categories[j].id, this.state.weapons[i].id, 'at', this.props.value.opens);
+                        pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'categoryId':this.state.categories[j].id,'weaponId':this.state.weapons[i].id,'starts':this.props.value.opens,'weaponsCheck':this.props.value.opens})
                         cindex+=1;
                     }
                 }
@@ -276,7 +302,7 @@ export default class EventDialog extends React.Component {
                 wpns.map((wpnId) => {
                     var key="w_" + wpnId + "_c_" + catId;
                     if (!pushedByKey[key]) {
-                        pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'category':catId,'weapon':wpnId,'opens':this.props.value.opens,'weapon_check':this.props.value.opens});
+                        pushed.push({'id':'a'+cindex,'event_id': this.props.value.id,'categoryId':catId,'weaponId':wpnId,'starts':this.props.value.opens,'weaponsCheck':this.props.value.opens});
                         cindex+=1;
                         pushedByKey[key] = true; // not needed, but okay...
                     }
@@ -327,6 +353,7 @@ export default class EventDialog extends React.Component {
         var use_registration = (cfg && cfg.use_registration) ? 'Y' : 'N';
 
         var options = [{ name: 'Yes', code: 'Y' }, { name: 'No', code: 'N' }];
+        var type_id = parseInt(this.props.value.type_id || this.props.value.type?.id || "1");
 
         return (
 <Dialog header="Edit Event" position="center" className="event-dialog" visible={this.props.display} style={{ width: '65vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
@@ -347,13 +374,13 @@ export default class EventDialog extends React.Component {
       <div>
         <label>Country</label>
         <div className='input'>
-            <Dropdown optionLabel="name" optionValue="id" value={this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} name='country'/>
+            <Dropdown optionLabel="name" optionValue="id" value={this.props.value.countryId} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} name='countryId'/>
         </div>
       </div>
       <div>
         <label>Type</label>
         <div className='input'>
-            <Dropdown optionLabel="name" optionValue="id" value={this.props.value.type} options={this.props.types} placeholder="Type" onChange={this.onChangeEl} name='type'/>
+            <Dropdown optionLabel="name" optionValue="id" value={type_id} options={this.props.types} placeholder="Type" onChange={this.onChangeEl} name='type_id'/>
         </div>
       </div>
       <div>
@@ -386,13 +413,6 @@ export default class EventDialog extends React.Component {
             <Dropdown name='use_registration' optionLabel="name" optionValue="code" value={use_registration} options={options} onChange={this.onChangeEl} />
         </div>
       </div>
-      <div>
-        <label>Live feed</label>
-        <div className='input'>
-            <InputText name='feed' value={this.props.value.feed} onChange={this.onChangeEl} placeholder='url'/>
-        </div>
-      </div>
-
     </TabPanel>
 
     <TabPanel id='competitions' header='Competitions'>
@@ -425,7 +445,7 @@ export default class EventDialog extends React.Component {
         <div>
             <label>In Ranking</label>
             <div className='input'>
-                <Dropdown name='in_ranking' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.in_ranking} options={options} placeholder="Ranked" onChange={this.onChangeEl}/>
+                <Dropdown name='inRanking' appendTo={document.body} optionLabel="name" optionValue="code" value={this.props.value.inRanking} options={options} placeholder="Ranked" onChange={this.onChangeEl}/>
             </div>
         </div>
 

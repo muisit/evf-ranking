@@ -104,13 +104,15 @@ export default class RankingPage extends React.Component {
     }
 
     onDetail = (fencer) => {
+        console.log('onDetail');
         this.setState({fencer_id:fencer});
         ranking("detail",{category_id: this.state.category_id, weapon_id: this.state.weapon_id, id: fencer})
             .then((res) => {
+                console.log('setting detail result', res);
                 if(res.data) {
                     this.setState({detail: res.data, detail_open: true});
                 }
-            });
+            }).catch((e) => console.log(e));
     }
 
     onList = () => {

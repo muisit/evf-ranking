@@ -66,13 +66,23 @@ export default class ImportDialog extends React.Component {
     onCloseDialog = (event) => {
         if(this.props.value.object.ranking.length) {
             var ranking=[];
+            var allHaveAnId = true;
             for(var i in this.props.value.object.ranking) {
                 var rnk=this.props.value.object.ranking[i];
-                var obj={pos: rnk.pos, fencer_id: rnk.fencer_id, firstname: rnk.firstname, lastname: rnk.lastname};
+                var obj={pos: rnk.pos, fencer_id: rnk.fencer_id, firstname: rnk.firstname, name: rnk.name};
                 ranking.push(obj);
+
+                if (!obj.fencer_id || obj.fencer_id < 1) {
+                    allHaveAnId = false;
+                }
             }
 
-            result('import',{import: { ranking: ranking, competition_id: this.props.value.object.competition_id }})
+            if (!allHaveAnId) {
+                alert("Not all entries have been assigned a new or existing record. Please adjust the lines with a non-green indicator");
+                return;
+            }
+
+            result('import',{competition_id: this.props.value.object.competition_id, import: { ranking: ranking}})
                 .then((res) => {
                     if(res) {
                         this.close();
@@ -104,6 +114,38 @@ export default class ImportDialog extends React.Component {
         this.close();
     }
 
+    setChecksBasedOnFirstSuggestion = (el, suggestion, countOfSuggestions) => {
+        el.lastname_check = 'ok';
+        el.firstname_check = 'ok';
+        el.country_check = 'ok';
+        el.all_check = countOfSuggestions > 1 ? 'nok' : 'ok';
+        if (countOfSuggestions > 1) {
+            el.all_text = 'Please pick a valid suggestion';
+        }
+
+        if (suggestion.checks && suggestion.checks.length) {
+            for(var chk of suggestion.checks) {
+                if (chk.type == 'lastname') {
+                    el.lastname_check = 'nok';
+                    el.lastname_text = chk.message;
+                }
+                if (chk.type == 'firstname') {
+                    el.firstname_check = 'nok';
+                    el.firstname_text = chk.message;
+                }
+                if (chk.type == 'country') {
+                    el.country_check = 'nok';
+                    el.country_text = chk.message;
+                }
+                if (chk.type == 'age') {
+                    el.all_check = 'nok';
+                    el.all_text = chk.message;
+                }
+            }
+        }
+        return el;
+    }
+
     checkResults = () => {
         // check the next 10 results
         var start=this.state.current_check;
@@ -116,48 +158,31 @@ export default class ImportDialog extends React.Component {
         }
 
         this.setState({current_check: start+10},() => {
-            result('importcheck',{
+            result('check',{
                 ranking: checkme,
-                competition: this.props.value.object.competition_id
+                competition_id: this.props.value.object.competition_id
             })
             .then((res) => {
                 // parse results
                 var ranking=this.props.value.object.ranking.slice();
-                if(res && res.data.ranking) {
-                    for(var i in res.data.ranking) {
-                        var entry=res.data.ranking[i];
+                if(res && res.data && res.data.length) {
+                    for(var i in res.data) {
+                        var entry=res.data[i];
 
                         for(var j in ranking) {
                             var el=ranking[j];
                             if(el.index === entry.index) {
-                                //if(entry.fencer_id > 0) {
-                                //    //console.log('copying birthday and gender from suggestions');
-                                //    for(var k in entry.suggestions) {
-                                //        var sugg = entry.suggestions[k];
-                                //        if(sugg.id == entry.fencer_id) {
-                                //            entry.birthday = sugg.birthday;
-                                //            entry.gender = sugg.gender;
-                                //        }
-                                //    }
-                                //}
-
                                 el.fencer_id = entry.fencer_id || -1;
-                                el.lastname_check = entry.lastname_check || 'nok';
-                                el.lastname_text = entry.lastname_text || '';
-                                el.firstname_check = entry.firstname_check || 'nok';
-                                el.firstname_text = entry.firstname_text || '';
-                                el.country_check = entry.country_check || 'nok';
-                                el.country_text = entry.country_text || '';
-                                el.all_check = entry.all_check || 'nok';
-                                el.all_text = entry.all_text || '';
+                                el = this.setChecksBasedOnFirstSuggestion(el, entry.suggestions ? entry.suggestions[0] : {}, entry.suggestions?.length || 0);
+
                                 el.gender = entry.gender || this.gender;
                                 el.birthday = entry.birthday || '';
+
                                 el.suggestions = [];
                                 if(entry.suggestions && entry.suggestions.length) {
                                     el.suggestions = entry.suggestions.slice();
                                 }
                                 ranking[j]=el;
-
                             }
                         }
                     }
@@ -254,7 +279,7 @@ export default class ImportDialog extends React.Component {
                 pos: pos,
                 pos_check: isNaN(pos) ? "nok":"ok",
                 pos_text: isNaN(pos) ? 'invalid number':'',
-                lastname: lastname,
+                name: lastname,
                 lastname_check: "und",
                 lastname_text: '',
                 firstname: firstname,
@@ -331,6 +356,7 @@ export default class ImportDialog extends React.Component {
             if (this.props.onChange) this.props.onChange(item);
         }
         if(tp === 'change') {
+            console.log('changing state of selected item for suggestion dialog to ', itm);
             this.setState({item:itm});
         }
     }
@@ -353,7 +379,8 @@ export default class ImportDialog extends React.Component {
                             <th>Lastname</th>
                             <th>Firstname</th>
                             <th>Country</th>
-                            <th></th>
+                            <th>#</th>
+                            <th>ID</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -365,7 +392,7 @@ export default class ImportDialog extends React.Component {
                             <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.pos_text} />)}
                         </td>
                         <td className={itm.lastname_check}>
-                            <span className='item'>{itm.lastname}</span>
+                            <span className='item'>{itm.name}</span>
                             {itm.lastname_text !== '' && (
                             <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.lastname_text} />)}
                         </td>
@@ -383,6 +410,9 @@ export default class ImportDialog extends React.Component {
                             {itm.all} ({itm.suggestions.length})
                             {itm.all_text !== '' && (
                             <Button icon="pi pi-info-circle" className="p-button-sm p-button-text right" tooltip={itm.all_text} />)}
+                        </td>
+                        <td className={itm.all_check}>
+                            {itm.fencer_id > 0 && itm.fencer_id}
                         </td>
                       </tr>
                         ))}

@@ -67,12 +67,13 @@ export default class FencerDialog extends React.Component {
         fencer('save',obj)
             .then((json) => {
                 this.loading(false);
+                console.log('return value after save', json.data?.item);
                 var itm=Object.assign({},this.props.value);
                 if(json.data && json.data.id) {
                     itm.id = json.data.id;
                 }
-                if(json.data.model) {
-                    itm = Object.assign({},itm,json.data.model);
+                if(json.data && json.data.item) {
+                    itm = Object.assign({},itm,json.data.item);
                 }
                 this.save(itm);
             })
@@ -85,7 +86,7 @@ export default class FencerDialog extends React.Component {
         // create a new object containing only the data we want to store
         var obj = {
             birthday: this.props.value.birthday,
-            country: this.props.value.country,
+            country_id: this.props.value.country_id,
             firstname: this.props.value.firstname,
             gender: this.props.value.gender,
             name: this.props.value.name,
@@ -111,6 +112,7 @@ export default class FencerDialog extends React.Component {
         fencer('presavecheck',obj)
             .then((json) => {
                 if(json && json.data && json.data.suggestions && json.data.suggestions.length) {
+                    this.loading(false);
                     this.setState({suggestiondialog: true, suggestions: json.data.suggestions, pendingSave: obj})
                 }
                 else {
@@ -131,7 +133,7 @@ export default class FencerDialog extends React.Component {
         switch(event.target.name) {
         case 'firstname':
         case 'name':
-        case 'country':
+        case 'country_id':
         case 'birthday':
         case 'gender':
             console.log('changing ', event.target.name,' to ', event.target.value);
@@ -254,12 +256,12 @@ export default class FencerDialog extends React.Component {
         let genders = [{ name: 'Male', code: 'M' }, { name: 'Female', code: 'F' }];
 
         var country = (
-          <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={'' + this.props.value.country} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
+          <Dropdown name='country_id' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.country_id} options={this.props.countries} placeholder="Country" onChange={this.onChangeEl} />
         );
-        if(this.props.country) {
+        if(this.props.country_id) {
             var cname = "";
             this.props.countries.map((c) => {
-                if(c.id == this.props.country) {
+                if(c.id == this.props.country_id) {
                     cname=c.name;
                 }
             });

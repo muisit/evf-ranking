@@ -68,7 +68,7 @@ export default class RoleDialog extends React.Component {
         if(!event.target || !event.target.value) return;
         var item=this.props.value;
         switch(event.target.name) {
-        case 'type':
+        case 'type_id':
         case 'name': item[event.target.name] = event.target.value; break;
         }
         if (this.props.onChange) this.props.onChange(item);
@@ -121,7 +121,7 @@ export default class RoleDialog extends React.Component {
       <div>
         <label>Type</label>
         <div className='input'>
-          <Dropdown name='type' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.type} options={this.state.roletypes} placeholder="Type" onChange={this.onChangeEl}/>
+          <Dropdown name='type_id' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.type_id} options={this.state.roletypes} placeholder="Type" onChange={this.onChangeEl}/>
         </div>
       </div>
 </Dialog>

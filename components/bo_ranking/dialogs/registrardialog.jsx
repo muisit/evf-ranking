@@ -3,7 +3,6 @@ import { registrar } from "../../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
 
 export default class RegistrarDialog extends React.Component {
     constructor(props, context) {
@@ -58,8 +57,8 @@ export default class RegistrarDialog extends React.Component {
         var item=this.props.value;
         var value=event.target.value;
         switch(event.target.name) {
-        case 'country': if(value == -1) value=null;
-        case 'user': item[event.target.name] = value; break;
+        case 'country_id': if(value < 1) value=null;
+        case 'user_id': item[event.target.name] = value; break;
         }
         if (this.props.onChange) this.props.onChange(item);
     }
@@ -104,25 +103,25 @@ export default class RegistrarDialog extends React.Component {
         // we mess around with null and -1, because we cannot set null as drop-down value
         // but we cannot pass -1 to the back-end, because no-such-country
         var nullvalue = { 
-            id:-1,
+            id:'-1',
             name: 'General Administration'
         };
         var countries = this.props.countries.slice();
         countries.unshift(nullvalue);
-        var cntvalue=this.props.value.country;
+        var cntvalue=this.props.value.country_id;
         if(cntvalue==null) cntvalue=-1;
 
         return (<Dialog header="Edit Registrar" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
       <div>
         <label>User</label>
         <div className='input'>
-            <Dropdown name='user' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.user} options={this.props.users} placeholder="User" onChange={this.onChangeEl} />  
+            <Dropdown name='user_id' appendTo={document.body} optionLabel="name" optionValue="id" value={this.props.value.user_id} options={this.props.users} placeholder="User" onChange={this.onChangeEl} />  
         </div>
       </div>
       <div>
-        <label>Country</label>
+        <label>Country {cntvalue}</label>
         <div className='input'>
-            <Dropdown name='country' appendTo={document.body} optionLabel="name" optionValue="id" value={cntvalue} options={countries} onChange={this.onChangeEl} />
+            <Dropdown name='country_id' appendTo={document.body} optionLabel="name" optionValue="id" value={cntvalue} options={countries} onChange={this.onChangeEl} />
         </div>
       </div>
 </Dialog>

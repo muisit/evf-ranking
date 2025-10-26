@@ -9,18 +9,14 @@ export function abort_all_calls(type) {
 }
 
 // Internal API
-function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor = null, useApi = false) {
+function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor = null) {
     if(!controllers[cnt]) {
         controllers[cnt]=new AbortController();
     }
     const contentHeaders = Object.assign({
         "Accept": "application/json",
         "Content-Type": "application/json"} , headers);
-    
-    console.log('simpleFetch of ', path, useApi);
-    if (useApi) {
-        contentHeaders['Authorization'] = 'Bearer ' + evfranking.key;
-    }
+    contentHeaders['Authorization'] = 'Bearer ' + evfranking.key;
 
     const data = {
         path: path,
@@ -37,7 +33,7 @@ function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor = null, 
     });
 
     //console.log('calling fetch using '+JSON.stringify(data));
-    const url = useApi ? (evfranking.api + path) : evfranking.url;
+    const url = evfranking.api + path;
     return fetch(url, fetchOptions)
         .then(postprocessor())
         .catch(err => {
@@ -55,7 +51,6 @@ function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor = null, 
 function validateResponse() {
     return res => {
         return res.json().then(json => {
-            //console.log('validate response ',json);
             if (!json || !json.success) {
                 console.log('no success entry found or success is false');
                 const error = new Error(res.statusText);
@@ -67,9 +62,9 @@ function validateResponse() {
     };
 }
 
-function fetchJson(cnt,path, data={}, options = {}, headers = {}, useApi = false) {
+function fetchJson(cnt,path, data={}, options = {}, headers = {}) {
     //console.log('valid fetch using data '+JSON.stringify(data));
-    return simpleFetch(cnt,path,data,options,headers,validateResponse, useApi);
+    return simpleFetch(cnt,path,data,options,headers,validateResponse);
 }
 
 function attachmentResponse() {
@@ -130,104 +125,98 @@ export function upload_file(cnt, selectedFile, add_data, options={}, headers={})
         });
 }
 
-
 // Fencers
 export function fencers(offset,pagesize,filter,sort) {
     // all migrated to the new api
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('fencers','/fencers',obj, {}, {}, true);
+    return fetchJson('fencers','/fencers',obj, {}, {});
 }
 
 export function fencer(action, fields) {
     // all migrated to the new api
-    return fetchJson('fencers','/fencers/' + action, fields, {}, {}, true);
+    return fetchJson('fencers','/fencers/' + action, fields, {}, {});
 }
 
-// Country
+export function roletypes(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('roletypes','/roletypes',obj, {}, {});
+}
+export function roletype(action, fields) {
+    return fetchJson('roletypes','/roletypes/' + action,fields, {}, {});
+}
+
+export function roles(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('roles','/roles',obj, {}, {});
+}
+export function role(action, fields) {
+    return fetchJson('roles','/roles/' + action,fields, {}, {});
+}
+
+export function registrars(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('registrars','/registrars',obj, {}, {});
+}
+export function registrar(action, fields) {
+    return fetchJson('registrars','/registrars/' + action,fields, {}, {});
+}
+
 export function countries(offset,pagesize,filter,sort) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('countries','countries',obj);
+    return fetchJson('countries','/countries',obj, {}, {});
 }
 export function country(action, fields) {
-    return fetchJson('countries','countries/' + action,fields);
+    return fetchJson('countries','/countries/' + action,fields, {}, {});
 }
 
-// Events and Competitions
+// only listings
+export function categories(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('events','/categories',obj, {}, {});
+}
+export function weapons(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('events','/weapons',obj, {}, {});
+}
+export function eventtypes(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('events','/types',obj, {}, {});
+}
+export function users(offset,pagesize,filter,sort) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('registrars','/users',obj, {}, {});
+}
+
 export function events(offset,pagesize,filter,sort, special) {
     var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
-    return fetchJson('events','events',obj);
-}
-export function singleevent(action,fields) {
-    return fetchJson('events','events/'+action,fields);
+    return fetchJson('events','/events',obj, {}, {});
 }
 
 export function competitions(id) {
     var obj = {id:id};
-    return fetchJson('events','events/competitions',obj);
-}
-export function eventroles(id) {
-    var obj = {id:id};
-    return fetchJson('events','events/roles',obj);
-}
-export function categories(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('events','categories',obj);
-}
-export function weapons(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('events','weapons',obj);
-}
-export function eventtypes(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('events','types',obj);
+    return fetchJson('events','/events/competitions',obj, {}, {});
 }
 
-export function results(offset,pagesize,filter,sort,special) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort,special:special};
-    return fetchJson('events','results',obj);
+export function singleevent(action,fields) {
+    console.log('network call to events/' + action);
+    return fetchJson('events','/events/'+action,fields, {}, {});
+}
+
+export function results(offset,pagesize,filter,sort,compId) {
+    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
+    return fetchJson('events','/results/' + compId,obj, {}, {});
 }
 
 export function result(action,fields) {
-    return fetchJson('events','results/'+action,fields);
+    var compid = fields.competition_id;
+    return fetchJson('events','/results/'+compid + '/' + action,fields, {}, {});
 }
 
+export function apidata(dt = {}) {
+    return fetchJson('events','/apidata', dt, {}, {});
+}
+
+// NEED TO BE MIGRATED STILL (or can be removed)
 export function ranking(action,fields) {
-    return fetchJson('events','ranking/'+action,fields);
-}
-
-// Administration
-export function roles(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('roles','roles',obj);
-}
-export function role(action, fields) {
-    return fetchJson('roles','roles/' + action,fields);
-}
-export function roletypes(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('roletypes','/roletypes',obj, {}, {}, true);
-}
-export function roletype(action, fields) {
-    return fetchJson('roletypes','/roletypes/' + action,fields, {}, {}, true);
-}
-export function registrars(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('registrars','registrars',obj);
-}
-export function registrar(action, fields) {
-    return fetchJson('registrars','registrars/' + action,fields);
-}
-export function users(offset,pagesize,filter,sort) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort};
-    return fetchJson('registrars','users',obj);
-}
-export function posts(offset,pagesize,filter,sort,special) {
-    var obj = {offset: offset, pagesize: pagesize, filter:filter,sort:sort, special:special};
-    return fetchJson('events','posts',obj);
-}
-
-// Ranking
-export function createRanking() {
-    console.log('calling createRanking in api');
-    return fetchJson('events', '/ranking/create', {}, {}, {}, true);
+    return fetchJson('events','/ranking/' + action,fields, {}, {});
 }

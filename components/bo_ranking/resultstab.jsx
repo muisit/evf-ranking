@@ -55,7 +55,7 @@ export default class ResultsTab extends PagedTab {
     }
 
     componentDidMount = () => {
-        events(0, 0, '', "D", "with_competitions").then((evnts) => { if (evnts) {
+        events(0, 20000, '', "D", "with_competitions").then((evnts) => { if (evnts) {
             this.setState({'events': evnts.data.list });
         }});
         weapons().then((wpns) => { if (wpns) {
@@ -118,8 +118,7 @@ export default class ResultsTab extends PagedTab {
 
     apiCall = (o, p, f, s) => {    
         if(this.state.competition.id) {
-            var special = JSON.stringify({ competition_id: this.state.competition.id });
-            return results(o, p, f, s, special);
+            return results(o, p, f, s, this.state.competition.id);
         }
         else if(is_valid(this.props.eventId)) {
             this.setState({loadedFor: this.props.eventId});
@@ -127,12 +126,12 @@ export default class ResultsTab extends PagedTab {
             .then((cmp) => {
                 if(cmp) {
                     var cmps = cmp.data.list.map((itm,idx) => {
-                        var k1="k" + itm.category;
+                        var k1="k" + itm.categoryId;
                         if(this.state.categories[k1]) {
                             itm.category_name = this.state.categories[k1].name;
                             itm.category_obj = this.state.categories[k1];
                         }
-                        var k2="k" + itm.weapon;
+                        var k2="k" + itm.weaponId;
                         if(this.state.weapons[k2]) {
                             itm.weapon_name = this.state.weapons[k2].name;
                             itm.weapon_obj = this.state.weapons[k2];

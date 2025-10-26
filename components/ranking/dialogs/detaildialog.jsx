@@ -23,7 +23,7 @@ export default class DetailDialog extends React.Component {
             return (null);
         }
         var footer=(<div>
-            <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
+            <Button label="Close" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
     </div>);
 
         var firstentry=this.props.detail[0];

@@ -74,6 +74,7 @@ export default class PerusalDialog extends React.Component {
         this.setState({fencer_id:fencer});
         ranking("detail",{category_id: this.state.category_id, weapon_id: this.state.weapon_id, id: fencer})
             .then((res) => {
+                console.log(res);
                 if(res.data) {
                     this.setState({detail: res.data});
                 }
@@ -81,7 +82,7 @@ export default class PerusalDialog extends React.Component {
     }
 
     onList = () => {
-        this.setState({fencer_id: null, detail: []});
+        this.setState({fencer_id: '', detail: []});
     }
 
     renderDetail = () => {
@@ -185,9 +186,9 @@ export default class PerusalDialog extends React.Component {
             var footer=(<div>
             <Button label="Ok" icon="pi pi-times" className="p-button-raised p-button-text" onClick={this.onCancelDialog} />
     </div>);
-            var dialogContent = this.state.fencer_id > 0 && this.state.detail.length > 0? this.renderDetail() : this.renderTable();
+            var dialogContent = this.state.fencer_id.length > 0 && this.state.detail.length > 0? this.renderDetail() : this.renderTable();
             return (<Dialog header="Scan Rankings" position="center" visible={this.props.display} style={{ width: '55vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
-          <div className='ranking-results'>
+          <div className='ranking-dialog'>
               {dialogContent}
           </div>
         </Dialog>);

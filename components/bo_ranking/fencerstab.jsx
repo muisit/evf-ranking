@@ -48,7 +48,7 @@ export default class FencersTab extends PagedTab {
 
 
     onEdit = (event)=> {
-        results(0,10000,{id: event.data.id},"E",{"withevents":true})
+        results(0, 10000, {"fencer":true}, 'E', event.data.id)
             .then((json) => {
                 this.setState({item: Object.assign({},event.data, {results: json.data.list})}, () => this.props.onAction({event: 'openDialog'}));
             });

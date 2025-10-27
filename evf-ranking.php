@@ -12,7 +12,7 @@
  * Plugin Name:         evf-ranking
  * Plugin URI:          https://github.com/muisit/evf-ranking
  * Description:         Result entry and Ranking calculations for EVF
- * Version:             3.0.15
+ * Version:             4.0.0
  * Requires at least:   5.4
  * Requires PHP:        7.2
  * Author:              Michiel Uitdehaag
@@ -39,7 +39,7 @@
  */
 
 define('EVFRANKING_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('EVFRANKING_VERSION', "3.0.4");
+define('EVFRANKING_VERSION', "4.0.0");
 
 if (defined('WP_DEBUG')) {
     // wait time before we automatically refresh a dirty accreditation
@@ -48,13 +48,12 @@ if (defined('WP_DEBUG')) {
     define('EVFRANKING_RENEW_DIRTY_ACCREDITATONS', 0);
     // wait time for the 10-minute-queue. On dev, we don't want to wait that long
     define('EVFRANKING_CRON_WAIT_HOOK', '1_second');
-    define('API_URL', 'http://localhost:9154/fe');
 }
 else {
     define('EVFRANKING_RENEW_DIRTY_ACCREDITATONS', 600);
     define('EVFRANKING_CRON_WAIT_HOOK', '2_minutes');
-    define('API_URL', 'https://api.veteransfencing.eu/fe');
 }
+define('API_URL', 'http://localhost:9154/fe');
 
 function evfranking_activate()
 {

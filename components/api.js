@@ -16,7 +16,9 @@ function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor = null) 
     const contentHeaders = Object.assign({
         "Accept": "application/json",
         "Content-Type": "application/json"} , headers);
-    contentHeaders['Authorization'] = 'Bearer ' + evfranking.key;
+    if (evfranking.key) {
+        contentHeaders['Authorization'] = 'Bearer ' + evfranking.key;
+    }
 
     const data = {
         path: path,

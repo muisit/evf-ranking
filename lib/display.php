@@ -62,7 +62,7 @@ HEREDOC;
     {
         if (in_array($page, array("toplevel_page_evfrankings"))) {
             $script = plugins_url('/dist/app.js', $this->get_plugin_base());
-            $this->enqueue_code($script);
+            $this->enqueue_code($script, true);
         }
     }
 
@@ -73,7 +73,7 @@ HEREDOC;
         }
     }
 
-    private function enqueue_code($script)
+    private function enqueue_code($script, $doUserAndKey = false)
     {
         // insert a small piece of html to load the ranking react script
         wp_enqueue_script( 'evfranking', $script, array('jquery','wp-element'), EVFRANKING_VERSION );
@@ -82,17 +82,19 @@ HEREDOC;
         $params = array_merge(Display::$jsparams, array(
             'url' => admin_url('admin-ajax.php?action=evfranking'),
             'api' => API_URL,
-            'key' => get_option("evf_internal_key"),
             'nonce' => $nonce,
             'capabilities' => (new Policy())->getCapabilities()
         ));
+        if ($doUserAndKey) {
+            $params['key'] = get_option("evf_internal_key");
+        }
         wp_localize_script('evfranking', 'evfranking', $params);
     }
 
     public function rankingShortCode($attributes)
     {
         $script = plugins_url('/dist/ranking.js', $this->get_plugin_base());
-        $this->enqueue_code($script);
+        $this->enqueue_code($script, false);
         wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
         $output = "<div id='evfranking-ranking'></div>";
         return $output;
@@ -102,7 +104,7 @@ HEREDOC;
     {
         // insert a small piece of html to load the ranking react script
         $script = plugins_url('/dist/results.js', $this->get_plugin_base());
-        $this->enqueue_code($script);
+        $this->enqueue_code($script, false);
         wp_enqueue_style('evfranking', plugins_url('/dist/app.css', $this->get_plugin_base()), array(), EVFRANKING_VERSION);
         $output = "<div id='evfranking-results'></div>";
         return $output;
@@ -145,7 +147,7 @@ HEREDOC;
                 break;
             }
         }
-        
+
         if (empty($found)) {
             // else find all tribe events
             $args = array(

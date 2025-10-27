@@ -136,6 +136,14 @@ fi
 
 if [[ "x$DRY" = "x1" ]]
 then
+    echo "cat '$PROJECT.php' |  sed 's/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1https://api.veteransfencing.eu/fe\2/'  > tmp.$$"
+else
+    cat "$PROJECT.php" |  sed "s/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1https://api.veteransfencing.eu/fe\2/"  > tmp.$$
+    mv tmp.$$ "$PROJECT.php"
+fi
+
+if [[ "x$DRY" = "x1" ]]
+then
     echo "npm run build"
 else
     # perform a production build before we deploy
@@ -215,4 +223,12 @@ else
 
     rm -rf vendor
     php8.4 /usr/bin/composer install
+fi
+
+if [[ "x$DRY" = "x1" ]]
+then
+    echo "cat '$PROJECT.php' |  sed 's/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1http://localhost:9154/fe\2/'  > tmp.$$"
+else
+    cat "$PROJECT.php" |  sed "s/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1http://localhost:9154/fe\2/"  > tmp.$$
+    mv tmp.$$ "$PROJECT.php"
 fi

@@ -136,9 +136,9 @@ fi
 
 if [[ "x$DRY" = "x1" ]]
 then
-    echo "cat '$PROJECT.php' |  sed 's/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1https://api.veteransfencing.eu/fe\2/'  > tmp.$$"
+    echo "cat '$PROJECT.php' |  sed 's/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1https:\/\/api.veteransfencing.eu\/fe\2/'  > tmp.$$"
 else
-    cat "$PROJECT.php" |  sed "s/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1https://api.veteransfencing.eu/fe\2/"  > tmp.$$
+    cat "$PROJECT.php" |  sed "s/\(define.*API_URL[^']*'[^']*'\)[^']*\('.*\)/\1https:\/\/api.veteransfencing.eu\/fe\2/"  > tmp.$$
     mv tmp.$$ "$PROJECT.php"
 fi
 
@@ -227,8 +227,8 @@ fi
 
 if [[ "x$DRY" = "x1" ]]
 then
-    echo "cat '$PROJECT.php' |  sed 's/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1http://localhost:9154/fe\2/'  > tmp.$$"
+    echo "cat '$PROJECT.php' |  sed 's/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1http:\/\/localhost:9154\/fe\2/'  > tmp.$$"
 else
-    cat "$PROJECT.php" |  sed "s/\(define.*API_URL[^\"]*\"\)[^\"]*\(\".*\)/\1http://localhost:9154/fe\2/"  > tmp.$$
+    cat "$PROJECT.php" |  sed "s/\(define.*API_URL[^']*'[^']*'\)[^']*\('.*\)/\1http:\/\/localhost:9154\/fe\2/"  > tmp.$$
     mv tmp.$$ "$PROJECT.php"
 fi

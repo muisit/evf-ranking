@@ -16,7 +16,8 @@ export default class RankingPage extends React.Component {
             orderBy: 'r',
             items: [],
             itemTries: -1,
-            itemSelect:null
+            itemSelect:null,
+            scrollPosition:0
         };
     }
 
@@ -30,7 +31,6 @@ export default class RankingPage extends React.Component {
             if (wpns) this.setState({ 'weapons': wpns.data.list, weapon_id: wpns.data.list[0].id }, this.checkState) 
         })
         .catch((e) => {
-            console.log("weapons: caught ",e);
             if(tries < 5) {
                 this.loadWeapons(tries+1);
             }
@@ -52,7 +52,6 @@ export default class RankingPage extends React.Component {
             }
         })
         .catch((e) => {
-            console.log("cats: caught ",e);
             if(tries < 5) {
                 this.loadCats(tries+1);
             }
@@ -77,7 +76,6 @@ export default class RankingPage extends React.Component {
             })
             .catch((e) => {
                 if(this.state.itemTries < 5) {
-                    console.log("reloading item selection ",select," using ",this.state.itemTries);
                     this.loadItemPage(select, this.state.itemTries+1);
                 }
                 else {
@@ -104,11 +102,9 @@ export default class RankingPage extends React.Component {
     }
 
     onDetail = (fencer) => {
-        console.log('onDetail');
-        this.setState({fencer_id:fencer});
+        this.setState({fencer_id:fencer, scrollPosition: window.scrollY});
         ranking("detail",{category_id: this.state.category_id, weapon_id: this.state.weapon_id, id: fencer})
             .then((res) => {
-                console.log('setting detail result', res);
                 if(res.data) {
                     this.setState({detail: res.data, detail_open: true});
                 }
@@ -120,7 +116,7 @@ export default class RankingPage extends React.Component {
     }
 
     onClose = () => {
-        this.setState({detail_open: false});
+        this.setState({detail_open: false}, () => { window.scroll(0, this.state.scrollPosition - 105)});
     }
 
     changeSort = (s) => {

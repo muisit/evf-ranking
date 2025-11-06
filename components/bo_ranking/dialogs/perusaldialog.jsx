@@ -10,7 +10,7 @@ export default class PerusalDialog extends React.Component {
         this.state = {
             weapons: [],
             categories: [],
-            fencer_id: -1,
+            fencer_id: '',
             detail: [],
             category_id: -1,
             weapon_id: -1,
@@ -72,35 +72,18 @@ export default class PerusalDialog extends React.Component {
 
     onDetail = (fencer) => {
         this.setState({fencer_id:fencer});
-        ranking("detail",{category_id: this.state.category_id, weapon_id: this.state.weapon_id, id: fencer})
-            .then((res) => {
-                console.log(res);
-                if(res.data) {
-                    this.setState({detail: res.data});
-                }
-            });
-    }
-
-    onList = () => {
-        this.setState({fencer_id: '', detail: []});
+        if (fencer != null) {
+            ranking("detail",{category_id: this.state.category_id, weapon_id: this.state.weapon_id, id: fencer})
+                .then((res) => {
+                    if(res.data) {
+                        this.setState({detail: res.data});
+                    }
+                });
+        }
     }
 
     renderDetail = () => {
-        var firstentry=this.state.detail[0];
         return (
-            <div>
-              <div className='personaldetail'>
-                <div className='fencer'>
-                    <span className='name'>{firstentry.surname},&nbsp;</span>
-                    <span className='firstname'>{firstentry.firstname}</span>
-                    <span className='abbr'>{firstentry.abbr}</span>
-                </div>
-                <div className='actions'>
-                  <a href='#' onClick={() => this.onList()}>
-                    <i className="pi pi-replay"></i> &nbsp;Return
-                  </a>
-                </div>
-              </div>
               <table className='detail'>
                 <thead>
                     <tr>
@@ -137,8 +120,36 @@ export default class PerusalDialog extends React.Component {
                     ))}
                 </tbody>
               </table>
-            </div> 
-            );
+        );
+    }
+
+    renderEntry = (fencer, idx) => {
+        return (<tbody key={fencer.id}>
+          <tr className={(idx%2)==1 ? "odd":"even"}>
+            <td className='pos'>{fencer.pos}</td>
+            <td>{fencer.name}</td>
+            <td>{fencer.firstname}</td>
+            <td>{fencer.country}</td>
+            <td>{fencer.points}</td>
+            <td className='icon'>
+                <span className="p-input-icon-left view-detail">
+                {this.state.fencer_id == fencer.id && (<a href='#' onClick={() => this.onDetail(null)}>
+                    <i className="pi pi-search-minus"></i>
+                </a>)}
+                {(this.state.fencer_id == null || this.state.fencer_id != fencer.id) && (<a href='#' onClick={() => this.onDetail(fencer.id)}>
+                    <i className="pi pi-search-plus"></i>
+                </a>)}
+                </span>
+            </td>
+          </tr>
+          {(this.state.fencer_id != null && this.state.fencer_id == fencer.id) && (
+            <tr>
+                <td colSpan='6'>
+                    {this.renderDetail()}
+                </td>
+            </tr>
+          )}
+        </tbody>);
     }
 
     renderTable = () => {
@@ -159,24 +170,7 @@ export default class PerusalDialog extends React.Component {
                     <th scope='col'></th>
                 </tr>
             </thead>
-            <tbody>
-                {this.state.items.map((fencer,idx) => (
-              <tr key={fencer.id} className={(idx%2)==1 ? "odd":"even"}>
-                  <td className='pos'>{fencer.pos}</td>
-                  <td>{fencer.name}</td>
-                  <td>{fencer.firstname}</td>
-                  <td>{fencer.country}</td>
-                  <td>{fencer.points}</td>
-                  <td className='icon'>
-                      <span className="p-input-icon-left view-detail">
-                        <a href='#' onClick={() => this.onDetail(fencer.id)}>
-                          <i className="pi pi-search-plus"></i>
-                        </a>
-                      </span>
-                  </td>
-              </tr>
-                ))}
-            </tbody>
+            {this.state.items.map((fencer,idx) => this.renderEntry(fencer, idx))}
           </table>
         </div>
         );
@@ -186,10 +180,9 @@ export default class PerusalDialog extends React.Component {
             var footer=(<div>
             <Button label="Ok" icon="pi pi-times" className="p-button-raised p-button-text" onClick={this.onCancelDialog} />
     </div>);
-            var dialogContent = this.state.fencer_id.length > 0 && this.state.detail.length > 0? this.renderDetail() : this.renderTable();
-            return (<Dialog header="Scan Rankings" position="center" visible={this.props.display} style={{ width: '55vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+            return (<Dialog header="Scan Rankings" position="center" visible={this.props.display} style={{ width: '75vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
           <div className='ranking-dialog'>
-              {dialogContent}
+              {this.renderTable()}
           </div>
         </Dialog>);
     }

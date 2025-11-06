@@ -46,7 +46,7 @@ export default class FencerDialog extends React.Component {
     onFileChange = (event) => {
         var selectedFile=event.target.files[0];
         console.log('onFileChange for fencer image');
-        upload_file("fencers",selectedFile,{
+        upload_file("/fencers/upload", "fencers",selectedFile,{
             fencer: this.props.value.id,
         })
         .then((json) => {

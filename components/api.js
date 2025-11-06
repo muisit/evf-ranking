@@ -8,6 +8,19 @@ export function abort_all_calls(type) {
     }
 }
 
+export function error_handler(err) {
+    if(err.response.data.messages && err.response.data.messages.length) {
+        var txt="";
+        for(var i=0;i<err.response.data.messages.length;i++) {
+           txt+=err.response.data.messages[i]+"\r\n";
+        }
+        alert(txt);
+    }
+    else {
+        alert('Error storing the data. Please try again');
+    }
+}
+
 // Internal API
 function simpleFetch(cnt, path,pdata,options, headers={}, postprocessor = null) {
     if(!controllers[cnt]) {
@@ -84,11 +97,7 @@ function fetchAttachment(cnt,path,data={},options={},headers={}) {
     return simpleFetch(cnt,path,data,options,headers,attachmentResponse);
 }
 
-export function upload_file(cnt, selectedFile, add_data, options={}, headers={}) {
-    if(!controllers[cnt]) {
-        controllers[cnt]=new AbortController();
-    }
-
+export function upload_file(path, cnt, selectedFile, add_data, options={}, headers={}) {
     const contentHeaders = Object.assign({
         "Accept": "application/json",
         "Content-Type": "removeme",
@@ -112,9 +121,8 @@ export function upload_file(cnt, selectedFile, add_data, options={}, headers={})
         signal: controllers[cnt].signal,
         body: data
     });
-    console.log(fetchOptions);
-    console.log(evfranking.api + '/fencers/upload');
-    return fetch(evfranking.api + '/fencers/upload', fetchOptions)
+
+    return fetch(evfranking.api + path, fetchOptions)
         .then(validateResponse())
         .catch(err => {
             if(err.name === "AbortError") {
@@ -218,7 +226,10 @@ export function apidata(dt = {}) {
     return fetchJson('events','/apidata', dt, {}, {});
 }
 
-// NEED TO BE MIGRATED STILL (or can be removed)
 export function ranking(action,fields) {
     return fetchJson('events','/ranking/' + action,fields, {}, {});
+}
+
+export function workflow(action,fields) {
+    return fetchJson('events','/workflow/' + action,fields, {}, {});
 }

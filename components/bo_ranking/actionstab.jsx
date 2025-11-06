@@ -4,7 +4,8 @@ import { Toast } from 'primereact/toast';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
 import PerusalDialog from './dialogs/perusaldialog.jsx';
-import { abort_all_calls, ranking, singleevent, competitions, result, apidata } from "../api.js";
+import WorkflowDialog from './dialogs/workflowdialog.jsx';
+import { abort_all_calls, ranking, singleevent, competitions, result, apidata, workflow } from "../api.js";
 
 import React from 'react';
 
@@ -14,6 +15,7 @@ export default class ActionsTab extends React.Component {
         this.abortType='fencers';
         this.state = {
             peruseDialog: false,
+            uploadXMLDialog: false,
             events: [],
             cutoff: 5,
             apiuser: -1,
@@ -62,6 +64,15 @@ export default class ActionsTab extends React.Component {
     }
     onClosePeruseDialog = () => {
         this.setState({peruseDialog: false});
+    }
+
+    onUploadXMLDialog = () => {
+        console.log('opening XML dialog');
+        this.setState({uploadXMLDialog: true});
+    }
+    onCloseUploadXMLDialog = () => {
+        console.log('closing XML dialog');
+        this.setState({uploadXMLDialog: false});
     }
 
     onCreateEvent = () => {
@@ -156,6 +167,10 @@ export default class ActionsTab extends React.Component {
                     Opens the ranking perusal dialog to skim through the current ranking. This is very similar
                     to the front end interface.
                 </p>
+                <Button label="Import XML" icon="pi pi-cloud-upload" className="p-button p-button-raised p-button-text" onClick={this.onUploadXMLDialog} />
+                <p className='small'>
+                    Opens the XML import workflow dialog.
+                </p>
             </div>
         </div>
         <div className='row'>
@@ -232,6 +247,7 @@ export default class ActionsTab extends React.Component {
         </div>
     </div>
     <PerusalDialog onClose={this.onClosePeruseDialog} display={this.state.peruseDialog}/>
+    <WorkflowDialog value="uploadXML" display={this.state.uploadXMLDialog} onClose={this.onCloseUploadXMLDialog} />
 </div>);
 //        <div className='row'>
 //        <div className='col-2'>

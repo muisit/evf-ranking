@@ -23,8 +23,6 @@ export default class ImportDialog extends React.Component {
                 this.countryByAbbrev[cnt.abbr.toLowerCase()]=cnt;
             }
         }
-
-        this.gender = 'M';
     }
 
     loading = (state) => {
@@ -119,7 +117,17 @@ export default class ImportDialog extends React.Component {
         el.firstname_check = 'ok';
         el.country_check = 'ok';
         el.all_check = countOfSuggestions > 1 ? 'nok' : 'ok';
-        if (countOfSuggestions > 1) {
+        if (countOfSuggestions == 0) {
+            el.lastname_check = 'nok';
+            el.firstname_check = 'nok';
+            el.country_check = 'nok';
+            el.all_check = 'nok';
+            el.lastname_text = 'Fencer not matched';
+            el.firstname_text = 'Fencer not matched';
+            el.country_text = 'Fencer not matched';
+            el.all_text = 'Fencer not matched';
+        }
+        else if (countOfSuggestions > 1) {
             el.all_text = 'Please pick a valid suggestion';
         }
 
@@ -146,6 +154,15 @@ export default class ImportDialog extends React.Component {
         return el;
     }
 
+    getFirstDOBForCategory = () => {
+        let dt = moment().month(11).date(25);
+        dt = dt.year(dt.year() - 30 - (this.props.category * 10));
+        if (moment().month() > 7) {
+          dt = dt.year(dt.year() + 1);
+        }
+        return dt.format('YYYY-MM-DD');
+    }
+
     checkResults = () => {
         // check the next 10 results
         var start=this.state.current_check;
@@ -156,6 +173,7 @@ export default class ImportDialog extends React.Component {
         for(var i=start; i<this.props.value.object.ranking.length && i< (start+10);i++) {
             checkme.push(this.props.value.object.ranking[i]);
         }
+        const dob = this.getFirstDOBForCategory();
 
         this.setState({current_check: start+10},() => {
             result('check',{
@@ -173,10 +191,10 @@ export default class ImportDialog extends React.Component {
                             var el=ranking[j];
                             if(el.index === entry.index) {
                                 el.fencer_id = entry.fencer_id || -1;
-                                el = this.setChecksBasedOnFirstSuggestion(el, entry.suggestions ? entry.suggestions[0] : {}, entry.suggestions?.length || 0);
+                                el = this.setChecksBasedOnFirstSuggestion(el, (entry.suggestions && entry.suggestions.length) ? entry.suggestions[0] : {}, entry.suggestions?.length || 0);
 
-                                el.gender = entry.gender || this.gender;
-                                el.birthday = entry.birthday || '';
+                                el.gender = entry.gender || this.props.gender;
+                                el.birthday = (entry.birthday && entry.birthday.length)|| dob;
 
                                 el.suggestions = [];
                                 if(entry.suggestions && entry.suggestions.length) {
@@ -255,16 +273,6 @@ export default class ImportDialog extends React.Component {
     }
 
     onConvert = () => {
-        // set the default gender based on the selected competition
-        if(this.props.weapons && this.props.competition) {
-            for(var j in this.props.weapons) {
-                var wpn=this.props.weapons[j];
-                if(wpn.id == this.props.competition.weapon) {
-                    this.gender = wpn.gender;
-                }
-            }
-        }
-
         var lines=this.props.value.text.split('\n');
         var lastpos=0;
         var ranking = lines.reduce((result, line) => {
@@ -362,7 +370,7 @@ export default class ImportDialog extends React.Component {
     }
 
     selectRow = (itm) => {
-        this.printRanking();
+        //this.printRanking();
         this.setState({showDialog: true, item: itm});
     }
 
@@ -419,7 +427,7 @@ export default class ImportDialog extends React.Component {
                     </tbody>
                 </table>
                 <SuggestionDialog 
-            countries={this.props.countries} gender={this.gender}
+            countries={this.props.countries}
             onClose={()=>this.onSuggest('close')} onChange={(itm)=>this.onSuggest('change',itm)} onSave={()=>this.onSuggest('save')} 
             value={this.state.item} display={this.state.showDialog}
             />

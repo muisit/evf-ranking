@@ -206,11 +206,33 @@ export default class ResultsTab extends PagedTab {
     }
 
     renderDialog() {
+        // set the default gender and category based on the selected competition
+        let selectedGender = 'M';
+        let selectedCat = 1;
+        if(this.state.weapons && this.state.competition) {
+            for(var j in this.state.weapons) {
+                var wpn=this.state.weapons[j];
+                if(wpn.id == this.state.competition.weaponId) {
+                    selectedGender = wpn.gender;
+                }
+            }
+        }
+        if(this.state.categories && this.state.competition) {
+            for(var j in this.state.categories) {
+                var cat=this.state.categories[j];
+                if(cat.id == this.state.competition.categoryId) {
+                    selectedCat = parseInt(cat.value);
+                }
+            }
+        }
+
+
         return (
             <div>
         <ResultDialog countries={this.props.countries} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />
         <ImportDialog 
-            countries={this.props.countries} competition={this.state.competition} event={this.props.eventId} weapons={this.state.weapons}
+            countries={this.props.countries} competition={this.state.competition} event={this.props.eventId}
+            gender={selectedGender} category={selectedCat}
             onClose={()=>this.onImport('close')} onChange={(itm)=>this.onImport('change',itm)} onSave={()=>this.onImport('save')} 
             value={this.state.importObject} display={this.state.importDialog}
             />
@@ -286,7 +308,7 @@ export default class ResultsTab extends PagedTab {
             <Column field="place" header="Place" sortable={true} />
             <Column field="fencer_surname" header="Name" sortable={true} />
             <Column field="fencer_firstname" header="Firstname" sortable={true} />
-            <Column field="country" header="Country" sortable={true} />
+            <Column field="country_abbr" header="Country" sortable={true} />
             <Column field="fencer_dob" header="DOB" sortable={true} />
             <Column field="points" header="Points" sortable={true} />
             <Column field="total_points" header="Total" sortable={true} />

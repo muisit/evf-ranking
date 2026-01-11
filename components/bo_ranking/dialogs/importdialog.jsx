@@ -45,24 +45,6 @@ export default class ImportDialog extends React.Component {
         this.close();
     }
 
-    printRanking2 = (rnk) => {
-        var ranking=[];
-        for(var i in rnk) {
-            var rnk=rnk[i];
-            var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
-            ranking.push(obj);
-        }
-    }
-
-    printRanking = () => {
-        var ranking=[];
-        for(var i in this.props.value.object.ranking) {
-            var rnk=this.props.value.object.ranking[i];
-            var obj={pos: rnk.pos, fencer_id: rnk.fencer_id};
-            ranking.push(obj);
-        }
-    }
-
     onCloseDialog = (event) => {
         if(this.props.value.object.ranking.length) {
             var ranking=[];
@@ -356,13 +338,11 @@ export default class ImportDialog extends React.Component {
             if (this.props.onChange) this.props.onChange(item);
         }
         if(tp === 'change') {
-            console.log('changing state of selected item for suggestion dialog to ', itm);
             this.setState({item:itm});
         }
     }
 
     selectRow = (itm) => {
-        this.printRanking();
         this.setState({showDialog: true, item: itm});
     }
 

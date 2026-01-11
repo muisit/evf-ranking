@@ -70,7 +70,6 @@ export default class SuggestionDialog extends React.Component {
             this.setState({displayFencerDialog: false});
         }
         else if(tp == 'save') {
-            console.log('selecting suggestion after save', itm);
             this.selectSuggestion(itm);
         }
     }
@@ -91,7 +90,6 @@ export default class SuggestionDialog extends React.Component {
     }
 
     selectSuggestion = (itm) => {
-        console.log('selecting suggestion', itm);
         var item = Object.assign({},this.props.value);
         // Do not! override the names, so we can add the new spelling to the accepted (mis)spellings
         //item.name = itm.name;

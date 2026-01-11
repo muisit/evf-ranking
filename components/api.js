@@ -9,7 +9,7 @@ export function abort_all_calls(type) {
 }
 
 export function error_handler(err) {
-    if(err.response.data.messages && err.response.data.messages.length) {
+    if(err?.response?.data?.messages && err.response.data.messages.length) {
         var txt="";
         for(var i=0;i<err.response.data.messages.length;i++) {
            txt+=err.response.data.messages[i]+"\r\n";
@@ -17,6 +17,7 @@ export function error_handler(err) {
         alert(txt);
     }
     else {
+        console.error(err);
         alert('Error storing the data. Please try again');
     }
 }

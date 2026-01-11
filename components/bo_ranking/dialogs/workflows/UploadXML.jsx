@@ -1,8 +1,5 @@
 import React from 'react';
 import { workflow, error_handler, upload_file } from "../../../api.js";
-import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { Dropdown } from 'primereact/dropdown';
 import { FileUpload } from 'primereact/fileupload';
 
 export default class UploadXML extends React.Component {
@@ -27,23 +24,20 @@ export default class UploadXML extends React.Component {
     }    
 
     onUpload = () => {
-        console.log('onUpload, at end of upload', this.props.value.id);
         this.loading(true);
         workflow('step', {
             id: this.props.value.id,
-            step: this.props.value.sandbox.step,
+            step: 'uploaded',
             file_id: this.state.file_id
         })
         .then((json) => {
             this.loading(false);
-            if (this.props.onFinish) this.props.onFinish(json);
-            this.close();
+            if (this.props.onFinish) this.props.onFinish(json.data);
         })
         .catch(error_handler);
     }
 
     doUpload = (f) => {
-        console.log('doUpload', this.props.value);
         this.loading(true);
         upload_file('/workflow/upload', 'events', f.files[0], {id: this.props.value.id})
             .then((data) => {

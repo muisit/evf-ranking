@@ -72,6 +72,11 @@ export function parse_int(val, def) {
     return retval;
 }
 
+export function is_valid_date(dt) {
+    var retval = moment(dt);
+    return retval && retval.isValid();
+}
+
 export function parse_date(dt) {
     var retval=moment(dt);
     if(!retval || !retval.isValid()) retval=moment();

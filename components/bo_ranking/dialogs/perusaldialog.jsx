@@ -8,28 +8,12 @@ export default class PerusalDialog extends React.Component {
     constructor(props, context) {
         super(props, context);
         this.state = {
-            weapons: [],
-            categories: [],
             fencer_id: -1,
             detail: [],
             category_id: -1,
             weapon_id: -1,
             items: []
         }
-    }
-
-    componentDidMount = () => {
-        weapons().then((wpns) => { if (wpns) this.setState({ 'weapons': wpns.data.list, weapon_id: wpns.data.list[0].id }, this.checkState) });
-        categories().then((cats) => { if (cats) {
-                var lst = cats.data.list.filter((cat) => {
-                    if(cat.type === 'I') {
-                        return true;
-                    }
-                    return false;
-                });
-                this.setState({ 'categories': lst, category_id: lst[0].id }, this.checkState); 
-            }
-        });
     }
 
     close = () => {
@@ -74,7 +58,6 @@ export default class PerusalDialog extends React.Component {
         this.setState({fencer_id:fencer});
         ranking("detail",{category_id: this.state.category_id, weapon_id: this.state.weapon_id, id: fencer})
             .then((res) => {
-                console.log(res);
                 if(res.data) {
                     this.setState({detail: res.data});
                 }
@@ -145,8 +128,8 @@ export default class PerusalDialog extends React.Component {
         return (
         <div>
           <div className='ranking-select-catwpn'>
-            <Dropdown className='drop catdrop' appendTo={document.body} name="category" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.category_id} options={this.state.categories} placeholder="Category" />
-            <Dropdown className='drop wpndrop' appendTo={document.body} name="weapon" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.weapon_id} options={this.state.weapons} placeholder="Weapon" />
+            <Dropdown className='drop catdrop' appendTo={document.body} name="category" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.category_id} options={this.props.categories} placeholder="Category" />
+            <Dropdown className='drop wpndrop' appendTo={document.body} name="weapon" onChange={this.onChangeEl} optionLabel="name" optionValue="id" value={this.state.weapon_id} options={this.props.weapons} placeholder="Weapon" />
           </div>
           <table className='list'>
             <thead>

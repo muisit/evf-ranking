@@ -2,6 +2,7 @@ import { Slider } from 'primereact/slider';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Paginator } from 'primereact/paginator';
+import { ProgressSpinner } from 'primereact/progressspinner';
 import { Toast } from 'primereact/toast';
 import { abort_all_calls } from "./api.js";
 
@@ -51,7 +52,7 @@ export default class PagedTab extends React.Component {
                         "items": json.data.list, 
                         "count": json.data.total, 
                         "pages": maxpages, 
-                        "loading":false,
+                        //"loading":false,
                         "noslider": maxpages<1,
                     });
                 }
@@ -192,6 +193,9 @@ export default class PagedTab extends React.Component {
         return (
 <div>
     <Toast ref={(el) => this.toast = el} />
+    {this.state.loading && (<div className='spinner-wrapper'>
+        <ProgressSpinner/>
+    </div>)}
     <div className="datatable">
       {this.renderAdd()}
       {this.renderFilter()}

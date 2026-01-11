@@ -10,7 +10,7 @@ import RegistrarsTab from './registrarstab.jsx';
 import RolesTab from './rolestab.jsx';
 import RoleTypeTab from './roletypetab.jsx';
 
-import { countries, eventtypes, users } from "../api.js";
+import { countries, eventtypes, users, categories, weapons } from "../api.js";
 
 export default class IndexPage extends React.Component {
     constructor(props, context) {
@@ -21,6 +21,10 @@ export default class IndexPage extends React.Component {
             countries_count: 0,
             eventtypes:[],
             eventtypes_count: 0,
+            categories: [],
+            categoriesById: {},
+            weapons: [],
+            weaponsById: {},
             users: [],
             users_count: -1,
             activeIndex: 0,
@@ -55,10 +59,37 @@ export default class IndexPage extends React.Component {
                     this.setState({ "users": json.data.list, "users_count": json.data.total }, () => this.checkInit());
                 }
             });
+        weapons().then((wpns) => {
+            if (wpns) {
+                var wbi = {};
+                for (const wpn of wpns.data.list) {
+                    wbi['k' + wpn.id] = wpn;
+                }
+                this.setState({ 'weapons': wpns.data.list, 'weaponsById': wbi}, () => this.checkInit());
+            }
+        });
+        categories().then((cats) => {
+            if (cats) {
+                var lst = cats.data.list.filter((cat) => {
+                    if(cat.type === 'I') {
+                        return true;
+                    }
+                    return false;
+                });
+                var cbi = {};
+                for (const c of lst) {
+                    cbi['k' + c.id] = c;
+                }
+                this.setState({ 'categories': lst, 'categoriesById': cbi }, () => this.checkInit()); 
+            }
+        });
     }
 
     checkInit = () => {
-        if (this.state.countries_count>=0 && this.state.eventtypes_count>=0 && this.state.users_count>=0) {
+        if (this.state.countries_count>=0 && this.state.eventtypes_count>=0 && this.state.users_count>=0
+            && (Array.isArray(this.state.weapons) && this.state.weapons.length)
+            && (Array.isArray(this.state.categories) && this.state.categories.length)
+        ) {
             console.log('checking initialization, all items loaded');
             this.setState({ initializing: false });
         }
@@ -164,10 +195,10 @@ export default class IndexPage extends React.Component {
         }
         return (<div>
 <TabView id="evfrankingtabs" activeIndex={this.state.activeIndex} onTabChange={(e) => this.changeTabIndex(e.index)}>
-    <TabPanel id="actions" header="Actions"><ActionsTab onAction={(f,c) => this.onAction('actions', f, c)}/></TabPanel>
-    <TabPanel id="results" header="Results"><ResultsTab countries={this.state.countries} displayDialog={this.state.dialogs.results}  onAction={(f,c) => this.onAction('results', f, c)} eventId={this.state.eventId}/></TabPanel>
-    <TabPanel id="events" header="Events"><EventsTab countries={this.state.countries} types={this.state.eventtypes} displayDialog={this.state.dialogs.events} onAction={(f,c) => this.onAction('events', f, c)}/></TabPanel>
-    <TabPanel id="fencers" header="Fencers"><FencersTab countries={this.state.countries} displayDialog={this.state.dialogs.fencers} onAction={(f,c) => this.onAction('fencers', f, c)}/></TabPanel>
+    <TabPanel id="actions" header="Actions"><ActionsTab onAction={(f,c) => this.onAction('actions', f, c)} categories={this.state.categories} weapons={this.state.weapons} types={this.state.eventtypes} countries={this.state.countries}/></TabPanel>
+    <TabPanel id="results" header="Results"><ResultsTab countries={this.state.countries} displayDialog={this.state.dialogs.results}  onAction={(f,c) => this.onAction('results', f, c)} eventId={this.state.eventId} categories={this.state.categoriesById} weapons={this.state.weaponsById}/></TabPanel>
+    <TabPanel id="events" header="Events"><EventsTab countries={this.state.countries} types={this.state.eventtypes} displayDialog={this.state.dialogs.events} onAction={(f,c) => this.onAction('events', f, c)}  categories={this.state.categories} weapons={this.state.weapons}/></TabPanel>
+    <TabPanel id="fencers" header="Fencers"><FencersTab countries={this.state.countries} displayDialog={this.state.dialogs.fencers} onAction={(f,c) => this.onAction('fencers', f, c)} categories={this.state.categories} weapons={this.state.weapons}/></TabPanel>
     <TabPanel id="countries" header="Countries"><CountriesTab displayDialog={this.state.dialogs.countries} onAction={(f,c) => this.onAction('countries', f, c)}/></TabPanel>
     <TabPanel id="registrars" header="Registrars"><RegistrarsTab users={this.state.users} countries={this.state.countries} displayDialog={this.state.dialogs.registrars} onAction={(f,c) => this.onAction('registrars', f, c)}/></TabPanel>
     <TabPanel id="roles" header="Roles"><RolesTab displayDialog={this.state.dialogs.roles} onAction={(f,c) => this.onAction('roles', f, c)}/></TabPanel>

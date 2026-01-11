@@ -3,9 +3,10 @@ import { ToggleButton } from '../togglebutton';
 import { Toast } from 'primereact/toast';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
+import { ProgressSpinner } from 'primereact/progressspinner';
 import PerusalDialog from './dialogs/perusaldialog.jsx';
 import WorkflowDialog from './dialogs/workflowdialog.jsx';
-import { abort_all_calls, ranking, singleevent, competitions, result, apidata, workflow } from "../api.js";
+import { abort_all_calls, ranking, singleevent, competitions, result, apidata } from "../api.js";
 
 import React from 'react';
 
@@ -17,6 +18,8 @@ export default class ActionsTab extends React.Component {
             peruseDialog: false,
             uploadXMLDialog: false,
             events: [],
+            weapons: [],
+            categories: [],
             cutoff: 5,
             apiuser: -1,
             apikey: '',
@@ -24,11 +27,23 @@ export default class ActionsTab extends React.Component {
         };
     }
 
+    checkState = () => {
+        if (!Array.isArray(this.state.events) || !this.state.events.length) {
+            return false;
+        }
+        this.onLoad(false);
+    }
+
+    onLoad = (state) => {
+        this.setState({loading:state});
+    }
+
     componentDidMount = () => {
+        this.setState({loading:true});
         apidata()
             .then ((res) => {
                 if (res && res.data) {
-                    this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey, events: res.data.events});
+                    this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey, events: res.data.events}, () => this.checkState());
                 }
             });
     }
@@ -150,6 +165,9 @@ export default class ActionsTab extends React.Component {
         return (
 <div>
     <Toast ref={(el) => this.toast = el} />
+    {this.state.loading && (<div className='spinner-wrapper'>
+        <ProgressSpinner/>
+    </div>)}        
     <div className="datatable container">
         <div className='row'>
             <div className='col-2'>
@@ -246,8 +264,8 @@ export default class ActionsTab extends React.Component {
             </div>
         </div>
     </div>
-    <PerusalDialog onClose={this.onClosePeruseDialog} display={this.state.peruseDialog}/>
-    <WorkflowDialog value="uploadXML" display={this.state.uploadXMLDialog} onClose={this.onCloseUploadXMLDialog} />
+    <PerusalDialog onClose={this.onClosePeruseDialog} display={this.state.peruseDialog} weapons={this.props.weapons} categories={this.props.categories}/>
+    <WorkflowDialog value="uploadXML" display={this.state.uploadXMLDialog} onClose={this.onCloseUploadXMLDialog} onLoad={this.onLoad} countries={this.props.countries} weapons={this.props.weapons} categories={this.props.categories} types={this.props.types}/>
 </div>);
 //        <div className='row'>
 //        <div className='col-2'>

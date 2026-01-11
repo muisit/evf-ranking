@@ -1,4 +1,4 @@
-import { events, weapons, categories, results, result, competitions } from "../api.js";
+import { events, results, result, competitions } from "../api.js";
 import { is_valid } from "../functions";
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -28,8 +28,6 @@ export default class ResultsTab extends PagedTab {
         this.state = {
             competition: {},
             events:[],
-            weapons:{},
-            categories:{},
             loading: false,
             sorting:"i",
             sortField: "",
@@ -55,29 +53,10 @@ export default class ResultsTab extends PagedTab {
     }
 
     componentDidMount = () => {
+        this.setState({'loading':true});
         events(0, 20000, '', "D", "with_competitions").then((evnts) => { if (evnts) {
-            this.setState({'events': evnts.data.list });
+            this.setState({'events': evnts.data.list, 'loading': false });
         }});
-        weapons().then((wpns) => { if (wpns) {
-                var byid={};
-                for(var i in wpns.data.list) {
-                    var obj=wpns.data.list[i];
-                    var key="k"+obj.id;
-                    byid[key]=obj;
-                }
-                this.setState({ 'weapons': byid });
-            }
-        });
-        categories().then((cats) => { if (cats) {
-                var byid={};
-                for(var i in cats.data.list) {
-                    var obj=cats.data.list[i];
-                    var key="k"+obj.id;
-                    byid[key]=obj;
-                }
-                this.setState({ 'categories': byid });
-            }
-        });
     }
 
     componentDidUpdate = () => {
@@ -118,23 +97,25 @@ export default class ResultsTab extends PagedTab {
 
     apiCall = (o, p, f, s) => {    
         if(this.state.competition.id) {
-            return results(o, p, f, s, this.state.competition.id);
+            this.setState({loading:true});
+            return results(o, p, f, s, this.state.competition.id).then((r) => {this.setState({loading:false}); return r;});
         }
         else if(is_valid(this.props.eventId)) {
-            this.setState({loadedFor: this.props.eventId});
+            this.setState({loadedFor: this.props.eventId, loading:true});
             return competitions(this.props.eventId)
             .then((cmp) => {
+                this.setState({loading:false});
                 if(cmp) {
                     var cmps = cmp.data.list.map((itm,idx) => {
                         var k1="k" + itm.categoryId;
-                        if(this.state.categories[k1]) {
-                            itm.category_name = this.state.categories[k1].name;
-                            itm.category_obj = this.state.categories[k1];
+                        if(this.props.categories[k1]) {
+                            itm.category_name = this.props.categories[k1].name;
+                            itm.category_obj = this.props.categories[k1];
                         }
                         var k2="k" + itm.weaponId;
-                        if(this.state.weapons[k2]) {
-                            itm.weapon_name = this.state.weapons[k2].name;
-                            itm.weapon_obj = this.state.weapons[k2];
+                        if(this.props.weapons[k2]) {
+                            itm.weapon_name = this.props.weapons[k2].name;
+                            itm.weapon_obj = this.props.weapons[k2];
                         }
                         return itm;
                     });
@@ -210,7 +191,7 @@ export default class ResultsTab extends PagedTab {
             <div>
         <ResultDialog countries={this.props.countries} onDelete={this.onDelete} onClose={this.onClose} onChange={this.onChange} onSave={this.onSave} onLoad={this.onLoad} display={this.props.displayDialog} value={this.state.item} />
         <ImportDialog 
-            countries={this.props.countries} competition={this.state.competition} event={this.props.eventId} weapons={this.state.weapons}
+            countries={this.props.countries} competition={this.state.competition} event={this.props.eventId} weapons={this.props.weapons}
             onClose={()=>this.onImport('close')} onChange={(itm)=>this.onImport('change',itm)} onSave={()=>this.onImport('save')} 
             value={this.state.importObject} display={this.state.importDialog}
             />

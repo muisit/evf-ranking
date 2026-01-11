@@ -1,33 +1,39 @@
 import React from 'react';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
-import UploadXML from './workflows/UploadXML.jsx';
 import { workflow, error_handler } from '../../api.js';
+import { create_catById, create_countryById, create_wpnById } from '../../functions.js';
+import UploadXML from './workflows/UploadXML.jsx';
+import Unpack from './workflows/Unpack.jsx';
+import SelectEvent from './workflows/SelectEvent.jsx';
+import PrepareImport from './workflows/PrepareImport.jsx';
+import SelectCompetition from './workflows/SelectCompetition.jsx';
+import ImportFencers from './workflows/ImportFencers.jsx';
 
 export default class WorkflowDialog extends React.Component {
     constructor(props, context) {
         super(props, context);
         this.state = {
-            data: {},
+            data: {sandbox:{step:'Initialise'}},
             closed: false
         }
     }
 
     componentDidUpdate = () => {
-        console.log('didUpdate:', this.props.display, this.state.data);
-        if (this.props.display && (!this.state.data || !this.state.data.id || this.state.data.id < 0)) {
+        if (this.props.display && (!this.state.data || !this.state.data.id)) {            
+            this.setState({data: {id:-1}}); // preventing the workflow initialisation from running again
             this.loading(true);
-            workflow('step', {id: -1, name: this.props.value})
+            workflow('step', {id: -1, name: this.props.value, step:'initialise'})
                 .then((json) => {
                     this.loading(false);
-                    if (json.data && json.data.model) {
-                        this.setState({data: json.data.model});
+                    if (json.data && json.data.id) {
+                        this.setState({data: json.data});
                     }
                 })
                 .catch(error_handler);
         }
-        else {
-            console.log('no update');
+        else if(!this.props.display && this.state.data.sandbox?.step != 'Initialise') {
+            this.setState({data:{sandbox:{step:"Initialise"}},closed:false});
         }
     }
 
@@ -41,7 +47,10 @@ export default class WorkflowDialog extends React.Component {
 
     onCancelDialog = (event) => {
         this.close();
-    }    
+    }
+    onCloseDialog = () => {
+        this.close();
+    }
 
     testClose = () => {
         if (this.data.closed) {
@@ -54,17 +63,33 @@ export default class WorkflowDialog extends React.Component {
     }
 
     render() {
-        const step = this.state.data?.step ?? this.props.value;
-        var footer=(<div>
+        const basicdata ={
+            countries: this.props.countries,
+            eventtypes: this.props.types,
+            categories: this.props.categories,
+            weapons: this.props.weapons,
+            weaponsById: create_wpnById(this.props.weapons),
+            categoriesById: create_catById(this.props.categories),
+            countriesById: create_countryById(this.props.countries)
+        };
+        const step = this.state.data?.sandbox?.step ?? this.props.value;
+        const footer=(<div>
         <Button label="Cancel" icon="pi pi-times" className="p-button-warning p-button-raised p-button-text" onClick={this.onCancelDialog} />
-        <Button label="Save" icon="pi pi-check" className="p-button-raised" onClick={this.onCloseDialog} />
 </div>);
 
-        return (<Dialog header={this.props.title} position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
-            <p>{step} , {this.props.value}</p>
-            {step == 'uploadXML' && (<UploadXML value={this.state.data} onLoad={this.loading} onCancel={this.onCancelDialog} onFinish={this.nextStep} />)}
-</Dialog>
-);
+        const header = (<span>Workflow {this.props.value} step {step}</span>);
+        if (this.props.value == 'uploadXML') {
+            return (<Dialog header={header} className='workflow-dialog' position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
+                {step == 'Upload File' && (<UploadXML value={this.state.data} onLoad={this.loading} onCancel={this.onCancelDialog} onFinish={this.nextStep} />)}
+                {step == 'Uploaded' && (<Unpack value={this.state.data} onLoad={this.loading} onCancel={this.onCancelDialog} onFinish={this.nextStep} />)}
+                {step == 'Select Event' && (<SelectEvent value={this.state.data} onLoad={this.loading} onCancel={this.onCancelDialog} onFinish={this.nextStep} data={basicdata}/>)}
+                {step == 'Prepare Import' && (<PrepareImport value={this.state.data} onLoad={this.loading} onClose={this.onCloseDialog} onCancel={this.onCancelDialog} onFinish={this.nextStep} data={basicdata}/>)}
+                {step == 'Select Competition' && (<SelectCompetition value={this.state.data} onLoad={this.loading} onCancel={this.onCancelDialog} onFinish={this.nextStep} data={basicdata}/>)}
+                {step == 'Import Fencers' && (<ImportFencers value={this.state.data} onLoad={this.loading} onCancel={this.onCancelDialog} onFinish={this.nextStep} data={basicdata}/>)}
+            </Dialog>
+            );
+        }
+        return (null);
     }
 }
 

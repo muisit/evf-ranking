@@ -18,6 +18,7 @@
 .right { float: right; }
 .cright { float: right; clear: both; }
 .smallprint { font-size: 0.6rem; }
+.title { font-size: large; font-weight: bold;}
 
 .live-feed {
     background-image: url('./btn_live.png');
@@ -203,3 +204,30 @@ div.table-action i a { padding: 0; }
     .ranking-dialog .detail { font-size: 0.8rem;}
     .ranking-dialog .detail .mobhide { display: none; }
 }
+
+.spinner-wrapper {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    background-color: #444;
+    opacity: 50%;
+}
+
+.wp-admin #wpwrap,
+.wp-admin #wpwrap #wpbody,
+.wp-admin #wpwrap #wpbody #wpbody-content { height: 100%; }
+#evfranking-root .spinner-wrapper { z-index: 9999999; }
+#evfranking-root .spinner-wrapper .p-progress-spinner { margin-left: 45%; margin-top: 20%; }
+
+.p-fileupload { width: 100%; }
+.p-fileupload .p-fileupload-buttonbar { padding: 2px; }
+.p-fileupload .p-fileupload-content { padding: 4px 2px; }
+.p-fileupload .p-fileupload-content .p-progressbar { display: none; }
+.p-fileupload .p-fileupload-content .p-fileupload-row .p-fileupload-file-badge { display: none; }
+.p-fileupload .p-fileupload-content .p-fileupload-row .p-button { display: none; }
+
+.workflow-dialog .stepname { font-weight: bold; width: 100%; padding-bottom: 4px; text-align: left;}
+.workflow-dialog .p-dialog-content .files .file { display: flex; }
+.workflow-dialog .p-dialog-content .files .file .filename { padding-right: 10px; }

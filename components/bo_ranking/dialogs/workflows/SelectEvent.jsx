@@ -172,7 +172,7 @@ export default class SelectEvent extends React.Component {
                 </div>
             </div>
           </div>
-          <div className="alignright"><Button label="Save" icon="pi pi-caret-right" className="p-button-primary p-button-raised p-button-text" onClick={this.save} /></div>
+          <div className="alignright"><Button label="Save" icon="pi pi-save" className="p-button-primary p-button-raised p-button-text" onClick={this.save} /></div>
       </div>
         );
     }

@@ -19,6 +19,20 @@ export default class SelectCompetition extends React.Component {
         if (this.props.onClose) this.props.onClose();
     }    
 
+    skip = () => {
+        this.loading(true);
+        workflow('step', {
+            id: this.props.value.id,
+            step: 'save_competition',
+            skip: true
+        })
+        .then((json) => {
+            this.loading(false);
+            if (this.props.onFinish) this.props.onFinish(json.data);
+        })
+        .catch(error_handler);
+    }
+
     save = () => {
         // validation
         if (!is_valid(this.state.category)) {
@@ -153,7 +167,10 @@ export default class SelectCompetition extends React.Component {
                 </div>
             </div>
           </div>
-          <div className="alignright"><Button label="Save" icon="pi pi-caret-right" className="p-button-primary p-button-raised p-button-text" onClick={this.save} /></div>
+          <div className="alignright">
+            <Button label="Skip" icon="pi pi-fast-forward" className="p-button-secondary p-button-raised p-button-text" onClick={this.skip} />
+            <Button label="Save" icon="pi pi-save" className="p-button-primary p-button-raised p-button-text" onClick={this.save} />
+          </div>
       </div>
         );
     }

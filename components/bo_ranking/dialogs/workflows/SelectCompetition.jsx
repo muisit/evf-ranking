@@ -76,9 +76,9 @@ export default class SelectCompetition extends React.Component {
         const selectedCompetition = selectedCompetitions.length > 0 ? selectedCompetitions[0] : {};
         return {
             competition_id: cId,
-            date: parse_date(selectedCompetition?.date),
-            category: selectedCompetition?.category ?? -1,
-            weapon: selectedCompetition?.weapon ?? -1
+            date: parse_date(selectedCompetition?.date ?? this.props.value.sandbox.date),
+            category: selectedCompetition?.category ?? this.props.value.sandbox.category,
+            weapon: selectedCompetition?.weapon ?? this.props.value.sandbox.weapon
         };
     }
 
@@ -122,6 +122,12 @@ export default class SelectCompetition extends React.Component {
         return (
       <div>
         <div className='input-form'>
+            <div>
+                <label>Original</label>
+                <div className="input">
+                    {this.props.value.sandbox.competition_name}
+                </div>
+            </div>
             <div>
                 <label>Competition</label>
                 <div className="input">

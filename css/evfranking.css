@@ -176,6 +176,7 @@ div.table-action i a { padding: 0; }
 .resultranking tbody td.ok, .resultranking tr.ok { background-color: #9f9; }
 .resultranking tbody td.part { background-color: #fa4; }
 .resultranking tbody .right { float: right; padding: 0; width: auto; height: 18px;}
+.resultranking tbody .iconspacer { width: 16px; }
 .resultranking tbody .button { padding: 0; width: auto; padding-left: 10px; }
 .resultranking tbody .button span.p-button-label { margin-top: 5px; }
 .resultranking tbody td span.item { padding-top: 0px;}

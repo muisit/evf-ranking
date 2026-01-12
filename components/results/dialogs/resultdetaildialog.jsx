@@ -55,7 +55,10 @@ export default class ResultDetailDialog extends React.Component {
         }
         return (
           <tr key={res.id}>
-            <td className='pos'>{res.place}</td>
+            <td className='pos'>
+                {res.ranked == 'N' && (<span>{res.place}</span>)}
+                {res.ranked == 'D' && (<span>DNF</span>)}
+            </td>
             <td>{res.fencer_surname}</td>
             <td>{res.fencer_firstname}</td>
             <td>{res.country_abbr}</td>

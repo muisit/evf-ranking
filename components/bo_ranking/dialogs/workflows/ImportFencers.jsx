@@ -98,7 +98,14 @@ export default class ImportFencers extends React.Component {
         var allHaveAnId = true;
         for(var i in this.state.fencers) {
             var rnk=this.state.fencers[i];
-            var obj={pos: rnk.pos, fencer_id: rnk.fencer_id, firstname: rnk.firstname, name: rnk.name};
+            var obj={pos: rnk.pos, fencer_id: rnk.fencer_id, firstname: rnk.firstname, name: rnk.name, status: rnk.status};
+            // a fencer that dropped out, but still has a ranking, will retain that ranking as if they lost
+            // Although we know they abandoned or forfeited, it does not influence their status
+            // However, fencers that abandoned in the poule rounds and do not have a valid ranking are still
+            // taken into account for ranking points, but at the bottom.
+            if (rnk.pos < 9999 && rnk.status == 'dnf') {
+                obj.status = 'normal';
+            }
             ranking.push(obj);
 
             if (!obj.fencer_id || obj.fencer_id < 1) {
@@ -174,6 +181,26 @@ export default class ImportFencers extends React.Component {
         this.setState({showDialog: true, item: itm});
     }
 
+    excludeFencer = (itm, state) => {
+        var ranking=this.state.fencers.map((rnk) => {
+            if(rnk.index == itm.index && state != 'T') {
+                switch (state) {
+                    case 'X': itm.status = 'exclude'; break;
+                    case 'D': itm.status = 'dnf'; break;
+                    case 'N': itm.status = 'normal'; break;
+                }
+                return itm;
+            }
+            return rnk;
+        });
+        if (state == 'T') {
+            ranking = ranking.filter((i) => i.index != itm.index);
+        }
+        var allOk = true;
+        ranking.forEach((itm) => {if (!is_valid(itm.fencer_id)) allOk = false; });
+        this.setState({fencers: ranking, checked: allOk});
+    }
+
     render() {
         let button = null;
         if (this.state.checking) {
@@ -198,13 +225,16 @@ export default class ImportFencers extends React.Component {
                     <th>D.o.B.</th>
                     <th>#</th>
                     <th>ID</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
             {this.state.fencers.map((itm,idx) => (
                 <tr key={idx} onDoubleClick={() => this.selectRow(itm)}>
                 <td className="ok">
-                    {itm.pos}
+                    {itm.pos >0 && itm.pos < 9999 && itm.status != 'exclude' && (<span>{itm.pos}</span>)}
+                    {itm.status == 'dnf' && itm.pos >= 9999 && (<span>DNF</span>)}
+                    {itm.status == 'exclude' && (<span>EX</span>)}
                 </td>
                 <td className={itm.lastname_check}>
                     <span className='item'>{itm.name}</span>
@@ -234,6 +264,15 @@ export default class ImportFencers extends React.Component {
                 <td className={itm.all_check}>
                     {is_valid(itm.fencer_id) && itm.fencer_id}
                     {!is_valid(itm.fencer_id) && '-'}
+                </td>
+                <td className='und'>
+                    {itm.status != 'exclude' && (<Button onClick={() => this.excludeFencer(itm, 'X')} icon="pi pi-times-circle" className="p-button-sm p-button-text right" tooltip="exclude this fencer" />)}
+                    {itm.status == 'exclude' && (<i className='pi iconspacer right'></i>)}
+                    {itm.status != 'dnf' && itm.pos < 9999 && (<Button onClick={() => this.excludeFencer(itm, 'D')} icon="pi pi-pause-circle" className="p-button-sm p-button-text right" tooltip="mark as did not finish" />)}
+                    {(itm.status == 'dnf' || itm.pos >= 9999) && (<i className='pi iconspacer right'></i>)}
+                    {itm.status != 'normal' && itm.pos < 9999 && (<Button onClick={() => this.excludeFencer(itm, 'N')} icon="pi pi-check-circle" className="p-button-sm p-button-text right" tooltip="reinstate" />)}
+                    {(itm.status == 'normal' || itm.pos >= 9999) && (<i className='pi iconspacer right'></i>)}
+                    <Button icon="pi pi-minus-circle" onClick={() => this.excludeFencer(itm, 'T')} className="p-button-sm p-button-text right" tooltip="remove from list" />
                 </td>
                 </tr>
                 ))

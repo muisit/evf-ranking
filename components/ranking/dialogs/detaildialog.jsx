@@ -62,7 +62,10 @@ export default class DetailDialog extends React.Component {
                           <td>{comp.location}</td>
                           <td className='mobhide'>{comp.weapon}</td>
                           <td className='pos mobhide'>{comp.entry}</td>
-                          <td className='pos'>{comp.place}</td>
+                          <td className='pos'>
+                            {comp.place < 9999 && (<span>{comp.place}</span>)}
+                            {comp.place >= 9999 && (<span>DNF</span>)}
+                          </td>
                           <td className='pos mobhide'>{comp.points}</td>
                           <td className='pos mobhide'>{comp.de}</td>
                           <td className='pos mobhide'>{comp.podium}</td>

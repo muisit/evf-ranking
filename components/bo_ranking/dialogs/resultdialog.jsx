@@ -120,12 +120,6 @@ export default class ResultDialog extends React.Component {
 </div>);
         }
 
-        var rankedValues = [
-            { 'label': 'Yes', 'value': 'Y'},
-            { 'label': 'No', 'value': 'N'},
-            { 'label': 'Exclude', 'value': 'E'},
-        ];
-
         return (<Dialog header="Edit Result" position="center" visible={this.props.display} style={{ width: '50vw' }} modal={true} footer={footer} onHide={this.onCancelDialog}>
             <div>
                 <label>Surname</label>
@@ -195,6 +189,7 @@ export default class ResultDialog extends React.Component {
                     <div className='input'>
                         {this.props.value.ranked == 'Y' && (<span>Yes</span>)}
                         {this.props.value.ranked == 'N' && (<span>No</span>)}
+                        {this.props.value.ranked == 'D' && (<span>DNF</span>)}
                     </div>
                 </div>
             )}

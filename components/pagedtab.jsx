@@ -52,7 +52,7 @@ export default class PagedTab extends React.Component {
                         "items": json.data.list, 
                         "count": json.data.total, 
                         "pages": maxpages, 
-                        //"loading":false,
+                        "loading":false,
                         "noslider": maxpages<1,
                     });
                 }

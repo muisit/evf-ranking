@@ -108,8 +108,8 @@ export default class SelectEvent extends React.Component {
             name: selectedEvent?.name ?? (this.props.value.sandbox.eventData?.name ?? ''),
             location: selectedEvent?.location ?? (this.props.value.sandbox.eventData?.location ?? ''),
             date: parse_date(selectedEvent?.date ?? (this.props.value.sandbox.eventData?.date ?? '')),
-            type: selectedEvent?.type_id ?? -1,
-            country: selectedEvent?.country_id ?? (this.props.value.sandbox.eventData?.country ?? -1)
+            type: parseInt(selectedEvent?.type_id ?? 1),
+            country: parseInt(selectedEvent?.country_id ?? (this.props.value.sandbox.eventData?.country ?? -1))
         };
     }
 

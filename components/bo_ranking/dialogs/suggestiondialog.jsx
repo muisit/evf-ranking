@@ -94,7 +94,7 @@ export default class SuggestionDialog extends React.Component {
         // Do not! override the names, so we can add the new spelling to the accepted (mis)spellings
         //item.name = itm.name;
         //item.firstname = itm.firstname;
-        item.country_id = itm.country_id;
+        item.country_id = parseInt(itm.country_id);
         item.country = this.state.countryById["k" + itm.country_id].abbr;
         item.fencer_id = itm.id;
         item.birthday = itm.birthday;

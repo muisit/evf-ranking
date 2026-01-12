@@ -86,11 +86,11 @@ export default class FencerDialog extends React.Component {
         // create a new object containing only the data we want to store
         var obj = {
             birthday: this.props.value.birthday,
-            country_id: this.props.value.country_id,
+            country_id: parseInt(this.props.value.country_id),
             firstname: this.props.value.firstname,
             gender: this.props.value.gender,
             name: this.props.value.name,
-            id: this.props.value.id,
+            id: parseInt(this.props.value.id),
             picture: this.props.value.picture
         };
 
@@ -133,11 +133,12 @@ export default class FencerDialog extends React.Component {
         switch(event.target.name) {
         case 'firstname':
         case 'name':
-        case 'country_id':
         case 'birthday':
         case 'gender':
-            console.log('changing ', event.target.name,' to ', event.target.value);
             item[event.target.name] = event.target.value;
+            break;
+        case 'country_id':
+            item[event.target.name] = parseInt(event.target.value);
             break;
         case 'picture':
             var value=event.value;

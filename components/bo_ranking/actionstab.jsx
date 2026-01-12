@@ -9,6 +9,7 @@ import WorkflowDialog from './dialogs/workflowdialog.jsx';
 import { abort_all_calls, ranking, singleevent, competitions, result, apidata } from "../api.js";
 
 import React from 'react';
+import { create_countryById } from '../functions.js';
 
 export default class ActionsTab extends React.Component {
     constructor(props, context) {
@@ -43,6 +44,10 @@ export default class ActionsTab extends React.Component {
         apidata()
             .then ((res) => {
                 if (res && res.data) {
+                    const cById=create_countryById(this.props.countries);
+                    const events = res.data.events.map((ev) => {
+                        ev.country_abbr = cById['c' + ev.countryId].abbr;
+                    })
                     this.setState({cutoff: res.data.cutoff, apiuser: res.data.apiuser, apikey: res.data.apikey, events: res.data.events}, () => this.checkState());
                 }
             });
@@ -214,6 +219,7 @@ export default class ActionsTab extends React.Component {
                         <tr>
                             <th>ID</th>
                             <th>Name</th>
+                            <th>Country</th>
                             <th>Date</th>
                             <th>Status</th>
                         </tr>
@@ -224,6 +230,7 @@ export default class ActionsTab extends React.Component {
                         <tr key={ev.id}>
                             <td>{ev.id}</td>
                             <td>{ev.name}</td>
+                            <td>{ev.country_abbr}</td>
                             <td>{ev.opens}</td>
                             <td>
                                 <ToggleButton onLabel='Included' offLabel='Excluded' checked={ev.inRanking == 'Y'} onChange={(e) => this.onToggleRanking(ev, e)} />

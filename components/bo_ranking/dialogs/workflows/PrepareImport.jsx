@@ -65,20 +65,23 @@ export default class PrepareImport extends React.Component {
         return (
       <div>
         <div className='title'>Processing Files</div>
-        <div className='files'>
+        <table className='files'>
+            <tbody>
         {this.props.value.sandbox?.files && this.props.value.sandbox.files.map((item) => {
             if (item && item.unpacked) {
-                return (<div key={item.id} className='file'>
-                    <div className='filename'>{item.name}</div>
-                    <div>
+                return (<tr key={item.id} className='file'>
+                    <td className='filename'>{item.name}</td>
+                    <td className='compname'>{item.competition}</td>
+                    <td>
                         {item.processed && (<i className="pi pi-check"></i>)}
                         {!item.processed && (<i className="pi pi-spinner"></i>)}
-                    </div>
-                </div>);
+                    </td>
+                </tr>);
             }
         })
         }
-        </div>
+          </tbody>
+        </table>
         <div className='alignright'>
             {button}
         </div>

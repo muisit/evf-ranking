@@ -89,10 +89,10 @@ export default class SelectCompetition extends React.Component {
         const selectedCompetitions = this.props.value.sandbox.competitions.filter((item) => item.id == cId);
         const selectedCompetition = selectedCompetitions.length > 0 ? selectedCompetitions[0] : {};
         return {
-            competition_id: cId,
+            competition_id: parseInt(cId),
             date: parse_date(selectedCompetition?.date ?? this.props.value.sandbox.date),
-            category: selectedCompetition?.category ?? this.props.value.sandbox.category,
-            weapon: selectedCompetition?.weapon ?? this.props.value.sandbox.weapon
+            category: parseInt(selectedCompetition?.category ?? this.props.value.sandbox.category),
+            weapon: parseInt(selectedCompetition?.weapon ?? this.props.value.sandbox.weapon)
         };
     }
 

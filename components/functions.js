@@ -7,7 +7,10 @@ export function pad(number) {
     return ''+number;
 }
 export function format_currency(val) {
-    return parseFloat(val).toFixed(2);
+    return format_points(val, 2);
+}
+export function format_points(val, digits) {
+    return parseFloat(val).toFixed(digits ?? 3);
 }
 
 export function format_datetime(dt) {

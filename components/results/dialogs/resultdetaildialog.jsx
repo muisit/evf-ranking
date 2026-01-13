@@ -1,9 +1,7 @@
 import React from 'react';
-import { results } from "../../api.js";
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
+import { format_points } from '../../functions.js';
 
 export default class ResultDetailDialog extends React.Component {
     constructor(props, context) {
@@ -56,13 +54,13 @@ export default class ResultDetailDialog extends React.Component {
         return (
           <tr key={res.id}>
             <td className='pos'>
-                {res.ranked == 'N' && (<span>{res.place}</span>)}
+                {res.ranked != 'D' && (<span>{res.place}</span>)}
                 {res.ranked == 'D' && (<span>DNF</span>)}
             </td>
             <td>{res.fencer_surname}</td>
             <td>{res.fencer_firstname}</td>
             <td>{res.country_abbr}</td>
-            <td className='pos'>{res.total_points}</td>
+            <td className='pos textright'>{format_points(res.total_points, 3)}</td>
           </tr>  
         )
     }
